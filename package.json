@@ -1,0 +1,23 @@
+{
+  "name": "@adbl/bullet",
+  "version": "0.0.0",
+  "description": "Basic framework for building web apps.",
+  "main": "library/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "web-components",
+    "web",
+    "javascript"
+  ],
+  "author": "Adebola Akomolafe",
+  "repository": {
+    "directory": "github.com/adebola-io/bullet",
+    "type": "git"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.5.2"
+  }
+}

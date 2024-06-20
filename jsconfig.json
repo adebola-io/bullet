@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ESNext",
+    "module": "NodeNext",
+    "moduleResolution": "NodeNext",
+    "allowJs": true,
+
+    "noImplicitReturns": true,
+
+    "noEmit": false,
+    "emitDeclarationOnly": true,
+    "declaration": true,
+
+    "checkJs": true,
+    "strict": true,
+
+    "outDir": "types"
+  },
+  "include": ["library/**/*", "index.js"],
+  "exclude": ["types/**/*", "tests/**/*"]
+}
