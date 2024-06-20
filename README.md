@@ -66,7 +66,7 @@ You can then use your custom element like any other HTML tag:
 </body>
 ```
 
-or you can instantiate teh constructor in javascript:
+or you can instantiate the constructor in javascript:
 
 ```js
 document.body.append(Counter());
