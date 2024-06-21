@@ -7,18 +7,11 @@
 
     "noImplicitReturns": true,
 
-    "noEmit": false,
-    "emitDeclarationOnly": true,
-    "declaration": true,
-
     "checkJs": true,
     "strict": true,
 
     "outDir": "types",
 
-    "jsx": "react-jsx",
-    "jsxImportSource": "tsx-dom"
-  },
-  "include": ["library/**/*", "index.js"],
-  "exclude": ["types/**/*", "tests/**/*"]
+    "jsx": "preserve"
+  }
 }

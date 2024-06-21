@@ -7,10 +7,8 @@
  */
 
 /**
- * @template {string} TagName
  * @template Props
- * @template ComponentData
- * @typedef {{componentId?: string} & ((props?: Props) => AimElement<ComponentData>)} ComponentConstructor
+ * @typedef {{ componentId?: string; } & ((props: keyof Props extends never ? {} | undefined : Props) => AimElement<{}>)} ComponentConstructor
  */
 
 /**
@@ -28,29 +26,31 @@
 
 /**
  * @template {string} TagName
- * @template {object} [Props=never]
+ * @template {DefaultProps} [Props=never]
  * @template {object} [ExtraData=never]
+ * @template {Partial<Props>} [DefaultProps={}]
+ * @template {object} [RenderProps=Props]
  * @typedef {{
  *  tag: TagName,
  *  styles?: string | Partial<CSSStyleDeclaration>,
- *  render: (props: ReplaceConstructors<Props>, data: ExtraData) => Template,
- *  defaultProps?: Props,
+ *  render: (props: RenderProps, data: ExtraData) => Template,
+ *  defaultProps?: DefaultProps,
  *  data?: ExtraData & ThisType<AimElement<ExtraData>>
  * }} ElementConfig
  */
 
-/**
- * @template {object} T
- * @typedef { {
- *     [K in keyof T]:
- *       T[K] extends new (...args: any) => infer U ?
- *         U extends String ? string :
- *         U extends Boolean ? boolean :
- *         U extends Number ? number : U
- *       : T[K]
- *   }
- * } ReplaceConstructors
- */
+// /**
+//  * @template {object} T
+//  * @typedef { {
+//  *     [K in keyof T]:
+//  *       T[K] extends new (...args: any) => infer U ?
+//  *         U extends String ? string :
+//  *         U extends Boolean ? boolean :
+//  *         U extends Number ? number : U
+//  *       : T[K]
+//  *   }
+//  * } ReplaceConstructors
+//  */
 
 /** @type {Map<string, any>} */
 const CUSTOM_ELEMENT_MAP = new Map();
@@ -72,18 +72,26 @@ class AimComponent extends HTMLElement {}
 /**
  * Defines a custom HTML element with a shadow DOM and optional styles.
  *
+ * @template {object} RenderPropsInitial
+ *
+ *
  * @template {object} ComponentData
  * Additional data for the custom element.
  *
  * @template {string} [TagName=string]
  * The name of the custom element.
  *
- * @template {object} [Props=never]
+ * @template {object} [Props={[k in keyof RenderPropsInitial]: RenderPropsInitial[k]}]
  * The type of properties that the component accepts.
  *
- * @param {ElementConfig<TagName, Props, ComponentData>} elementConfig
+ * @template {object} [DefaultProps={}]
+ * Defines the default props for the custom element.
+ *
+ * @template {Props & DefaultProps} [RenderProps=Props & DefaultProps]
+ *
+ * @param {ElementConfig<TagName, Props & DefaultProps & RenderProps, ComponentData, DefaultProps, RenderPropsInitial>} elementConfig
  * The configuration object for the custom element.
- * @returns {ComponentConstructor<TagName, ReplaceConstructors<Props>, ComponentData>} A function that creates instances of the custom element.
+ * @returns {ComponentConstructor<Props & Partial<DefaultProps>>} A function that creates instances of the custom element.
  *
  * @example
  * // Define a custom element with a simple render function
@@ -130,7 +138,7 @@ export function defineComponent(elementConfig) {
     data: componentData,
   } = elementConfig;
   const elementIdentifier = `${tag}`;
-  const emptyProps = /** @type ReplaceConstructors<Props> */ ({});
+  const emptyProps = /** @type Props */ ({});
 
   // Load component CSS.
   if (styles) {
@@ -185,7 +193,7 @@ export function defineComponent(elementConfig) {
 
     /**
      * Sets up the component instance with the provided props and extra data.
-     * @param {Partial<ReplaceConstructors<Props>>} [props] - The props to initialize the component with.
+     * @param {Partial<Props>} [props] - The props to initialize the component with.
      * @returns {void}
      */
     __aim__setup(props = emptyProps) {
@@ -193,20 +201,10 @@ export function defineComponent(elementConfig) {
       GLOBAL_DATA.set(this.aim__instanceKey, storage);
       storage.set('owner', this);
 
-      // Setup props.
-      const defaultPropLiterals = /** @type ReplaceConstructors<Props> */ ({});
-      for (const [key, value] of Object.entries(defaultProps ?? {})) {
-        if (typeof value === 'object' && 'prototype' in value) {
-          continue;
-        }
-        // @ts-ignore
-        defaultPropLiterals[key] = value;
-      }
-
       const finalProps =
-        /** @type ReplaceConstructors<Props> */
+        /** @type Props */
         {
-          ...defaultPropLiterals,
+          ...defaultProps,
           ...props,
         };
 
@@ -243,6 +241,7 @@ export function defineComponent(elementConfig) {
       }
       this.data = data;
 
+      //@ts-ignore
       const children = render.bind(elementConfig)(finalPropsProxy, this.data);
 
       // data functions should always use the element as the context.
@@ -303,7 +302,7 @@ export function defineComponent(elementConfig) {
   customElements.define(elementIdentifier, Component);
   CUSTOM_ELEMENT_MAP.set(elementIdentifier, Component);
 
-  /** @param {Partial<ReplaceConstructors<Props>>} [props] */
+  /** @param {Partial<Props>} [props] */
   function factory(props) {
     const Constructor = CUSTOM_ELEMENT_MAP.get(factory.componentId);
     const element = /** @type {Component} */ (new Constructor(props));
@@ -347,8 +346,12 @@ function generateChildNodes(children, parent) {
     );
   }
 
-  if (children instanceof DocumentFragment || children instanceof Element) {
+  if (children instanceof DocumentFragment) {
     nodes = Array.from(children.childNodes);
+  }
+
+  if (children instanceof Node) {
+    nodes = [children];
   }
 
   if (Array.isArray(children)) {
