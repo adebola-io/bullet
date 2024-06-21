@@ -237,10 +237,22 @@ export function defineComponent(elementConfig) {
           storage.set(storageKey, value);
           return `${this.aim__instanceKey}@${storageKey}`;
         };
+
+        // @ts-ignore
+        data[key] = value;
       }
       this.data = data;
 
       const children = render.bind(elementConfig)(finalPropsProxy, this.data);
+
+      // data functions should always use the element as the context.
+      // This has to be done after rendering to prevent mismatches in serializing.
+      for (const [key, value] of Object.entries(data)) {
+        if (typeof value === 'function') {
+          // @ts-ignore
+          data[key] = value.bind(this);
+        }
+      }
 
       // @ts-ignore
       this.shadowRoot.replaceChildren(...generateChildNodes(children, this));
