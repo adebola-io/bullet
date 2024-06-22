@@ -1,5 +1,6 @@
-import { component, css } from '../../index.js';
+import { component, css, html } from '../../index.js';
 import { Signal } from '@adbl/signals';
+import '../../library/jsx-runtime.js';
 
 const Counter = component({
   render() {

@@ -38,7 +38,7 @@ In your `tsconfig.json` or `jsconfig.json` file, add the compiler option:
 Lastly, at the entry file to your project, add the following at the very top:
 
 ```js
-import '@adbl/bullet/library/jsx-runtime';
+import '@adbl/bullet/library/jsx-runtime.js';
 ```
 
 ## Usage

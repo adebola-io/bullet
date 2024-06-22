@@ -30,7 +30,7 @@ export function toKebabCase(str) {
 
 /**
  * Generates an array of DOM nodes from a given input.
- * @param {import('./component.js').Template} children - The input to generate DOM nodes from.
+ * @param {import('./component.js').Template| TemplateStringsArray} children - The input to generate DOM nodes from.
  * @returns {Node[]}
  */
 export function generateChildNodes(children) {
