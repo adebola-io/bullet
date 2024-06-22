@@ -1,6 +1,6 @@
-# bullet
+# bullet 〰️
 
-A tiny, experimental, and ill-advised library for defining and using Web Components.
+A tiny, experimental, and ill-advised library for Web Components.
 
 > Exploratory and experimental. If you use it, you're on your own. If you want to use web components in a production setting, use Lit.
 
@@ -14,44 +14,36 @@ npm install @adbl/bullet
 yarn add @adbl/bullet
 ```
 
-## Usage
-
-You can define your own custom elements with the `defineComponent` function.
-Here's an example of a simple counter component:
+If you wish to use the JSX syntax in a Vite project, create a `vite.config.js` file with the following:
 
 ```js
-import { defineComponent, css, html } from '@adbl/bullet';
+import { defineConfig } from 'vite';
 
-const Counter = defineComponent({
+export default defineConfig({
+  esbuild: {
+    jsxFactory: '__bullet__jsx',
+    jsxFragment: '__bullet__jsxFragment',
+  },
+});
+```
+
+then in your `tsconfig.json` or `jsconfig.json` file, add the compiler option:
+
+```json
+  "jsx": "preserve"
+```
+
+## Usage
+
+You can define your own custom elements with the `component` function.
+Here's an example of a simple component:
+
+```js
+import { component } from '@adbl/bullet';
+
+const MyElement = component({
   tag: 'my-counter',
-  styles: css`
-    .counter {
-      font-size: 2rem;
-      font-weight: bold;
-    }
-  `,
-
-  data: {
-    count: 0,
-
-    increment() {
-      this.data.count++;
-      this.get('.counter').textContent = this.data.count;
-    },
-
-    decrement() {
-      this.data.count--;
-      this.get('.counter').textContent = this.data.count;
-    },
-  },
-
-  render(props, data) {
-    return html`
-      <div class="counter">${data.count}</div>
-      <button onclick="${data.increment}">Increment</button>
-      <button onclick="${data.decrement}">Decrement</button>
-    `;
-  },
+  render: () => <div>Hello, World!</div>)
 });
 ```
 
@@ -59,7 +51,7 @@ You can then use your custom element like any other HTML tag:
 
 ```html
 <body>
-  <my-counter></my-counter>
+  <bt-my-counter></bt-my-counter>
   <script type="module">
     import { Counter } from './counter.js';
   </script>
@@ -69,7 +61,74 @@ You can then use your custom element like any other HTML tag:
 or you can instantiate the constructor in javascript:
 
 ```js
-document.body.append(Counter());
+document.body.append(<MyElement />);
+```
+
+### Usage without JSX
+
+Bullet's JSX uses the standard HTML syntax and compile to regular DOM nodes, but you can use Bullet without it.
+
+```js
+import { component } from '@adbl/bullet';
+
+const Box = component({
+  tag: 'app-button',
+  render() {
+    const boxElement = document.createElement('div');
+    button.innerHTML = 'This is a box';
+    return box;
+  },
+});
+```
+
+You can also use the html template function to automatically parse strings:
+
+```js
+import { component, html } from '@adbl/bullet';
+
+const Card = component({
+  tag: 'app-product-card',
+  render: (props) => {
+    return html`
+      <div class="card">
+        <h1>${props.name}</h1>
+        <img src=${props.imgSrc} alt=${props.imgAlt} />
+      </div>
+    `;
+  },
+});
+```
+
+### Styling
+
+Components can be styled using the `styles` property on the component object. All styles are generated as constructed stylesheets and are automatically scoped only to the parent web component.
+
+```ts
+const Button = component({
+  tag: 'my-button',
+  render: (props) => <button>{props.label}</button>
+
+  styles:  `
+    button {
+      background-color: red;
+      color: white;
+      border-radius: 1rem;
+      padding: 4rem 8rem;
+    }
+  `
+});
+```
+
+By default, the button styles will only apply to buttons within the `Button` component.
+
+### Anonymous components
+
+You can also declare custom elements without tag names, meaning the tag names will be auto-generated:
+
+```js
+const Heading = component((props) => <h1>{props.text}</h1>);
+
+document.body.append(<Heading text="Hello there" />);
 ```
 
 ## Why bullet?

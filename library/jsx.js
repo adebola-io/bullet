@@ -1,3 +1,6 @@
+import { RENDER_TARGET_STACK } from './constants.js';
+import { convertObjectToCssStylesheet } from './utils.js';
+
 /**
  * Creates a new DOM element with the specified tag name, props, and children.
  *
@@ -11,22 +14,59 @@
 export function h(tagname, props, ...children) {
   if (typeof tagname === 'function') {
     // @ts-ignore
-    return tagname({
+    const component = tagname({
       ...props,
-      children,
     });
+
+    if (component instanceof Element) {
+      for (const child of children) {
+        component.appendChild(normalizeChild(child));
+      }
+    }
+
+    //@ts-ignore
+    return component;
   }
 
   const element = document.createElement(tagname);
+  RENDER_TARGET_STACK.push(element);
 
   if (props !== null)
     for (const [key, value] of Object.entries(props)) {
+      if (key.startsWith('on') && typeof value !== 'string') {
+        element.addEventListener(key.slice(2), value);
+        continue;
+      }
+
+      if (
+        key === 'dangerouslySetInnerHTML' &&
+        typeof value === 'object' &&
+        value !== null &&
+        '__html' in value &&
+        typeof value.__html === 'string'
+      ) {
+        element.innerHTML = value.html;
+        continue;
+      }
+
+      if (key === 'style' && typeof value === 'object' && value !== null) {
+        element.setAttribute(
+          'style',
+          convertObjectToCssStylesheet(value, false)
+        );
+        continue;
+      }
+
+      if (value === undefined) continue;
+
       element.setAttribute(key, value);
     }
 
   for (const child of children) {
     element.appendChild(normalizeChild(child));
   }
+
+  RENDER_TARGET_STACK.pop();
 
   // @ts-ignore
   return element;
@@ -49,7 +89,7 @@ export function renderFragment(fragment) {
 
 /**
  * Normalizes a child jsx element for use in the DOM.
- * @param {Node | Array<any> | string | number | boolean} child - The child element to normalize.
+ * @param {Node | Array<any> | string | number | boolean | undefined | null} child - The child element to normalize.
  * @returns {Node} The normalized child element.
  */
 export function normalizeChild(child) {
@@ -67,12 +107,12 @@ export function normalizeChild(child) {
     return fragment;
   }
 
-  return document.createTextNode(child.toString());
+  return document.createTextNode(child?.toString() ?? '');
 }
 
 // @ts-ignore
-window.__aim__jsx = h;
+window.__bullet__jsx = h;
 // @ts-ignore
-window.__aim__jsxFragment = renderFragment;
+window.__bullet__jsxFragment = renderFragment;
 
 export default h;

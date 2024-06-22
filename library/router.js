@@ -1,4 +1,4 @@
-import { defineComponent } from './defineComponent.js';
+import { component } from './component.js';
 
 /** @type {Router | undefined } */
 let ROUTER_INSTANCE = undefined;
@@ -108,7 +108,7 @@ export class Router {
    */
 
   Outlet = (() => {
-    return defineComponent({
+    return component({
       tag: 'router-outlet',
 
       render() {
@@ -127,7 +127,7 @@ export class Router {
   Link = ((/** @type {RouteLinkProps} */ props) => {
     const self = this;
 
-    return defineComponent({
+    return component({
       tag: 'route-link',
       defaultProps: props,
       render(props) {
@@ -228,6 +228,6 @@ export function useRouter() {
 /**
  * @typedef RouteItem
  * @property {string} path
- * @property {import("./defineComponent").ComponentConstructor<any, any, any>} component
+ * @property {import("./component").ComponentConstructor<any, any, any>} component
  * @property {RouteItem[]} [children]
  */

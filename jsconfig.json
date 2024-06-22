@@ -19,6 +19,6 @@
     "jsx": "react-jsx",
     "jsxImportSource": "tsx-dom"
   },
-  "include": ["library/**/*", "index.js"],
+  "include": ["library/**/*", "index.js", "library/jsx.js"],
   "exclude": ["types/**/*", "tests/**/*"]
 }
