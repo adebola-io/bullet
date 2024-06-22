@@ -15,11 +15,11 @@ import {
 } from './utils.js';
 
 /**
- * @typedef {Element | DocumentFragment | string  } AimRenderNode
+ * @typedef {Node | string} AimRenderNode
  */
 
 /**
- * @typedef {AimRenderNode | AimRenderNode[] } Template
+ * @typedef {AimRenderNode | AimRenderNode[]} Template
  */
 
 /**
@@ -224,12 +224,10 @@ export function component(elementConfig) {
 
       if (children instanceof Promise) {
         children.then((children) => {
-          this.shadowRoot?.replaceChildren(
-            ...generateChildNodes(children, this)
-          );
+          this.shadowRoot?.replaceChildren(...generateChildNodes(children));
         });
       } else {
-        this.shadowRoot?.replaceChildren(...generateChildNodes(children, this));
+        this.shadowRoot?.replaceChildren(...generateChildNodes(children));
       }
 
       this.bullet__isSetup = true;

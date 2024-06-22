@@ -96,7 +96,7 @@ export class Router {
    */
   instantiate() {
     this.Outlet();
-    this.Link();
+    this.Link({ to: '' });
   }
 
   /**
@@ -128,7 +128,7 @@ export class Router {
     const self = this;
 
     return component({
-      tag: 'route-link',
+      tag: 'router-link',
       defaultProps: props,
       render(props) {
         const a = document.createElement('a');
@@ -228,6 +228,6 @@ export function useRouter() {
 /**
  * @typedef RouteItem
  * @property {string} path
- * @property {import("./component").ComponentConstructor<any, any, any>} component
+ * @property {import("./component.js").Component<{}>} component
  * @property {RouteItem[]} [children]
  */

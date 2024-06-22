@@ -14,6 +14,8 @@ npm install @adbl/bullet
 yarn add @adbl/bullet
 ```
 
+## JSX Support
+
 If you wish to use the JSX syntax in a Vite project, create a `vite.config.js` file with the following:
 
 ```js
@@ -27,10 +29,16 @@ export default defineConfig({
 });
 ```
 
-then in your `tsconfig.json` or `jsconfig.json` file, add the compiler option:
+In your `tsconfig.json` or `jsconfig.json` file, add the compiler option:
 
 ```json
   "jsx": "preserve"
+```
+
+Lastly, at the entry file to your project, add the following at the very top:
+
+```js
+import '@adbl/bullet/library/jsx-runtime';
 ```
 
 ## Usage

@@ -1,6 +1,6 @@
 {
   "name": "@adbl/bullet",
-  "version": "0.0.0",
+  "version": "0.0.2",
   "description": "Basic framework for building web apps.",
   "private": false,
   "type": "module",
@@ -8,7 +8,8 @@
   "typings": "./types/index.d.ts",
   "main": "library/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "npx tsc --project jsconfig.json"
   },
   "keywords": [
     "web-components",

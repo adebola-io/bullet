@@ -1,4 +1,4 @@
-namespace JSXUtils {
+declare namespace JSXUtils {
   type BooleanString = 'false' | 'true';
   type Booleanish = boolean | BooleanString;
   type NumberString = `${number}`;
@@ -729,10 +729,7 @@ namespace JSXUtils {
 // ------------------------------------
 
 declare namespace JSX {
-  type JSXAttributesOf<U> = Omit<
-    Partial<JSXUtils.GlobalAttributesMap>,
-    'style'
-  > &
+  type JSXElement<U> = Omit<Partial<JSXUtils.GlobalAttributesMap>, 'style'> &
     Partial<JSXUtils.DataAttributes> &
     Partial<JSXUtils.GlobalEventAttributes> &
     Partial<
@@ -746,13 +743,11 @@ declare namespace JSX {
       style?: JSXUtils.CSSProperties | string;
     };
 
-  export type AttributesOf<U> = JSXAttributesOf<U>;
-
   type ElementTagNameMap = HTMLElementTagNameMap & SVGElementTagNameMap;
 
   export type IntrinsicElements = {
-    [K in keyof ElementTagNameMap]: AttributesOf<K>;
-  } & Record<`bt-${string}`, AttributesOf<HTMLElement>>;
+    [K in keyof ElementTagNameMap]: JSXElement<K>;
+  } & Record<`bt-${string}`, JSXElement<HTMLElement>>;
 
   export type Element = globalThis.Element;
 }

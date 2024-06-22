@@ -1,4 +1,4 @@
-import { CUSTOM_ELEMENT_INSTANCE_CACHE, GLOBAL_DATA } from './constants.js';
+import { CUSTOM_ELEMENT_INSTANCE_CACHE } from './constants.js';
 
 /**
  * Converts an object of styles to a CSS stylesheet string.
@@ -30,12 +30,10 @@ export function toKebabCase(str) {
 
 /**
  * Generates an array of DOM nodes from a given input.
- *
- * @param {Element & {shadowRoot: ShadowRoot | null }} parent
  * @param {import('./component.js').Template} children - The input to generate DOM nodes from.
  * @returns {Node[]}
  */
-export function generateChildNodes(children, parent) {
+export function generateChildNodes(children) {
   /** @type {Node[]} */
   let nodes = [];
 
@@ -55,11 +53,7 @@ export function generateChildNodes(children, parent) {
   }
 
   if (Array.isArray(children)) {
-    nodes = children.flatMap((child) => generateChildNodes(child, parent));
-  }
-
-  for (const node of nodes) {
-    replaceEventListeners(node, parent);
+    nodes = children.flatMap((child) => generateChildNodes(child));
   }
 
   return nodes;
@@ -114,37 +108,37 @@ export function replaceComponentPlaceholders(element) {
   return element;
 }
 
-/**
- * Replaces event listeners on the given node with the corresponding listeners from the provided data.
- *
- * @param {Node} node - The DOM element to replace event listeners on.
- * @param {Element } parent - The parent component instance.
- */
-export function replaceEventListeners(node, parent) {
-  if (!(node instanceof Element)) return;
+// /**
+//  * Replaces event listeners on the given node with the corresponding listeners from the provided data.
+//  *
+//  * @param {Node} node - The DOM element to replace event listeners on.
+//  * @param {Element } parent - The parent component instance.
+//  */
+// export function replaceEventListeners(node, parent) {
+//   if (!(node instanceof Element)) return;
 
-  const attributes = Array.from(node.attributes).filter((attribute) =>
-    attribute.name.startsWith('on')
-  );
+//   const attributes = Array.from(node.attributes).filter((attribute) =>
+//     attribute.name.startsWith('on')
+//   );
 
-  for (const attribute of attributes) {
-    const eventName = attribute.name.slice(2);
-    const [namespaceKey, listenerKey] = attribute.value.split('@');
+//   for (const attribute of attributes) {
+//     const eventName = attribute.name.slice(2);
+//     const [namespaceKey, listenerKey] = attribute.value.split('@');
 
-    const namespace = GLOBAL_DATA.get(namespaceKey);
-    const listener = namespace?.get(listenerKey);
-    const listenerOwner = namespace?.get('owner');
+//     const namespace = GLOBAL_DATA.get(namespaceKey);
+//     const listener = namespace?.get(listenerKey);
+//     const listenerOwner = namespace?.get('owner');
 
-    if (listener && !customElements.get(node.tagName.toLowerCase())) {
-      node.addEventListener(eventName, listener.bind(listenerOwner));
-      node.removeAttribute(attribute.name);
-    }
-  }
+//     if (listener && !customElements.get(node.tagName.toLowerCase())) {
+//       node.addEventListener(eventName, listener.bind(listenerOwner));
+//       node.removeAttribute(attribute.name);
+//     }
+//   }
 
-  for (const child of Array.from(node.children)) {
-    replaceEventListeners(child, parent);
-  }
-}
+//   for (const child of Array.from(node.children)) {
+//     replaceEventListeners(child, parent);
+//   }
+// }
 
 /**
  * Generates a unique key for a custom element instance.

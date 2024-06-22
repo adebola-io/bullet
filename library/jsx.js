@@ -111,8 +111,8 @@ export function normalizeChild(child) {
 }
 
 // @ts-ignore
-window.__bullet__jsx = h;
+globalThis.__bullet__jsx = h;
 // @ts-ignore
-window.__bullet__jsxFragment = renderFragment;
+globalThis.__bullet__jsxFragment = renderFragment;
 
 export default h;
