@@ -2,6 +2,7 @@ import {
   CUSTOM_ELEMENT_INSTANCE_CACHE,
   CUSTOM_ELEMENT_MAP,
   CUSTOM_ELEMENT_STYLES,
+  CUSTOM_ELEMENT_GLOBAL_STYLES,
   GLOBAL_DATA,
 } from './constants.js';
 import {
@@ -11,7 +12,6 @@ import {
   replaceComponentPlaceholders,
   generateChildNodes,
   generateComponentName,
-  isNotObject,
 } from './utils.js';
 
 /**
@@ -54,13 +54,21 @@ import {
  * @template {object} [ExtraData=never]
  * @template {Partial<Props>} [DefaultProps={}]
  * @template {object} [RenderProps=Props]
- * @typedef {{
- *  tag?: string,
- *  styles?: string | Partial<CSSStyleDeclaration>,
- *  render: RenderFunction<ExtraData, RenderProps, DefaultProps>,
- *  defaultProps?: DefaultProps,
- *  data?: (props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData & ThisType<BulletElement<ExtraData>>
- * }} ElementConfig
+ *
+ * @typedef ElementConfig
+ * @property {string} [tag]
+ * The HTML tag name to use for the custom element.
+ * @property {string | Partial<CSSStyleDeclaration>} [styles]
+ * The CSS styles to apply within the custom element. The styles are scoped to the custom element's shadow root.
+ * @property {string | Partial<CSSStyleDeclaration>} [globalStyles]
+ * CSS styles that should be applied globally to the parent document. They are only valid as long as there is at least one
+ * instance of the component in the document.
+ * @property {RenderFunction<ExtraData, RenderProps, DefaultProps>} render
+ * A function that generates the content for the component's shadow root. It accepts the props of the component and the component data as arguments.
+ * @property {DefaultProps} [defaultProps]
+ * Defines the default props for the custom element.
+ * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData & ThisType<BulletElement<ExtraData>>} [data]
+ * Additional data for the custom element.
  */
 
 // /**
@@ -139,6 +147,7 @@ export function component(elementConfig) {
   const {
     render,
     styles,
+    globalStyles,
     defaultProps,
     data: componentData,
     tag,
@@ -149,6 +158,7 @@ export function component(elementConfig) {
         defaultProps: undefined,
         data: undefined,
         tag: undefined,
+        globalStyles: undefined,
       }
     : elementConfig;
   const elementTagname = `bt-${tag ?? generateComponentName()}`;
@@ -165,6 +175,18 @@ export function component(elementConfig) {
         break;
     }
     CUSTOM_ELEMENT_STYLES.set(elementTagname, stylesheet);
+  }
+
+  // Load global CSS.
+  if (globalStyles) {
+    const styleString =
+      typeof globalStyles === 'string'
+        ? globalStyles
+        : convertObjectToCssStylesheet(globalStyles);
+    CUSTOM_ELEMENT_GLOBAL_STYLES.set(elementTagname, {
+      data: styleString,
+      instances: 0,
+    });
   }
 
   class ComponentConstructor extends AimComponent {
@@ -195,6 +217,17 @@ export function component(elementConfig) {
       const stylesheet = CUSTOM_ELEMENT_STYLES.get(elementTagname);
       if (stylesheet) {
         shadowRoot.adoptedStyleSheets = [stylesheet];
+      }
+      const globalStyles = CUSTOM_ELEMENT_GLOBAL_STYLES.get(elementTagname);
+      if (globalStyles) {
+        globalStyles.instances += 1;
+
+        if (globalStyles.instances === 1) {
+          const styleElement = document.createElement('style');
+          styleElement.setAttribute('blt-component', elementTagname);
+          styleElement.innerHTML = globalStyles.data;
+          document.head.appendChild(styleElement);
+        }
       }
 
       this.bullet__instanceKey = generateInstanceKey(elementTagname);
@@ -277,6 +310,16 @@ export function component(elementConfig) {
     disconnectedCallback() {
       CUSTOM_ELEMENT_INSTANCE_CACHE.delete(this.bullet__instanceKey);
       GLOBAL_DATA.delete(this.bullet__instanceKey);
+      const globalStyles = CUSTOM_ELEMENT_GLOBAL_STYLES.get(elementTagname);
+      if (globalStyles) {
+        globalStyles.instances -= 1;
+
+        if (globalStyles.instances === 0) {
+          document
+            .querySelector(`style[blt-component="${elementTagname}"]`)
+            ?.remove();
+        }
+      }
     }
   }
 
