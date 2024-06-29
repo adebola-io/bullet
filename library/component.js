@@ -25,7 +25,7 @@ import {
 /**
  * @template Props
  * @typedef {{ componentId?: string; } &
- *  (keyof Props extends never ? ((props?: {}) => BulletElement<{}>) : (props: Props) => BulletElement<{}>)} Component
+ *  (keyof Props extends never ? ((props?: {}) => BulletElement<{}>) : (props: Props & JSX.JSXNativeProps) => BulletElement<{}>)} Component
  */
 
 /**
@@ -69,6 +69,12 @@ import {
  * Defines the default props for the custom element.
  * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData & ThisType<BulletElement<ExtraData>>} [data]
  * Additional data for the custom element.
+ *
+ * @property {ThisType<BulletElement<ExtraData>> & ((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => void)} [onMounted]
+ * Called when the component is mounted to the DOM.
+ *
+ * @property {ThisType<BulletElement<ExtraData>> & (() => void)} [onUnMounted]
+ * Called when the component is unmounted from the DOM.
  */
 
 // /**
@@ -87,7 +93,7 @@ import {
 export const html = generateChildNodes;
 export const css = String.raw;
 
-class AimComponent extends HTMLElement {}
+class BulletComponent extends HTMLElement {}
 
 /**
  * Defines a custom HTML element with a shadow DOM and optional styles.
@@ -151,6 +157,8 @@ export function component(elementConfig) {
     defaultProps,
     data: componentData,
     tag,
+    onMounted,
+    onUnMounted,
   } = typeof elementConfig === 'function'
     ? {
         render: elementConfig,
@@ -159,6 +167,8 @@ export function component(elementConfig) {
         data: undefined,
         tag: undefined,
         globalStyles: undefined,
+        onMounted: undefined,
+        onUnMounted: undefined,
       }
     : elementConfig;
   const elementTagname = `bt-${tag ?? generateComponentName()}`;
@@ -189,7 +199,7 @@ export function component(elementConfig) {
     });
   }
 
-  class ComponentConstructor extends AimComponent {
+  class ComponentConstructor extends BulletComponent {
     /**
      * Whether or not the component has been rendered by Aim.
      * @private
@@ -201,6 +211,17 @@ export function component(elementConfig) {
      * @type {string}
      */
     bullet__instanceKey;
+
+    /**
+     * Called when the component is mounted to the DOM.
+     *
+     */
+    bullet__onMounted = onMounted;
+
+    /**
+     * Called when the component is unmounted from the DOM.
+     */
+    bullet__onUnMounted = onUnMounted;
 
     /**
      * The data signal for the component instance.
@@ -255,6 +276,15 @@ export function component(elementConfig) {
       /** @type {Template | Promise<Template>}*/ // @ts-ignore
       const children = render.bind(this)(finalProps, this.data);
 
+      for (const [key, value] of Object.entries(finalProps)) {
+        if (
+          !(defaultProps && key in defaultProps) ||
+          GLOBAL_DATA.get(this.bullet__instanceKey)?.has(`props.${key}`)
+        ) {
+          this.setAttribute(key, value);
+        }
+      }
+
       if (children instanceof Promise) {
         children.then((children) => {
           this.shadowRoot?.replaceChildren(...generateChildNodes(children));
@@ -290,10 +320,9 @@ export function component(elementConfig) {
     }
 
     connectedCallback() {
+      const attributes = getElementAttributes(this);
+      const props = /** @type {Props} */ (attributes);
       if (!this.bullet__isSetup) {
-        const attributes = getElementAttributes(this);
-        const props = /** @type {Props} */ (attributes);
-
         this.__bullet__setup(props);
 
         for (const key of Object.keys(attributes)) {
@@ -305,6 +334,8 @@ export function component(elementConfig) {
           }
         }
       }
+
+      this.bullet__onMounted?.(/** @type {any} */ (props));
     }
 
     disconnectedCallback() {
@@ -320,6 +351,8 @@ export function component(elementConfig) {
             ?.remove();
         }
       }
+
+      this.bullet__onUnMounted?.();
     }
   }
 

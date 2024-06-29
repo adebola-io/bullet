@@ -736,12 +736,15 @@ declare namespace JSX {
       U extends keyof JSXUtils.HtmlElementToAttributeMap
         ? JSXUtils.HtmlElementToAttributeMap[U]
         : object
-    > & {
-      children?: Node;
-      key?: string | number | boolean;
-      dangerouslySetInnerHTML?: { __html: string };
-      style?: JSXUtils.CSSProperties | string;
-    };
+    > &
+    JSXNativeProps;
+
+  type JSXNativeProps = {
+    children?: Node;
+    key?: string | number | boolean;
+    dangerouslySetInnerHTML?: { __html: string };
+    style?: JSXUtils.CSSProperties | string;
+  };
 
   type ElementTagNameMap = HTMLElementTagNameMap & SVGElementTagNameMap;
 

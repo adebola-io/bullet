@@ -1,15 +1,22 @@
-import { component } from './component.js';
+import { component } from '../component.js';
+import { LazyRoute } from './lazy.js';
 
 /** @type {Router | undefined } */
 let ROUTER_INSTANCE = undefined;
 
 export class Router {
-  /** @param {RouteItem[]} routes */
+  /** @param {Route[]} routes */
   constructor(routes) {
     this.routes = routes;
   }
 
   currentHistoryIndex = 0;
+
+  /** @type {Set<Route>} */
+  activeRoutes = new Set();
+
+  /** @type {Element[]} */
+  outlets = [];
 
   /**
    * Pushes the specified path to the browser's history and renders the corresponding route component.
@@ -62,31 +69,74 @@ export class Router {
       return;
     }
 
-    // Find the Outlet element in the DOM.
-    const outlet = document.querySelector(
-      this.Outlet.componentId.replace('.', '\\.')
-    );
-
-    // If the Outlet element is not found, do nothing.
-    if (outlet === null) {
+    if (path.startsWith('/')) {
+      try {
+        new URL(window.location.origin + path);
+      } catch (error) {
+        console.error(`Invalid path: ${path}`);
+        return;
+      }
+    } else {
+      console.error(`Invalid path: ${path}`);
       return;
     }
 
     // Find the route corresponding to the specified path.
-    const route = this.routes.find((route) => route.path === path);
+    /** @type {Route[]} */
+    const routeMatches = [];
+    findRouteMatches(
+      this.routes,
+      ['/'].concat(path.split('/').filter(Boolean)),
+      routeMatches
+    );
 
-    // Create the replacement node for the Outlet element. If the route is not found,
-    // create a text node with an error message.
-    let replacementNode = /** @type {Node} */ (route?.component());
-    if (replacementNode === undefined) {
-      console.warn(`Route not found: ${path}`);
-      replacementNode = new DocumentFragment();
-      replacementNode.appendChild(
-        document.createTextNode(`Route not found: ${path}`)
-      );
+    if (routeMatches.length === 0) {
+      console.error(`No route matches path: ${path}`);
+      return;
     }
 
-    outlet.shadowRoot?.replaceChildren(replacementNode);
+    const newActiveRoutes = new Set();
+
+    for (let i = 0; i < routeMatches.length; i++) {
+      const route = routeMatches[i];
+      const outlet = this.outlets[i];
+
+      newActiveRoutes.add(route);
+
+      if (outlet === undefined || this.activeRoutes.has(route)) {
+        continue;
+      }
+
+      /** @type {Node?} */
+      let replacementNode = null;
+
+      try {
+        if (route?.component instanceof LazyRoute) {
+          const imported = route.component.importer();
+          if (imported instanceof Promise) {
+            imported.then((component) => {
+              replacementNode = component();
+              outlet.shadowRoot?.replaceChildren(replacementNode);
+            });
+
+            continue;
+          }
+
+          replacementNode = imported();
+          outlet.shadowRoot?.replaceChildren(replacementNode);
+
+          continue;
+        }
+
+        replacementNode = route?.component() ?? null;
+      } catch (error) {
+        console.error(error);
+      }
+
+      outlet.shadowRoot?.replaceChildren(replacementNode ?? emptyRoute(path));
+    }
+    this.activeRoutes = newActiveRoutes;
+
     return true;
   }
 
@@ -95,7 +145,6 @@ export class Router {
    * used by the router.
    */
   instantiate() {
-    this.Outlet();
     this.Link({ to: '' });
   }
 
@@ -108,12 +157,20 @@ export class Router {
    */
 
   Outlet = (() => {
+    const self = this;
     return component({
-      tag: 'router-outlet',
-
-      render() {
-        return document.createElement('slot');
+      tag: 'route-outlet',
+      onMounted() {
+        // @ts-ignore
+        self.outlets.push(this);
       },
+
+      onUnMounted() {
+        // @ts-ignore
+        self.outlets.splice(self.outlets.indexOf(this), 1);
+      },
+
+      render: () => document.createElement('slot'),
     });
   })();
 
@@ -128,7 +185,7 @@ export class Router {
     const self = this;
 
     return component({
-      tag: 'router-link',
+      tag: 'route-link',
       defaultProps: props,
       render(props) {
         const a = document.createElement('a');
@@ -176,7 +233,7 @@ export class Router {
  * document.querySelector('#root').append(router.Outlet());
  */
 export function createWebRouter(routerOptions) {
-  const router = new Router(routerOptions.routes);
+  const router = new Router(/** @type {Route[]} */ (routerOptions.routes));
 
   window.addEventListener('popstate', (event) => {
     router.load({ event, path: location.pathname });
@@ -192,7 +249,6 @@ export function createWebRouter(routerOptions) {
   return router;
 }
 
-/**
 /**
  * Returns the singleton instance of the Router class.
  *
@@ -217,6 +273,7 @@ export function useRouter() {
 /**
  * @typedef {{to: string}} RouteLinkProps
  */
+
 /**
  * @typedef RouterOptions
  * @property {string} [namespace]
@@ -226,8 +283,46 @@ export function useRouter() {
  */
 
 /**
+ * @typedef {RouteItem & { isActive: boolean }} Route
+ */
+
+/**
  * @typedef RouteItem
  * @property {string} path
- * @property {import("./component.js").Component<{}>} component
+ * @property {import("../component.js").Component<{}> | LazyRoute} component
  * @property {RouteItem[]} [children]
  */
+
+/**
+ * Generates a DocumentFragment node with a text node indicating that the specified route path was not found.
+ *
+ * @param {string} path - The route path that was not found.
+ * @returns {DocumentFragment} A DocumentFragment node containing a text node with the "Route not found" message.
+ */
+function emptyRoute(path) {
+  console.warn(`Route not found: ${path}`);
+  const node = new DocumentFragment();
+  node.appendChild(document.createTextNode(`Route not found: ${path}`));
+  return node;
+}
+
+/**
+ * Finds all routes that match the given path.
+ *
+ * @param {RouteItem[]} routes - An array of route items to search through.
+ * @param {string[]} pathSegments - An array of path segments to search for in the routes.
+ * @param {RouteItem[]} matches - The result array to append the matching routes to.
+ */
+function findRouteMatches(routes, pathSegments, matches = []) {
+  for (const route of routes) {
+    if (route.path === pathSegments[0]) {
+      matches.push(route);
+
+      if (route.children !== undefined) {
+        findRouteMatches(route.children, pathSegments.slice(1), matches);
+      }
+
+      return;
+    }
+  }
+}
