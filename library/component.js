@@ -46,7 +46,8 @@ import {
  * @template ExtraData
  * @template RenderProps
  * @template DefaultProps
- * @typedef {(this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Template | Promise<Template>} RenderFunction
+ * @template {boolean} Async
+ * @typedef {(this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Async extends true ? Template | Promise<Template>: Template} RenderFunction
  */
 
 /**
@@ -56,17 +57,23 @@ import {
  * @template {object} [RenderProps=Props]
  *
  * @typedef ElementConfig
+ *
  * @property {string} [tag]
  * The HTML tag name to use for the custom element.
+ *
  * @property {string | Partial<CSSStyleDeclaration>} [styles]
  * The CSS styles to apply within the custom element. The styles are scoped to the custom element's shadow root.
+ *
  * @property {string | Partial<CSSStyleDeclaration>} [globalStyles]
  * CSS styles that should be applied globally to the parent document. They are only valid as long as there is at least one
  * instance of the component in the document.
- * @property {RenderFunction<ExtraData, RenderProps, DefaultProps>} render
+ *
+ * @property {RenderFunction<ExtraData, RenderProps, DefaultProps, true>} render
  * A function that generates the content for the component's shadow root. It accepts the props of the component and the component data as arguments.
+ *
  * @property {DefaultProps} [defaultProps]
  * Defines the default props for the custom element.
+ *
  * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData & ThisType<BulletElement<ExtraData>>} [data]
  * Additional data for the custom element.
  *
@@ -75,20 +82,15 @@ import {
  *
  * @property {ThisType<BulletElement<ExtraData>> & (() => void)} [onUnMounted]
  * Called when the component is unmounted from the DOM.
+ *
+ * @property {(error: unknown, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Template} [fallback]
+ * If the render function throws an error, this function will be called to render a fallback template for the component.
+ * It is most useful for asynchronous rendering, where the render function returns a promise that may be rejected.
+ *
+ * @property {RenderFunction<ExtraData, RenderProps, DefaultProps, false>} [initial]
+ * A function that generates a starting template for the component. It will be render as a placeholder if the `render()` function
+ * is async, and is yet to be resolved.
  */
-
-// /**
-//  * @template {object} T
-//  * @typedef { {
-//  *     [K in keyof T]:
-//  *       T[K] extends new (...args: any) => infer U ?
-//  *         U extends String ? string :
-//  *         U extends Boolean ? boolean :
-//  *         U extends Number ? number : U
-//  *       : T[K]
-//  *   }
-//  * } ReplaceConstructors
-//  */
 
 export const html = generateChildNodes;
 export const css = String.raw;
@@ -113,7 +115,7 @@ class BulletComponent extends HTMLElement {}
  * @template {Props & DefaultProps} [RenderProps=Props & DefaultProps]
  *
  * @param {ElementConfig<Props & DefaultProps & RenderProps, ComponentData, DefaultProps, RenderPropsInitial>
- * |  RenderFunction<ComponentData, RenderProps, DefaultProps>} elementConfig
+ * |  RenderFunction<ComponentData, RenderProps, DefaultProps, true>} elementConfig
  * The configuration object for the custom element.
  *
  * @returns {keyof Props extends never ? Component<Partial<DefaultProps>>: Component<Props>} A function that creates instances of the custom element.
@@ -159,6 +161,8 @@ export function component(elementConfig) {
     tag,
     onMounted,
     onUnMounted,
+    fallback,
+    initial,
   } = typeof elementConfig === 'function'
     ? {
         render: elementConfig,
@@ -169,6 +173,8 @@ export function component(elementConfig) {
         globalStyles: undefined,
         onMounted: undefined,
         onUnMounted: undefined,
+        fallback: undefined,
+        initial: undefined,
       }
     : elementConfig;
   const elementTagname = `bt-${tag ?? generateComponentName()}`;
@@ -273,24 +279,41 @@ export function component(elementConfig) {
       const data = componentData?.bind(this)?.(finalProps);
       this.data = data;
 
-      /** @type {Template | Promise<Template>}*/ // @ts-ignore
-      const children = render.bind(this)(finalProps, this.data);
-
-      for (const [key, value] of Object.entries(finalProps)) {
-        if (
-          !(defaultProps && key in defaultProps) ||
-          GLOBAL_DATA.get(this.bullet__instanceKey)?.has(`props.${key}`)
-        ) {
-          this.setAttribute(key, value);
-        }
-      }
-
-      if (children instanceof Promise) {
-        children.then((children) => {
-          this.shadowRoot?.replaceChildren(...generateChildNodes(children));
-        });
-      } else {
+      /** @param {Template} children */
+      const appendTemplate = (children) => {
         this.shadowRoot?.replaceChildren(...generateChildNodes(children));
+      };
+
+      const renderInitial = () => {
+        if (initial) {
+          /** @type {Template | Promise<Template>}*/ // @ts-ignore
+          const children = initial.bind(this)(finalProps, this.data);
+          appendTemplate(children);
+        }
+      };
+
+      /** @param {unknown} error */
+      const renderFallback = (error) => {
+        if (fallback) {
+          const finalFallbackProps = /** @type {any} */ (finalProps);
+          appendTemplate(fallback(error, finalFallbackProps, this.data));
+        } else {
+          throw error;
+        }
+      };
+
+      // Render the component.
+      try {
+        /** @type {Template | Promise<Template>}*/ // @ts-ignore
+        const renderResult = render.bind(this)(finalProps, this.data);
+        if (renderResult instanceof Promise) {
+          renderInitial();
+          renderResult.then(appendTemplate).catch(renderFallback);
+        } else {
+          appendTemplate(renderResult);
+        }
+      } catch (error) {
+        renderFallback(error);
       }
 
       this.bullet__isSetup = true;

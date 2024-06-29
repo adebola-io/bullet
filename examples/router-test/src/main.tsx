@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 
-import '../../../library/jsx-runtime';
-
 import router from './router';
+
+import '../../../library/jsx-runtime';
 
 document.querySelector('#app')?.append(<router.Outlet />);
