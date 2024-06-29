@@ -70,7 +70,7 @@ export class Router {
     }
 
     // If the Outlet component has not been instantiated, do nothing.
-    if (!this.Outlet.componentId) {
+    if (!this.Outlet.tagName) {
       return;
     }
 

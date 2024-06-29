@@ -1,4 +1,10 @@
-import { component, css, useRouter } from '../../../library';
+import {
+  component,
+  css,
+  useRouter,
+  type BulletElement,
+} from '../../../library';
+import { searchBarText } from './signals';
 
 export interface CardProps {
   id: number;
@@ -35,6 +41,19 @@ export default component({
         </Link>
       </li>
     );
+  },
+
+  onMounted(this: BulletElement, props) {
+    const destroyEffect = searchBarText.createEffect((text) => {
+      const regex = new RegExp(text.trim().toLowerCase());
+      this.style.display =
+        regex.test(props.title.toLowerCase()) ||
+        props.tags.some((tag) => regex.test(tag.toLowerCase()))
+          ? 'block'
+          : 'none';
+    });
+
+    return destroyEffect;
   },
 
   styles: css`
@@ -107,7 +126,8 @@ export default component({
       list-style: none;
       font-size: 8pt;
       text-transform: uppercase;
-      border: 1px solid white;
+      border: 1px solid var(--outline-color);
+      color: var(--outline-color);
       padding: 2px 5px;
     }
 

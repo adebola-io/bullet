@@ -75,12 +75,12 @@ import {
 
 /**
  * @template Props
- * @typedef {{ componentId?: string; } &
+ * @typedef {{ tagName: string; } &
  *  (keyof Props extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props>) => BulletElement<{}>)} Component
  */
 
 /**
- * @template ComponentData
+ * @template [ComponentData={}]
  * @typedef {(HTMLElement & {
  *    data: ComponentData
  *    select: Element['querySelector']
@@ -128,8 +128,9 @@ import {
  * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData & ThisType<BulletElement<ExtraData>>} [data]
  * Additional data for the custom element.
  *
- * @property {ThisType<BulletElement<ExtraData>> & ((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => void)} [onMounted]
+ * @property {ThisType<BulletElement<ExtraData>> & ((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => (void | (() => void)))} [onMounted]
  * Called when the component is mounted to the DOM.
+ * It can optionally return a function that will be called when the component is unmounted from the DOM.
  *
  * @property {ThisType<BulletElement<ExtraData>> & (() => void)} [onUnMounted]
  * Called when the component is unmounted from the DOM.
@@ -287,6 +288,9 @@ export function component(elementConfig) {
     // @ts-ignore
     data = {};
 
+    /** @type {any} */
+    bullet__finalProps;
+
     constructor() {
       super();
       this.attachShadow({ mode: 'open' });
@@ -324,6 +328,8 @@ export function component(elementConfig) {
         ...defaultProps,
         ...props,
       };
+
+      this.bullet__finalProps = finalProps;
 
       // Setup component data.
       /** @type ComponentData */ // @ts-ignore
@@ -416,7 +422,9 @@ export function component(elementConfig) {
         }
       }
 
-      this.bullet__onMounted?.(/** @type {any} */ (props));
+      this.bullet__onMountReturn = this.bullet__onMounted?.(
+        /** @type {any} */ (this.bullet__finalProps ?? props)
+      );
     }
 
     disconnectedCallback() {
@@ -433,6 +441,7 @@ export function component(elementConfig) {
         }
       }
 
+      this.bullet__onMountReturn?.();
       this.bullet__onUnMounted?.();
     }
   }
@@ -442,7 +451,9 @@ export function component(elementConfig) {
 
   /** @param {Partial<Props>} [props] */
   function factory(props) {
-    const Constructor = CUSTOM_ELEMENT_MAP.get(factory.componentId);
+    const Constructor = CUSTOM_ELEMENT_MAP.get(
+      factory.tagName.replace(/\\\./g, '.')
+    );
     const element = /** @type {ComponentConstructor} */ (
       new Constructor(props)
     );
@@ -451,7 +462,7 @@ export function component(elementConfig) {
     return replaceComponentPlaceholders(element);
   }
 
-  factory.componentId = elementTagname;
+  factory.tagName = elementTagname.replace(/\./g, '\\.');
 
   // @ts-ignore
   return factory;

@@ -5,7 +5,9 @@ export default component({
   tag: 'home-page',
 
   async render() {
-    const products = (await import('./products.json')).default;
+    const res = await fetch('https://dummyjson.com/products');
+    const data = await res.json();
+    const { products } = data;
 
     return (
       <main>
@@ -27,7 +29,11 @@ export default component({
   },
 
   fallback(error) {
-    return <main>Could not render Home page: {error}</main>;
+    return (
+      <main>
+        <span class="ErrorScreen">Could not render Home page: {error}</span>
+      </main>
+    );
   },
 
   styles: css`
@@ -40,9 +46,14 @@ export default component({
       gap: 20px;
     }
 
-    main:has(.LoadingScreen) {
+    main:has(.LoadingScreen, .ErrorScreen) {
       padding-top: 0;
       justify-content: center;
+    }
+
+    .ErrorScreen {
+      color: coral;
+      font-style: italic;
     }
 
     .CardList {

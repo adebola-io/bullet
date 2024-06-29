@@ -444,7 +444,30 @@ declare namespace JSXUtils {
       size: string;
       src: string;
       step: string;
-      type: string;
+      type:
+        | 'button'
+        | 'checkbox'
+        | 'color'
+        | 'date'
+        | 'datetime'
+        | 'datetime-local'
+        | 'email'
+        | 'file'
+        | 'hidden'
+        | 'image'
+        | 'month'
+        | 'number'
+        | 'password'
+        | 'radio'
+        | 'range'
+        | 'reset'
+        | 'search'
+        | 'submit'
+        | 'tel'
+        | 'text'
+        | 'time'
+        | 'url'
+        | 'week';
       usemap: string;
       value: string;
       width: string;

@@ -1,4 +1,10 @@
 import { component, css, useRouter } from '../../../library';
+import { searchBarText } from './signals';
+
+function updateSearchBarText(e: Event) {
+  const target = e.target as HTMLInputElement;
+  searchBarText.value = target.value;
+}
 
 export default component({
   render() {
@@ -18,6 +24,7 @@ export default component({
     return (
       <>
         <header>
+          <input type="search" on:input={updateSearchBarText} />
           <nav>
             {links.map(({ to, text }) => (
               <Link plain class="NavLink" to={to} key={to}>
@@ -70,7 +77,8 @@ export default component({
 
   styles: css`
     :host {
-      --page-height: calc(100vh - 70px);
+      --header-height: 80px;
+      --page-height: calc(100vh - var(--header-height));
     }
 
     header {
@@ -78,9 +86,9 @@ export default component({
       top: 0;
       z-index: 99;
       display: flex;
-      justify-content: end;
+      justify-content: space-between;
       align-items: center;
-      height: 70px;
+      height: var(--header-height);
       width: calc(100% - 40px);
       padding-inline: 20px;
       background-color: lightgreen;
@@ -100,10 +108,25 @@ export default component({
       color: var(--outline-color);
     }
 
+    input {
+      border: none;
+      border-radius: 5px;
+      padding: 5px;
+      font-family: inherit;
+      outline: 2px solid var(--outline-color);
+      width: min(300px, 50vw);
+    }
+
     @media (prefers-color-scheme: dark) {
       header {
         background-color: #151515;
         color: white;
+      }
+
+      input {
+        background-color: #151515;
+        color: white;
+        outline: 2px solid #727272;
       }
     }
   `,
