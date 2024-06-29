@@ -52,7 +52,7 @@ export default component({
       box-shadow: 0 0 5px 0 #ccc;
       scale: 1.01;
       outline-width: 2px;
-      outline-color: lightsalmon;
+      outline-color: var(--outline-color);
     }
 
     .ImageContainer {
@@ -116,10 +116,6 @@ export default component({
         background-color: #222;
         color: white;
         outline-color: transparent;
-      }
-
-      .Card:hover {
-        outline-color: lightskyblue;
       }
 
       .ImageContainer {

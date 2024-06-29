@@ -14,11 +14,14 @@ export class Router {
 
   currentHistoryIndex = 0;
 
-  /** @type {Set<Route>} */
-  activeRoutes = new Set();
+  /** @type {Map<Element, Route>} */
+  activeRoutes = new Map();
 
   /** @type {Element[]} */
   outlets = [];
+
+  /** @type {import('../component.js').BulletElement<{to: string}>[]} */
+  links = [];
 
   /**
    * Pushes the specified path to the browser's history and renders the corresponding route component.
@@ -83,29 +86,50 @@ export class Router {
       return;
     }
 
+    const pathSegments = ['/'].concat(path.split('/').filter(Boolean));
+
     // Find the route corresponding to the specified path.
     /** @type {Route[]} */
     const routeMatches = [];
-    findRouteMatches(
-      this.routes,
-      ['/'].concat(path.split('/').filter(Boolean)),
-      routeMatches
-    );
+    findRouteMatches(this.routes, pathSegments, routeMatches);
 
-    if (routeMatches.length === 0) {
+    if (
+      routeMatches.length === 0 ||
+      !routeMatches[routeMatches.length - 1].path.endsWith(
+        pathSegments[pathSegments.length - 1]
+      )
+    ) {
       console.error(`No route matches path: ${path}`);
-      return;
+      const outlet = this.outlets[this.outlets.length - 1];
+      this.activeRoutes.delete(outlet);
+      outlet?.shadowRoot?.replaceChildren(emptyRoute(path));
+      return true;
     }
 
-    const newActiveRoutes = new Set();
+    const newActiveRoutes = new Map();
+
+    // Activate route links
+    for (const link of this.links) {
+      link.removeAttribute('active');
+    }
 
     for (let i = 0; i < routeMatches.length; i++) {
       const route = routeMatches[i];
       const outlet = this.outlets[i];
+      const builtRoute = routeMatches
+        .slice(0, i + 1)
+        .map((r) => r.path.replace(/\//g, ''))
+        .join('/');
 
-      newActiveRoutes.add(route);
+      newActiveRoutes.set(outlet, route);
+      const matchingLinks = this.links.filter((link) => {
+        return link.data.to === builtRoute;
+      });
+      for (const link of matchingLinks) {
+        link.toggleAttribute('active', true);
+      }
 
-      if (outlet === undefined || this.activeRoutes.has(route)) {
+      if (outlet === undefined || this.activeRoutes.get(outlet) === route) {
         continue;
       }
 
@@ -148,14 +172,6 @@ export class Router {
   }
 
   /**
-   * Instantiates the custom components (`<router-outlet>` and `<route-link>`)
-   * used by the router.
-   */
-  instantiate() {
-    this.Link({ to: '' });
-  }
-
-  /**
    * Defines a custom component that serves as the router outlet, rendering the component
    * associated with the current route.
    *
@@ -194,13 +210,21 @@ export class Router {
     return component({
       tag: 'route-link',
       defaultProps: props,
+
+      onMounted() {
+        // @ts-ignore
+        self.links.push(this);
+      },
+
+      data(props) {
+        return {
+          to: props.to,
+        };
+      },
+
       render(props) {
         const a = document.createElement('a');
         a.href = props.to;
-
-        if (props.class) {
-          this.className = props.class;
-        }
 
         a.addEventListener('click', (event) => {
           event.preventDefault();
@@ -209,13 +233,22 @@ export class Router {
         a.append(document.createElement('slot'));
 
         if (props.plain) {
-          a.classList.add('plain');
+          this.toggleAttribute('plain', true);
+        }
+
+        if (props.class) {
+          this.classList.add(...props.class.split(' '));
         }
         return a;
       },
 
+      onUnMounted() {
+        // @ts-ignore
+        self.links.splice(self.links.indexOf(this), 1);
+      },
+
       styles: `
-        a.plain {
+        :host([plain]) a {
           text-decoration: none;
           color: inherit;
         }
@@ -266,7 +299,6 @@ export function createWebRouter(routerOptions) {
   });
 
   ROUTER_INSTANCE = router;
-  router.instantiate();
 
   return router;
 }

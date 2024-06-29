@@ -35,12 +35,35 @@ export default component({
     body {
       margin: 0;
       font-family: 'Inter', sans-serif;
+      --outline-color: lightskyblue;
     }
 
     @media (prefers-color-scheme: dark) {
       body {
         background-color: black;
         color: white;
+      }
+
+      ::-webkit-scrollbar {
+        width: 10px;
+      }
+
+      /* Track */
+      ::-webkit-scrollbar-track {
+        background: #151515;
+        padding-right: 10px;
+      }
+
+      /* Handle */
+      ::-webkit-scrollbar-thumb {
+        background: #555;
+        border-radius: 10px;
+        border: 2px solid #727272;
+      }
+
+      /* Handle on hover */
+      ::-webkit-scrollbar-thumb:hover {
+        background: #444;
       }
     }
   `,
@@ -70,6 +93,11 @@ export default component({
 
     .NavLink:hover {
       text-decoration: underline;
+    }
+
+    [active].NavLink {
+      font-weight: bold;
+      color: var(--outline-color);
     }
 
     @media (prefers-color-scheme: dark) {
