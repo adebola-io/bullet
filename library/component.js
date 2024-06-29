@@ -19,13 +19,64 @@ import {
  */
 
 /**
+ * @template {(...args: any[]) => any} Component
+ * @typedef {Parameters<Component>[0]} ExtractPropTypes
+ */
+
+/**
+ * @template {(...args: any[]) => any} Component
+ * @typedef {{
+ *    [K in keyof ExtractPropTypes<Component> as K extends `on:${infer L}` ? L : never]: ExtractPropTypes<Component>[K]
+ * }} GetCustomEvents
+ */
+
+/**
+ * @template {(...args: any[]) => any} Component
+ * @template {keyof GetCustomEvents<Component>} EventName
+ * @typedef {Required<GetCustomEvents<Component>>[EventName]} HandlerFor
+ *
+ * Extracts the type of an event handler from a component.
+ *
+ * ### Example
+ * ```typescript
+ * interface ComponentProps {
+ *   'on:btn-click': (event: CustomEvent<MouseEvent>) => void
+ * }
+ *
+ * // Define a component with a custom event
+ * const MyComponent = component({
+ *   tag: 'my-component',
+ *
+ *   render(props: ComponentProps) {
+ *     const emitButtonClick = (event: MouseEvent) => {
+ *       this.dispatchEvent(new CustomEvent('btn-click', { detail: event }));
+ *     };
+ *
+ *     return <button on:click={emitButtonClick}>Click me</button>;
+ *   }
+ * });
+ *
+ * // Extract the type of the click event
+ * type ButtonClickEventHandler = HandlerFor<typeof MyComponent, 'btn-click'>;
+ *
+ * // Use the extracted type for a function
+ * const handleClick: ButtonClickEventHandler = (event) => { console.log(event); };
+ * ```
+ */
+
+/**
  * @typedef {AimRenderNode | AimRenderNode[]} Template
  */
 
 /**
  * @template Props
+ * @typedef {Props & JSX.JSXNativeProps} ComponentProps
+ */
+
+/**
+ * @template Props
  * @typedef {{ componentId?: string; } &
- *  (keyof Props extends never ? ((props?: {}) => BulletElement<{}>) : (props: Props & JSX.JSXNativeProps) => BulletElement<{}>)} Component
+ *  (keyof Props extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props>) => BulletElement<{}>)} Component
  */
 
 /**
@@ -314,6 +365,13 @@ export function component(elementConfig) {
         }
       } catch (error) {
         renderFallback(error);
+      }
+
+      // Store component event listeners.
+      for (const [key, value] of Object.entries(finalProps)) {
+        if (key.startsWith('on:')) {
+          this.addEventListener(key.slice(3), value);
+        }
       }
 
       this.bullet__isSetup = true;

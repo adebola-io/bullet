@@ -1,6 +1,8 @@
 import { component } from '../component.js';
 import { LazyRoute } from './lazy.js';
 
+export * from './lazy.js';
+
 /** @type {Router | undefined } */
 let ROUTER_INSTANCE = undefined;
 
@@ -115,7 +117,7 @@ export class Router {
           const imported = route.component.importer();
           if (imported instanceof Promise) {
             imported.then((component) => {
-              replacementNode = component();
+              replacementNode = component.default();
               outlet.shadowRoot?.replaceChildren(replacementNode);
             });
 
@@ -136,6 +138,11 @@ export class Router {
       outlet.shadowRoot?.replaceChildren(replacementNode ?? emptyRoute(path));
     }
     this.activeRoutes = newActiveRoutes;
+
+    const lastRouteMatch = routeMatches[routeMatches.length - 1];
+    if (lastRouteMatch.redirect) {
+      this.navigate(lastRouteMatch.redirect);
+    }
 
     return true;
   }
@@ -191,13 +198,28 @@ export class Router {
         const a = document.createElement('a');
         a.href = props.to;
 
+        if (props.class) {
+          this.className = props.class;
+        }
+
         a.addEventListener('click', (event) => {
           event.preventDefault();
           self.navigate(props.to);
         });
         a.append(document.createElement('slot'));
+
+        if (props.plain) {
+          a.classList.add('plain');
+        }
         return a;
       },
+
+      styles: `
+        a.plain {
+          text-decoration: none;
+          color: inherit;
+        }
+      `,
     });
   })();
 }
@@ -271,7 +293,13 @@ export function useRouter() {
 }
 
 /**
- * @typedef {{to: string}} RouteLinkProps
+ * @typedef RouteLinkProps
+ * @property {string} to
+ * The path to navigate to when the link is clicked.
+ * @property {boolean} plain
+ * If `true`, the link will reset the default styles for the `<a>` element.
+ * @property {string} [class]
+ * The CSS class to apply to the link.
  */
 
 /**
@@ -291,6 +319,7 @@ export function useRouter() {
  * @property {string} path
  * @property {import("../component.js").Component<{}> | LazyRoute} component
  * @property {RouteItem[]} [children]
+ * @property {string} [redirect]
  */
 
 /**

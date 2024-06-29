@@ -42,8 +42,8 @@ export function h(tagname, props, ...children) {
 
   if (props !== null)
     for (const [key, value] of Object.entries(props)) {
-      if (key.startsWith('on') && typeof value !== 'string') {
-        element.addEventListener(key.slice(2), value);
+      if (key.startsWith('on:') && typeof value !== 'string') {
+        element.addEventListener(key.slice(3), value);
         continue;
       }
 

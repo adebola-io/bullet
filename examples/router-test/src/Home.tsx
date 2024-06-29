@@ -7,19 +7,11 @@ export default component({
   async render() {
     const products = (await import('./products.json')).default;
 
-    // await new Promise((resolve) => setTimeout(resolve, 40000));
-
     return (
       <main>
         <ul class="CardList">
           {products.map((data: CardProps) => (
-            <Card
-              {...data}
-              key={data.id}
-              oncard-click={() => {
-                console.log('Hello, world.');
-              }}
-            />
+            <Card {...data} key={data.id} />
           ))}
         </ul>
       </main>
@@ -73,6 +65,12 @@ export default component({
     }
 
     @media (max-width: 1500px) {
+      .CardList {
+        --no-of-columns: 5;
+      }
+    }
+
+    @media (max-width: 1300px) {
       .CardList {
         --no-of-columns: 4;
       }

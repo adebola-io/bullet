@@ -7,7 +7,7 @@ declare namespace JSXUtils {
     Record<`--${string}`, string>;
   export interface DataAttributes extends Record<`data-${string}`, string> {}
 
-  export type PickEvent<K> = K extends `on${infer T}`
+  export type PickEvent<K> = K extends `on:${infer T}`
     ? T extends keyof GlobalEventHandlersEventMap
       ? GlobalEventHandlersEventMap[T]
       : never
@@ -16,7 +16,11 @@ declare namespace JSXUtils {
   export type EventHandler<E = Event> = (event: E) => void;
 
   export type GlobalEventAttributes = {
-    [K in `on${keyof GlobalEventHandlersEventMap}`]:
+    [K in `on${keyof GlobalEventHandlersEventMap}`]: string;
+  };
+
+  export type JSXEventAttributes = {
+    [K in `on:${keyof GlobalEventHandlersEventMap}`]:
       | EventHandler<PickEvent<K>>
       | string;
   };
@@ -731,6 +735,7 @@ declare namespace JSXUtils {
 declare namespace JSX {
   type JSXElement<U> = Omit<Partial<JSXUtils.GlobalAttributesMap>, 'style'> &
     Partial<JSXUtils.DataAttributes> &
+    Partial<JSXUtils.JSXEventAttributes> &
     Partial<JSXUtils.GlobalEventAttributes> &
     Partial<
       U extends keyof JSXUtils.HtmlElementToAttributeMap

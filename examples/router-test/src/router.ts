@@ -1,12 +1,13 @@
 import { createWebRouter, type RouteItem } from '../../..';
-import About from './About';
 import Home from './Home';
 import App from './App';
+import { lazy } from '../../../library';
 
 const routes: RouteItem[] = [
   {
     path: '/',
     component: App,
+    redirect: '/home',
     children: [
       {
         path: 'home',
@@ -14,7 +15,7 @@ const routes: RouteItem[] = [
       },
       {
         path: 'about',
-        component: About,
+        component: lazy(() => import('./About')),
       },
     ],
   },

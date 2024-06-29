@@ -1,5 +1,7 @@
 /**
- * @typedef {() => (Promise<import('../component.js').Component<{}>> | import('../component.js').Component<{}>)} LazyRouteLoader
+ * @typedef {() => (Promise<{
+ *  default: import('../component.js').Component<{}>
+ * }> | import('../component.js').Component<{}>)} LazyRouteLoader
  */
 
 export class LazyRoute {

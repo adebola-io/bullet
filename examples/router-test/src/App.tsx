@@ -20,7 +20,7 @@ export default component({
         <header>
           <nav>
             {links.map(({ to, text }) => (
-              <Link to={to} key={to}>
+              <Link plain class="NavLink" to={to} key={to}>
                 {text}
               </Link>
             ))}
@@ -34,6 +34,14 @@ export default component({
   globalStyles: css`
     body {
       margin: 0;
+      font-family: 'Inter', sans-serif;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      body {
+        background-color: black;
+        color: white;
+      }
     }
   `,
 
@@ -45,6 +53,7 @@ export default component({
     header {
       position: sticky;
       top: 0;
+      z-index: 99;
       display: flex;
       justify-content: end;
       align-items: center;
@@ -57,6 +66,17 @@ export default component({
     nav {
       display: flex;
       gap: 20px;
+    }
+
+    .NavLink:hover {
+      text-decoration: underline;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      header {
+        background-color: #151515;
+        color: white;
+      }
     }
   `,
 });
