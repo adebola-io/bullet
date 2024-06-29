@@ -114,7 +114,7 @@ Components can be styled using the `styles` property on the component object. Al
 ```ts
 const Button = component({
   tag: 'my-button',
-  render: (props) => <button>{props.label}</button>
+  render: (props) => <button>{props.label}</button>,
 
   styles:  `
     button {
