@@ -75,17 +75,32 @@ import {
 
 /**
  * @template Props
- * @typedef {{ tagName: string; } &
+ * @typedef {{ tagName: string } &
  *  (keyof Props extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props>) => BulletElement<{}>)} Component
  */
 
 /**
  * @template [ComponentData={}]
- * @typedef {(HTMLElement & {
- *    data: ComponentData
- *    select: Element['querySelector']
- *    selectAll: Element['querySelectorAll']
- * })} BulletElement
+ * @typedef CustomElementProperties
+ *
+ * @property {ComponentData} data
+ * The extra data associated with the custom element.
+ *
+ * @property {Element['querySelector']} select
+ * Selects the first element that matches the specified CSS selector within the custom element's shadow root.
+ *
+ * @property {Element['querySelectorAll']} selectAll
+ * Selects all elements that match the specified CSS selector within the custom element's shadow root.
+ *
+ * @property {() => void} render
+ * Triggers a re-render of the element's template.
+ * This is useful when you want to update the element's content based on changes in the component's data,
+ * but it should not be used liberally, as it can lead to performance issues.
+ */
+
+/**
+ * @template [ComponentData={}]
+ * @typedef {(HTMLElement & CustomElementProperties<ComponentData>)} BulletElement
  */
 
 /**
@@ -347,42 +362,46 @@ function setupInternal(setupOptions) {
         const data = componentData?.bind(this)?.(finalProps);
         this.data = data;
 
-        /** @param {Template} children */
-        const appendTemplate = (children) => {
-          this.shadowRoot?.replaceChildren(...generateChildNodes(children));
-        };
+        this.render = function () {
+          /** @param {Template} children */
+          const appendTemplate = (children) => {
+            this.shadowRoot?.replaceChildren(...generateChildNodes(children));
+          };
 
-        const renderInitial = () => {
-          if (initial) {
+          const renderInitial = () => {
+            if (initial) {
+              /** @type {Template | Promise<Template>}*/ // @ts-ignore
+              const children = initial.bind(this)(finalProps, this.data);
+              appendTemplate(children);
+            }
+          };
+
+          /** @param {unknown} error */
+          const renderFallback = (error) => {
+            if (fallback) {
+              const finalFallbackProps = /** @type {any} */ (finalProps);
+              appendTemplate(fallback(error, finalFallbackProps, this.data));
+            } else {
+              throw error;
+            }
+          };
+
+          // Render the component.
+          try {
             /** @type {Template | Promise<Template>}*/ // @ts-ignore
-            const children = initial.bind(this)(finalProps, this.data);
-            appendTemplate(children);
+            const renderResult = render.bind(this)(finalProps, this.data);
+            if (renderResult instanceof Promise) {
+              renderInitial();
+              renderResult.then(appendTemplate).catch(renderFallback);
+            } else {
+              appendTemplate(renderResult);
+            }
+          } catch (error) {
+            renderFallback(error);
           }
         };
 
-        /** @param {unknown} error */
-        const renderFallback = (error) => {
-          if (fallback) {
-            const finalFallbackProps = /** @type {any} */ (finalProps);
-            appendTemplate(fallback(error, finalFallbackProps, this.data));
-          } else {
-            throw error;
-          }
-        };
-
-        // Render the component.
-        try {
-          /** @type {Template | Promise<Template>}*/ // @ts-ignore
-          const renderResult = render.bind(this)(finalProps, this.data);
-          if (renderResult instanceof Promise) {
-            renderInitial();
-            renderResult.then(appendTemplate).catch(renderFallback);
-          } else {
-            appendTemplate(renderResult);
-          }
-        } catch (error) {
-          renderFallback(error);
-        }
+        this.render();
 
         // Store component event listeners.
         for (const [key, value] of Object.entries(finalProps)) {
@@ -445,7 +464,7 @@ function setupInternal(setupOptions) {
           }
         }
 
-        this.bullet__onMountReturn = this.bullet__connected?.(
+        this.bullet__connectedReturn = this.bullet__connected?.(
           /** @type {any} */ (this.bullet__finalProps ?? props)
         );
       }
@@ -464,7 +483,7 @@ function setupInternal(setupOptions) {
           }
         }
 
-        this.bullet__onMountReturn?.();
+        this.bullet__connectedReturn?.();
         this.bullet__disconnected?.();
       }
     }

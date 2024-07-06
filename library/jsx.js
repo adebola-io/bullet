@@ -1,4 +1,3 @@
-import { RENDER_TARGET_STACK } from './constants.js';
 import { convertObjectToCssStylesheet } from './utils.js';
 
 /**
@@ -38,7 +37,6 @@ export function h(tagname, props, ...children) {
   }
 
   const element = document.createElement(tagname);
-  RENDER_TARGET_STACK.push(element);
 
   if (props !== null)
     for (const [key, value] of Object.entries(props)) {
@@ -74,8 +72,6 @@ export function h(tagname, props, ...children) {
   for (const child of children) {
     element.appendChild(normalizeChild(child));
   }
-
-  RENDER_TARGET_STACK.pop();
 
   // @ts-ignore
   return element;
