@@ -39,6 +39,9 @@ export class Router {
   /** @private @type {HTMLElement[]} */
   links = [];
 
+  /** @type {Map<string, string>} */
+  params = new Map();
+
   /** @private RouteTree<ReturnType<ElementConstructor>> */ routeTree;
 
   /** @param {RouterOptions} routeOptions */
@@ -78,6 +81,7 @@ export class Router {
   async load(path) {
     const matchResult = this.routeTree.match(path);
     matchResult.flattenTransientRoutes();
+    this.params = matchResult.params;
 
     if (matchResult.subTree === null) {
       console.warn(`No route matches path: ${path}`);
@@ -102,7 +106,10 @@ export class Router {
         /** @type {ReturnType<ElementConstructor>} */
         let matchedComponent;
 
-        if (matchedComponentOrLazyLoader === null) {
+        if (
+          matchedComponentOrLazyLoader === null ||
+          matchedComponentOrLazyLoader === undefined
+        ) {
           if (currentMatchedRoute.child) {
             currentMatchedRoute = currentMatchedRoute.child;
             continue;
@@ -169,11 +176,11 @@ export class Router {
     const self = this;
     return createElement({
       tag: 'route-outlet',
-      onMounted() {
+      connected() {
         // @ts-ignore
         self.outlets.push(this);
       },
-      onUnMounted() {
+      disconnected() {
         // @ts-ignore
         self.outlets.splice(self.outlets.indexOf(this), 1);
       },
@@ -194,7 +201,7 @@ export class Router {
     return createElement({
       tag: 'route-link',
       defaultProps: props,
-      onMounted() {
+      connected() {
         // @ts-ignore
         self.links.push(this);
       },
@@ -218,7 +225,7 @@ export class Router {
         }
         return a;
       },
-      onUnMounted() {
+      disconnected() {
         // @ts-ignore
         self.links.splice(self.links.indexOf(this), 1);
       },

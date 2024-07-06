@@ -328,25 +328,26 @@ RouteTree.fromRouteRecords = (routeRecords, parent = null) => {
     let current = root;
 
     if (pathSegments.length > 1) {
-      for (const [index, pathSegment] of pathSegments.entries()) {
+      for (const [index, pathSegment] of pathSegments.slice(1).entries()) {
         const subPath = `${parentFullPath}/${pathSegments
-          .slice(0, index)
+          .slice(1, index)
           .join('/')}/${pathSegment}`;
         const child = new Route(subPath.replace(/\/+/g, '/'));
 
         child.isDynamic = pathSegment.startsWith(':');
         child.isWildcard = pathSegment.startsWith('*');
 
+        console.log(
+          'Transient path segment:',
+          pathSegment,
+          JSON.stringify(child),
+          pathSegment.startsWith(':'),
+          child.isDynamic
+        );
         current.isTransient = true;
 
-        if (child.fullPath !== current.fullPath) {
-          current.children.push(child);
-          current = child;
-          continue;
-        }
-
-        current.isDynamic = child.isDynamic;
-        current.isWildcard = child.isWildcard;
+        current.children.push(child);
+        current = child;
       }
     }
 
@@ -357,10 +358,10 @@ RouteTree.fromRouteRecords = (routeRecords, parent = null) => {
     const fullPath = `${parentFullPath}/${routeRecord.path}`;
     current.fullPath = fullPath.replace(/\/+/g, '/');
 
-    current.isDynamic =
-      routeRecord.path.startsWith(':') && pathSegments.length <= 1;
-    current.isWildcard =
-      routeRecord.path.startsWith('*') && pathSegments.length <= 1;
+    if (pathSegments.length <= 1) {
+      current.isDynamic = routeRecord.path.startsWith(':');
+      current.isWildcard = routeRecord.path.startsWith('*');
+    }
 
     current.children =
       'children' in routeRecord

@@ -18,10 +18,18 @@ A tiny, experimental, and ill-advised library for Web Components.
   - [Event Handling](#event-handling)
     - [Custom Events](#custom-events)
   - [Lifecycle Methods](#lifecycle-methods)
-    - [onMounted](#onmounted)
-    - [onUnMounted](#onunmounted)
+    - [`connected`](#connected)
+    - [`disconnected`](#disconnected)
   - [Async components](#async-components)
     - [Loading and Error Handling](#loading-and-error-handling)
+  - [Routing](#routing)
+    - [Setting Up the Router](#setting-up-the-router)
+    - [Route Configuration](#route-configuration)
+    - [Implementing the Router](#implementing-the-router)
+    - [Lazy Loading Routes](#lazy-loading-routes)
+    - [Programmatic Navigation](#programmatic-navigation)
+    - [Dynamic Route Parameters](#dynamic-route-parameters)
+    - [Wildcard Routes](#wildcard-routes)
   - [Why bullet?](#why-bullet)
   - [License](#license)
 
@@ -78,7 +86,7 @@ You can define your own custom elements with the `createElement` function.
 Here's an example of a simple component:
 
 ```js
-import { component } from '@adbl/bullet';
+import { createElement} from '@adbl/bullet';
 
 const MyElement = createElement({
   tag: 'my-counter',
@@ -90,7 +98,7 @@ You can then use your custom element like any other HTML tag:
 
 ```html
 <body>
-  <bt-my-counter></bt-my-counter>
+  <my-counter></my-counter>
   <script type="module">
     import { Counter } from './counter.js';
   </script>
@@ -108,14 +116,14 @@ document.body.append(<MyElement />);
 Bullet's JSX uses the standard HTML syntax and compile to regular DOM nodes, but you can use Bullet without it.
 
 ```js
-import { component } from '@adbl/bullet';
+import { createElement } from '@adbl/bullet';
 
 const Box = createElement({
-  tag: 'app-button',
-  render() {
+  tag: 'app-box',
+  render: () => {
     const boxElement = document.createElement('div');
-    button.innerHTML = 'This is a box';
-    return box;
+    boxElement.innerHTML = 'This is a box';
+    return boxElement;
   },
 });
 ```
@@ -126,15 +134,13 @@ You can also use the html template function to automatically parse strings:
 import { component, html } from '@adbl/bullet';
 
 const Card = createElement({
-  tag: 'app-product-card',
-  render: (props) => {
-    return html`
-      <div class="card">
-        <h1>${props.name}</h1>
-        <img src=${props.imgSrc} alt=${props.imgAlt} />
-      </div>
-    `;
-  },
+  tag: 'product-card',
+  render: (props) => html`
+    <div class="card">
+      <h1>${props.name}</h1>
+      <img src=${props.imgSrc} alt=${props.imgAlt} />
+    </div>
+  `,
 });
 ```
 
@@ -203,12 +209,14 @@ document.body.append(<Heading text="Hello there" />);
 
 ## Event Handling
 
-In Bullet, you can pass event handlers as props to components using the `on:`s prefix. These event handlers will be automatically bound to the corresponding event on the component's root element.
+In Bullet, you can pass event handlers as props to components using the `on:` prefix. These event handlers will be automatically bound to the corresponding event on the component's root element.
 
 ```tsx
 const Button = createElement({
   tag: 'my-button',
-  render: (props) => <button on:click={props.click}>{props.label}</button>,
+  render: (props) => (
+    <button on:click={props.onButtonClick}>{props.label}</button>
+  ),
 });
 
 const handleClick = () => {
@@ -216,10 +224,10 @@ const handleClick = () => {
 };
 
 // Usage
-<Button click={handleClick} label="Click me" />;
+<Button onButtonClick={handleClick} label="Click me" />;
 ```
 
-In this example, the handleClick function is passed as the onClick prop to the Button component. When the button is clicked, the handleClick function will be called, and "Button clicked!" will be logged to the console.
+In this example, the handleClick function is passed as the onButtonClick prop to the Button component. When the button is clicked, the handleClick function will be called, and "Button clicked!" will be logged to the console.
 
 ### Custom Events
 
@@ -230,7 +238,7 @@ Example:
 ```tsx
 const CustomEventComponent = createElement({
   tag: 'custom-event-component',
-  render() {
+  render: function () {
     const handleClick = () => {
       const event = new CustomEvent('custom', {
         detail: { message: 'Hello, World!' },
@@ -261,9 +269,9 @@ To listen for the custom event, you can also use the addEventListener method on 
 
 ## Lifecycle Methods
 
-### onMounted
+### `connected`
 
-The onMounted method is a lifecycle hook that is called when the component is mounted (inserted) into the DOM. This is a good place to perform side effects or initialize any resources that depend on the component being rendered.
+The connected method is a lifecycle hook that is called when the component is mounted (inserted) into the DOM. This is a good place to perform side effects or initialize any resources that depend on the component being rendered.
 
 Example:
 
@@ -271,7 +279,7 @@ Example:
 const MyComponent = createElement({
   tag: 'my-component',
   render: () => <div>Hello, World!</div>,
-  onMounted: function (props) {
+  connected: (props) => {
     console.log('Component mounted!');
     console.log('Component Props: ', props);
     // Perform side effects or initialize resources here
@@ -279,15 +287,15 @@ const MyComponent = createElement({
 });
 ```
 
-In this example, when an instance of `<bt-my-component>` is added to the DOM, the onMounted function will be called, and the message "Component mounted!" will be logged to the console, as well as props passed.
+In this example, when an instance of `<my-component>` is added to the DOM, the connected function will be called, and the message "Component mounted!" will be logged to the console, as well as props passed.
 
-The onMounted method can optionally return a cleanup function, which will be called when the component is unmounted from the DOM.
+The connected method can optionally return a cleanup function, which will be called when the component is unmounted from the DOM.
 
 ```jsx
 const MyComponent = createElement({
   tag: 'my-component',
   render: () => <div>Hello, World!</div>,
-  onMounted: function () {
+  connected: () => {
     const interval = setInterval(() => {
       console.log('Interval running...');
     }, 1000);
@@ -300,22 +308,22 @@ const MyComponent = createElement({
 });
 ```
 
-### onUnMounted
+### `disconnected`
 
-The onUnMounted method is a lifecycle hook that is called when the component is unmounted (removed) from the DOM. This is also a good place to perform cleanup tasks or release any resources that were initialized in the onMounted hook.
+The `disconnected` method is a lifecycle hook that is called when the component is unmounted (removed) from the DOM. This is also a good place to perform cleanup tasks or release any resources that were initialized in the connected hook.
 
 ```jsx
 const MyComponent = createElement({
   tag: 'my-component',
   render: () => <div>Hello, World!</div>,
-  onUnMounted: function () {
+  disconnected: () => {
     console.log('Component unmounted!');
     // Perform cleanup tasks or release resources here
   },
 });
 ```
 
-In this example, when an instance of `<bt-my-component>` is removed from the DOM, the onUnMounted function will be called, and the message "Component unmounted!" will be logged to the console.
+In this example, when an instance of `<my-component>` is removed from the DOM, the disconnected function will be called, and the message "Component unmounted!" will be logged to the console.
 
 These lifecycle methods provide a way to hook into the component's lifecycle and perform actions at specific points, making it easier to manage side effects and resources within your components.
 
@@ -326,12 +334,12 @@ These lifecycle methods provide a way to hook into the component's lifecycle and
 You can define components that load asynchronously just by adding async before your render function.
 
 ```jsx
-import { component } from '@adbl/bullet';
+import { createElement } from '@adbl/bullet';
 
 const Products = computed({
   tag: `products`,
 
-  async render() {
+  render: async () => {
     const res = await fetch('https://dummyjson.com/products');
     const data = await res.json();
     const { products } = data;
@@ -350,7 +358,7 @@ const Products = computed({
 You can then use `Products` anywhere just like a regular component:
 
 ```tsx
-document.body.append(<bt-products></bt-products>);
+document.body.append(<products></products>);
 ```
 
 The component will be loaded on-demand when it is rendered.
@@ -361,10 +369,10 @@ The `initial` method is used to define a placeholder template that will be creat
 
 For example:
 
-```ts
+```tsx
 const LoadingComponent = createElement({
   tag: 'loading-component',
-  async render() {
+  render: async () => {
     await new Promise((resolve) => setTimeout(resolve, 2000));
     return <div>Content loaded!</div>;
   },
@@ -374,10 +382,10 @@ const LoadingComponent = createElement({
 
 The `fallback` method is used to define a fallback template that will be rendered if the render method throws an error,or its Promise is rejected.
 
-```ts
+```tsx
 const ErrorComponent = createElement({
   tag: 'error-component',
-  async render() {
+  render: async () => {
     throw new Error('Oops, something went wrong!');
   },
   fallback: (error) => <div>Error: {error.message}</div>,
@@ -385,6 +393,171 @@ const ErrorComponent = createElement({
 ```
 
 In both cases, the initial and fallback methods provide a way to handle the different states of an asynchronous component, ensuring a better user experience by displaying appropriate content or error messages.
+
+---
+
+## Routing
+
+Bullet includes a straightforward yet powerful routing system for single-page applications. This built-in functionality integrates seamlessly with Bullet components, allowing for dynamic page navigation.
+
+### Setting Up the Router
+
+To implement routing in your Bullet application, use the `createWebRouter` function:
+
+```javascript
+import {
+  createWebRouter,
+  type RouteRecords,
+  createElement,
+} from '@adbl/bullet';
+
+// Define simple components
+const Home = createElement({
+  tag: 'home-page',
+  render: () => <h1>Welcome to the Home Page</h1>,
+});
+
+const About = createElement({
+  tag: 'about-page',
+  render: () => <h1>About Us</h1>,
+});
+
+const NotFound = createElement({
+  tag: 'not-found',
+  render: () => <h1>404 - Page Not Found</h1>,
+});
+
+// Define routes
+const routes: RouteRecords = [
+  {
+    name: 'home',
+    path: '/',
+    component: Home,
+  },
+  {
+    name: 'about',
+    path: '/about',
+    component: About,
+  },
+  {
+    name: 'not-found',
+    path: '*',
+    component: NotFound,
+  },
+];
+
+// Create and mount the router
+const router = createWebRouter({ routes });
+document.body.appendChild(<router.Outlet />);
+```
+
+### Route Configuration
+
+The `RouteRecords` type defines your application's route structure. Each route can include:
+
+- `name`: A unique route identifier
+- `path`: The URL path for the route
+- `component`: The component to render for this route
+- `children`: (Optional) Nested routes
+
+### Implementing the Router
+
+After creating a router, you can use it from within your elements with the `useRouter` hook. The router provides two essential custom elements:
+
+1. `Link`: For creating navigation links
+2. `Outlet`: Renders the current route's component
+
+```javascript
+import { createElement, useRouter } from '@adbl/bullet';
+
+const App = createElement({
+  tag: 'app-root',
+  render: () => {
+    const router = useRouter();
+    const { Link, Outlet } = router;
+
+    return (
+      <div class="app">
+        <nav>
+          <Link to="/">Home</Link>
+          <Link to="/about">About</Link>
+        </nav>
+        <main>
+          <Outlet />
+        </main>
+      </div>
+    );
+  },
+});
+
+export default App;
+```
+
+### Lazy Loading Routes
+
+Bullet supports lazy loading of route components for improved performance:
+
+```javascript
+const Settings = lazy(() => import('./Settings'));
+```
+
+This technique allows for code splitting and on-demand loading of components.
+
+### Programmatic Navigation
+
+For programmatic navigation, use the router's `navigate` method:
+
+```javascript
+const ProfileButton = createElement({
+  render: () => {
+    const router = useRouter();
+    const goToProfile = () => router.navigate('/profile/123');
+
+    return <button on:click={goToProfile}>View Profile</button>;
+  },
+});
+```
+
+### Dynamic Route Parameters
+
+You can define routes with dynamic parameters:
+
+```javascript
+{
+  name: 'profile',
+  path: 'profile/:id',
+  component: lazy(() => import('./Profile')),
+}
+```
+
+Access these parameters in your component:
+
+```javascript
+const Profile = createElement({
+  render() {
+    const router = useRouter();
+    const id = router.params.get('id');
+
+    return <h1>Profile ID: {id}</h1>;
+  },
+});
+```
+
+### Wildcard Routes
+
+Wildcard routes in Bullet offer powerful flexibility for handling various routing scenarios. They're particularly useful for handling 404 (Not Found) pages, error pages, and more.
+
+```javascript
+{
+  name: 'not-found',
+  path: '*',
+  component: lazy(() => import('./NotFound')),
+}
+```
+
+This routing system provides a robust foundation for creating single-page applications with Bullet. It offers easy navigation, code splitting capabilities, and flexible route configurations to suit various application needs.
+
+---
 
 ## Why bullet?
 

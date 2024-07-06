@@ -778,7 +778,7 @@ declare namespace JSX {
 
   export type IntrinsicElements = {
     [K in keyof ElementTagNameMap]: JSXElement<K>;
-  } & Record<`bt-${string}`, JSXElement<HTMLElement>>;
+  } & Record<`${string}-${string}`, JSXElement<HTMLElement>>;
 
   export type Element = globalThis.Element;
 }

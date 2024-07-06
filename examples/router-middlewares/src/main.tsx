@@ -15,7 +15,13 @@ const App = createElement({
     if (!authenticated) {
       return router.navigate('/login');
     }
-    return <div>Hello, World!</div>;
+    return (
+      <div>
+        <button on:click={() => router.navigate('/profile/123')}>
+          Profile
+        </button>
+      </div>
+    );
   },
 
   globalStyles: css`
@@ -46,6 +52,15 @@ const Login = createElement({
   },
 });
 
+const Profile = createElement({
+  render() {
+    const router = useRouter();
+    const id = router.params.get('id');
+
+    return <h1>Profile ID: {id}</h1>;
+  },
+});
+
 const router = createWebRouter({
   routes: [
     {
@@ -57,6 +72,17 @@ const router = createWebRouter({
       name: 'Login',
       path: '/login',
       component: Login,
+    },
+    {
+      name: 'Profile',
+      path: '/profile',
+      children: [
+        {
+          name: 'Profile',
+          path: ':id',
+          component: Profile,
+        },
+      ],
     },
   ],
 });

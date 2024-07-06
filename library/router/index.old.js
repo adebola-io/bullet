@@ -186,12 +186,12 @@ export class Router {
     const self = this;
     return createElement({
       tag: 'route-outlet',
-      onMounted() {
+      connected() {
         // @ts-ignore
         self.outlets.push(this);
       },
 
-      onUnMounted() {
+      disconnected() {
         // @ts-ignore
         self.outlets.splice(self.outlets.indexOf(this), 1);
       },
@@ -214,7 +214,7 @@ export class Router {
       tag: 'route-link',
       defaultProps: props,
 
-      onMounted() {
+      connected() {
         // @ts-ignore
         self.links.push(this);
       },
@@ -245,7 +245,7 @@ export class Router {
         return a;
       },
 
-      onUnMounted() {
+      disconnected() {
         // @ts-ignore
         self.links.splice(self.links.indexOf(this), 1);
       },

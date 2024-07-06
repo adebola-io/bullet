@@ -39,7 +39,7 @@ export default createElement({
     );
   },
 
-  onMounted(this: BulletElement, props) {
+  connected(this: BulletElement, props) {
     const destroyEffect = searchBarText.createEffect((text) => {
       const regex = new RegExp(text.trim().toLowerCase());
       this.style.display =

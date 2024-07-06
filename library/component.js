@@ -128,11 +128,11 @@ import {
  * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData & ThisType<BulletElement<ExtraData>>} [data]
  * Additional data for the custom element.
  *
- * @property {ThisType<BulletElement<ExtraData>> & ((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => (void | (() => void)))} [onMounted]
+ * @property {ThisType<BulletElement<ExtraData>> & ((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => (void | (() => void)))} [connected]
  * Called when the component is mounted to the DOM.
  * It can optionally return a function that will be called when the component is unmounted from the DOM.
  *
- * @property {ThisType<BulletElement<ExtraData>> & (() => void)} [onUnMounted]
+ * @property {ThisType<BulletElement<ExtraData>> & (() => void)} [disconnected]
  * Called when the component is unmounted from the DOM.
  *
  * @property {(error: unknown, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Template} [fallback]
@@ -231,8 +231,8 @@ function setupInternal(setupOptions) {
       defaultProps,
       data: componentData,
       tag,
-      onMounted,
-      onUnMounted,
+      connected,
+      disconnected,
       fallback,
       initial,
     } = typeof elementConfig === 'function'
@@ -243,8 +243,8 @@ function setupInternal(setupOptions) {
           data: undefined,
           tag: undefined,
           globalStyles: undefined,
-          onMounted: undefined,
-          onUnMounted: undefined,
+          connected: undefined,
+          disconnected: undefined,
           fallback: undefined,
           initial: undefined,
         }
@@ -296,12 +296,12 @@ function setupInternal(setupOptions) {
        * Called when the component is mounted to the DOM.
        *
        */
-      bullet__onMounted = onMounted;
+      bullet__connected = connected;
 
       /**
        * Called when the component is unmounted from the DOM.
        */
-      bullet__onUnMounted = onUnMounted;
+      bullet__disconnected = disconnected;
 
       /**
        * The data signal for the component instance.
@@ -445,7 +445,7 @@ function setupInternal(setupOptions) {
           }
         }
 
-        this.bullet__onMountReturn = this.bullet__onMounted?.(
+        this.bullet__onMountReturn = this.bullet__connected?.(
           /** @type {any} */ (this.bullet__finalProps ?? props)
         );
       }
@@ -465,7 +465,7 @@ function setupInternal(setupOptions) {
         }
 
         this.bullet__onMountReturn?.();
-        this.bullet__onUnMounted?.();
+        this.bullet__disconnected?.();
       }
     }
 
