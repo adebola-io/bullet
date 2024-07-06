@@ -74,13 +74,13 @@ import '@adbl/bullet/library/jsx-runtime.js';
 
 ## Usage
 
-You can define your own custom elements with the `component` function.
+You can define your own custom elements with the `createElement` function.
 Here's an example of a simple component:
 
 ```js
 import { component } from '@adbl/bullet';
 
-const MyElement = component({
+const MyElement = createElement({
   tag: 'my-counter',
   render: () => <div>Hello, World!</div>)
 });
@@ -110,7 +110,7 @@ Bullet's JSX uses the standard HTML syntax and compile to regular DOM nodes, but
 ```js
 import { component } from '@adbl/bullet';
 
-const Box = component({
+const Box = createElement({
   tag: 'app-button',
   render() {
     const boxElement = document.createElement('div');
@@ -125,7 +125,7 @@ You can also use the html template function to automatically parse strings:
 ```js
 import { component, html } from '@adbl/bullet';
 
-const Card = component({
+const Card = createElement({
   tag: 'app-product-card',
   render: (props) => {
     return html`
@@ -145,7 +145,7 @@ const Card = component({
 Components can be styled using the `styles` property on the component object. All styles are generated as constructed stylesheets and are automatically scoped only to the parent web component.
 
 ```ts
-const Button = component({
+const Button = createElement({
   tag: 'my-button',
   render: (props) => <button>{props.label}</button>,
 
@@ -163,7 +163,7 @@ const Button = component({
 By default, the button styles will only apply to buttons within the `Button` component. If you want to define styles that can apply to the whole document, you can use the `globalStyles` property instead:
 
 ```ts
-const Button = component({
+const Button = createElement({
   tag: 'my-button',
   render: (props) => <button>{props.label}</button>,
 
@@ -194,7 +194,7 @@ Whenever there is at least one instance of the component in the DOM, the documen
 You can also declare custom elements without tag names, meaning the tag names will be auto-generated:
 
 ```js
-const Heading = component((props) => <h1>{props.text}</h1>);
+const Heading = createElement((props) => <h1>{props.text}</h1>);
 
 document.body.append(<Heading text="Hello there" />);
 ```
@@ -206,7 +206,7 @@ document.body.append(<Heading text="Hello there" />);
 In Bullet, you can pass event handlers as props to components using the `on:`s prefix. These event handlers will be automatically bound to the corresponding event on the component's root element.
 
 ```tsx
-const Button = component({
+const Button = createElement({
   tag: 'my-button',
   render: (props) => <button on:click={props.click}>{props.label}</button>,
 });
@@ -228,9 +228,9 @@ More conventionally, Bullet also allows you to create and dispatch custom events
 Example:
 
 ```tsx
-const CustomEventComponent = component({
+const CustomEventComponent = createElement({
   tag: 'custom-event-component',
-  render: () => {
+  render() {
     const handleClick = () => {
       const event = new CustomEvent('custom', {
         detail: { message: 'Hello, World!' },
@@ -268,7 +268,7 @@ The onMounted method is a lifecycle hook that is called when the component is mo
 Example:
 
 ```jsx
-const MyComponent = component({
+const MyComponent = createElement({
   tag: 'my-component',
   render: () => <div>Hello, World!</div>,
   onMounted: function (props) {
@@ -284,7 +284,7 @@ In this example, when an instance of `<bt-my-component>` is added to the DOM, th
 The onMounted method can optionally return a cleanup function, which will be called when the component is unmounted from the DOM.
 
 ```jsx
-const MyComponent = component({
+const MyComponent = createElement({
   tag: 'my-component',
   render: () => <div>Hello, World!</div>,
   onMounted: function () {
@@ -305,7 +305,7 @@ const MyComponent = component({
 The onUnMounted method is a lifecycle hook that is called when the component is unmounted (removed) from the DOM. This is also a good place to perform cleanup tasks or release any resources that were initialized in the onMounted hook.
 
 ```jsx
-const MyComponent = component({
+const MyComponent = createElement({
   tag: 'my-component',
   render: () => <div>Hello, World!</div>,
   onUnMounted: function () {
@@ -362,7 +362,7 @@ The `initial` method is used to define a placeholder template that will be creat
 For example:
 
 ```ts
-const LoadingComponent = component({
+const LoadingComponent = createElement({
   tag: 'loading-component',
   async render() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
@@ -375,7 +375,7 @@ const LoadingComponent = component({
 The `fallback` method is used to define a fallback template that will be rendered if the render method throws an error,or its Promise is rejected.
 
 ```ts
-const ErrorComponent = component({
+const ErrorComponent = createElement({
   tag: 'error-component',
   async render() {
     throw new Error('Oops, something went wrong!');

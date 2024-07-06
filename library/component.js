@@ -44,7 +44,7 @@ import {
  * }
  *
  * // Define a component with a custom event
- * const MyComponent = component({
+ * const MyComponent = createElement({
  *   tag: 'my-component',
  *
  *   render(props: ComponentProps) {
@@ -150,320 +150,356 @@ export const css = String.raw;
 class BulletComponent extends HTMLElement {}
 
 /**
- * Defines a custom HTML element with a shadow DOM and optional styles.
+ * @typedef SetupOptions
+ * @property {string} [namespace]
+ * A namespace to scope your custom elements to. This will ensure that they do not affect
+ * other custom elements in the DOM.
  *
- * @template {object} RenderPropsInitial
- *
- *
- * @template {object} [ComponentData={}]
- * Additional data for the custom element.
- *
- * @template {object} [Props=RenderPropsInitial]
- * The type of properties that the component accepts.
- *
- * @template {object} [DefaultProps={}]
- * Defines the default props for the custom element.
- *
- * @template {Props & DefaultProps} [RenderProps=Props & DefaultProps]
- *
- * @param {ElementConfig<Props & DefaultProps & RenderProps, ComponentData, DefaultProps, RenderPropsInitial>
- * |  RenderFunction<ComponentData, RenderProps, DefaultProps, true>} elementConfig
- * The configuration object for the custom element.
- *
- * @returns {keyof Props extends never ? Component<Partial<DefaultProps>>: Component<Props>} A function that creates instances of the custom element.
- * @example
- * // Define a custom element with a simple render function
- * const MyElement = component(() => <div>Hello, World!</div>);
- *
- * // Create an instance of the custom element
- * const myElement = <MyElement />;
- * document.body.appendChild(myElement);
- *
- * @example
- * // Define a custom element with props and styles
- * const MyButton = component({
- *   styles: css`
- *   button {
- *     fontSize: '16px',
- *     fontWeight: 'bold',
- *   }`,
- *   render: (props) => <button style={{ color: props.color }}>{props.label}</button>,
- *  // Defines the default props for the custom element
- *   defaultProps: {
- *     color: 'black',
- *     label: 'Click me',
- *   },
- * });
- *
- * // Create an instance of the custom element with custom props
- * // You can define the element by using the result of the `component` function, like so:
- * const myButton = <MyButton color="red" label="Click here" />; // or MyButton({color: 'red', label: 'Click here' })
- * document.body.appendChild(myButton);
- *
- * // Or by defining the element directly as html:
- * document.body.innerHtml = '<bt-my-button color="red" label="Click here"></bt-my-button>';
+ * @property {CSSStyleSheet[]} [stylesheets]
+ * This allows you to add stylesheets that should be available to every element that is created.
  */
-export function component(elementConfig) {
-  const {
-    render,
-    styles,
-    globalStyles,
-    defaultProps,
-    data: componentData,
-    tag,
-    onMounted,
-    onUnMounted,
-    fallback,
-    initial,
-  } = typeof elementConfig === 'function'
-    ? {
-        render: elementConfig,
-        styles: undefined,
-        defaultProps: undefined,
-        data: undefined,
-        tag: undefined,
-        globalStyles: undefined,
-        onMounted: undefined,
-        onUnMounted: undefined,
-        fallback: undefined,
-        initial: undefined,
-      }
-    : elementConfig;
-  const elementTagname = `bt-${tag ?? generateComponentName()}`;
 
-  // Load component CSS.
-  if (styles) {
-    const stylesheet = new CSSStyleSheet();
-    switch (typeof styles) {
-      case 'string':
-        stylesheet.replace(styles);
-        break;
-      case 'object':
-        stylesheet.replace(convertObjectToCssStylesheet(styles));
-        break;
-    }
-    CUSTOM_ELEMENT_STYLES.set(elementTagname, stylesheet);
-  }
+/**
+ * @typedef {ReturnType<typeof setupInternal>['createElement']} ElementConstructor
+ */
 
-  // Load global CSS.
-  if (globalStyles) {
-    const styleString =
-      typeof globalStyles === 'string'
-        ? globalStyles
-        : convertObjectToCssStylesheet(globalStyles);
-    CUSTOM_ELEMENT_GLOBAL_STYLES.set(elementTagname, {
-      data: styleString,
-      instances: 0,
-    });
-  }
+/**
+ * @typedef SetupResult
+ * @property {ElementConstructor} createElement
+ */
 
-  class ComponentConstructor extends BulletComponent {
-    /**
-     * Whether or not the component has been rendered by Aim.
-     * @private
-     */
-    bullet__isSetup = false;
-
-    /**
-     * The unique identifier for the component instance.
-     * @type {string}
-     */
-    bullet__instanceKey;
-
-    /**
-     * Called when the component is mounted to the DOM.
-     *
-     */
-    bullet__onMounted = onMounted;
-
-    /**
-     * Called when the component is unmounted from the DOM.
-     */
-    bullet__onUnMounted = onUnMounted;
-
-    /**
-     * The data signal for the component instance.
-     * @type {ComponentData}
-     */
-    // @ts-ignore
-    data = {};
-
-    /** @type {any} */
-    bullet__finalProps;
-
-    constructor() {
-      super();
-      this.attachShadow({ mode: 'open' });
-      const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
-
-      const stylesheet = CUSTOM_ELEMENT_STYLES.get(elementTagname);
-      if (stylesheet) {
-        shadowRoot.adoptedStyleSheets = [stylesheet];
-      }
-      const globalStyles = CUSTOM_ELEMENT_GLOBAL_STYLES.get(elementTagname);
-      if (globalStyles) {
-        globalStyles.instances += 1;
-
-        if (globalStyles.instances === 1) {
-          const styleElement = document.createElement('style');
-          styleElement.setAttribute('blt-component', elementTagname);
-          styleElement.innerHTML = globalStyles.data;
-          document.head.appendChild(styleElement);
+/** @param {SetupOptions} [setupOptions] */
+function setupInternal(setupOptions) {
+  const { namespace, stylesheets } = setupOptions ?? {};
+  /**
+   * Defines a custom HTML element with a shadow DOM and optional styles.
+   *
+   * @template {object} RenderPropsInitial
+   *
+   *
+   * @template {object} [ComponentData={}]
+   * Additional data for the custom element.
+   *
+   * @template {object} [Props=RenderPropsInitial]
+   * The type of properties that the component accepts.
+   *
+   * @template {object} [DefaultProps={}]
+   * Defines the default props for the custom element.
+   *
+   * @template {Props & DefaultProps} [RenderProps=Props & DefaultProps]
+   *
+   * @param {ElementConfig<Props & DefaultProps & RenderProps, ComponentData, DefaultProps, RenderPropsInitial>
+   * |  RenderFunction<ComponentData, RenderProps, DefaultProps, true>} elementConfig
+   * The configuration object for the custom element.
+   *
+   * @returns {keyof Props extends never ? Component<Partial<DefaultProps>>: Component<Props>} A function that creates instances of the custom element.
+   * @example
+   * // Define a custom element with a simple render function
+   * const MyElement = createElement(() => <div>Hello, World!</div>);
+   *
+   * // Create an instance of the custom element
+   * const myElement = <MyElement />;
+   * document.body.appendChild(myElement);
+   *
+   * @example
+   * // Define a custom element with props and styles
+   * const MyButton = createElement({
+   *   styles: css`
+   *   button {
+   *     fontSize: '16px',
+   *     fontWeight: 'bold',
+   *   }`,
+   *   render: (props) => <button style={{ color: props.color }}>{props.label}</button>,
+   *  // Defines the default props for the custom element
+   *   defaultProps: {
+   *     color: 'black',
+   *     label: 'Click me',
+   *   },
+   * });
+   *
+   * // Create an instance of the custom element with custom props
+   * // You can define the element by using the result of the `component` function, like so:
+   * const myButton = <MyButton color="red" label="Click here" />; // or MyButton({color: 'red', label: 'Click here' })
+   * document.body.appendChild(myButton);
+   *
+   * // Or by defining the element directly as html:
+   * document.body.innerHtml = '<my-button color="red" label="Click here"></my-button>';
+   */
+  const createElement = function (elementConfig) {
+    const {
+      render,
+      styles,
+      globalStyles,
+      defaultProps,
+      data: componentData,
+      tag,
+      onMounted,
+      onUnMounted,
+      fallback,
+      initial,
+    } = typeof elementConfig === 'function'
+      ? {
+          render: elementConfig,
+          styles: undefined,
+          defaultProps: undefined,
+          data: undefined,
+          tag: undefined,
+          globalStyles: undefined,
+          onMounted: undefined,
+          onUnMounted: undefined,
+          fallback: undefined,
+          initial: undefined,
         }
+      : elementConfig;
+    const elementTagname = `${namespace ? `${namespace}-` : ''}${
+      tag ?? generateComponentName()
+    }`;
+
+    // Load component CSS.
+    if (styles) {
+      const stylesheet = new CSSStyleSheet();
+      switch (typeof styles) {
+        case 'string':
+          stylesheet.replace(styles);
+          break;
+        case 'object':
+          stylesheet.replace(convertObjectToCssStylesheet(styles));
+          break;
       }
-
-      this.bullet__instanceKey = generateInstanceKey(elementTagname);
-    }
-
-    /**
-     * Sets up the component instance with the provided props and extra data.
-     * @param {Partial<Props>} [props] - The props to initialize the component with.
-     */
-    __bullet__setup(props = {}) {
-      const storage = new Map();
-      GLOBAL_DATA.set(this.bullet__instanceKey, storage);
-      storage.set('owner', this);
-
-      const finalProps = {
-        ...defaultProps,
-        ...props,
-      };
-
-      this.bullet__finalProps = finalProps;
-
-      // Setup component data.
-      /** @type ComponentData */ // @ts-ignore
-      const data = componentData?.bind(this)?.(finalProps);
-      this.data = data;
-
-      /** @param {Template} children */
-      const appendTemplate = (children) => {
-        this.shadowRoot?.replaceChildren(...generateChildNodes(children));
-      };
-
-      const renderInitial = () => {
-        if (initial) {
-          /** @type {Template | Promise<Template>}*/ // @ts-ignore
-          const children = initial.bind(this)(finalProps, this.data);
-          appendTemplate(children);
-        }
-      };
-
-      /** @param {unknown} error */
-      const renderFallback = (error) => {
-        if (fallback) {
-          const finalFallbackProps = /** @type {any} */ (finalProps);
-          appendTemplate(fallback(error, finalFallbackProps, this.data));
-        } else {
-          throw error;
-        }
-      };
-
-      // Render the component.
-      try {
-        /** @type {Template | Promise<Template>}*/ // @ts-ignore
-        const renderResult = render.bind(this)(finalProps, this.data);
-        if (renderResult instanceof Promise) {
-          renderInitial();
-          renderResult.then(appendTemplate).catch(renderFallback);
-        } else {
-          appendTemplate(renderResult);
-        }
-      } catch (error) {
-        renderFallback(error);
-      }
-
-      // Store component event listeners.
-      for (const [key, value] of Object.entries(finalProps)) {
-        if (key.startsWith('on:')) {
-          this.addEventListener(key.slice(3), value);
-        }
-      }
-
-      this.bullet__isSetup = true;
+      CUSTOM_ELEMENT_STYLES.set(elementTagname, stylesheet);
     }
 
-    /**
-     * @param {string} selector
-     * @returns {Element | null}
-     */
-    select = (selector) => {
-      const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
-      return shadowRoot.querySelector(selector);
-    };
-
-    /**
-     * @param {string} selector
-     * @returns {NodeListOf<Element>}
-     */
-    selectAll = (selector) => {
-      const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
-      return shadowRoot.querySelectorAll(selector);
-    };
-
-    toString() {
-      CUSTOM_ELEMENT_INSTANCE_CACHE.set(this.bullet__instanceKey, this);
-      return `<template bt-placeholder key=${this.bullet__instanceKey}></template>`;
+    // Load global CSS.
+    if (globalStyles) {
+      const styleString =
+        typeof globalStyles === 'string'
+          ? globalStyles
+          : convertObjectToCssStylesheet(globalStyles);
+      CUSTOM_ELEMENT_GLOBAL_STYLES.set(elementTagname, {
+        data: styleString,
+        instances: 0,
+      });
     }
 
-    connectedCallback() {
-      const attributes = getElementAttributes(this);
-      const props = /** @type {Props} */ (attributes);
-      if (!this.bullet__isSetup) {
-        this.__bullet__setup(props);
+    class ComponentConstructor extends BulletComponent {
+      /**
+       * Whether or not the component has been rendered by Aim.
+       * @private
+       */
+      bullet__isSetup = false;
 
-        for (const key of Object.keys(attributes)) {
-          if (
-            (defaultProps && key in defaultProps) ||
-            GLOBAL_DATA.get(this.bullet__instanceKey)?.has(`props.${key}`)
-          ) {
-            this.removeAttribute(key);
+      /**
+       * The unique identifier for the component instance.
+       * @type {string}
+       */
+      bullet__instanceKey;
+
+      /**
+       * Called when the component is mounted to the DOM.
+       *
+       */
+      bullet__onMounted = onMounted;
+
+      /**
+       * Called when the component is unmounted from the DOM.
+       */
+      bullet__onUnMounted = onUnMounted;
+
+      /**
+       * The data signal for the component instance.
+       * @type {ComponentData}
+       */
+      // @ts-ignore
+      data = {};
+
+      /** @type {any} */
+      bullet__finalProps;
+
+      constructor() {
+        super();
+        this.attachShadow({ mode: 'open' });
+        const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
+
+        const stylesheet = CUSTOM_ELEMENT_STYLES.get(elementTagname);
+        if (stylesheet) {
+          shadowRoot.adoptedStyleSheets = [stylesheet];
+        }
+        const globalStyles = CUSTOM_ELEMENT_GLOBAL_STYLES.get(elementTagname);
+        if (globalStyles) {
+          globalStyles.instances += 1;
+
+          if (globalStyles.instances === 1) {
+            const styleElement = document.createElement('style');
+            styleElement.setAttribute('blt-component', elementTagname);
+            styleElement.innerHTML = globalStyles.data;
+            document.head.appendChild(styleElement);
           }
         }
+
+        this.bullet__instanceKey = generateInstanceKey(elementTagname);
       }
 
-      this.bullet__onMountReturn = this.bullet__onMounted?.(
-        /** @type {any} */ (this.bullet__finalProps ?? props)
-      );
-    }
+      /**
+       * Sets up the component instance with the provided props and extra data.
+       * @param {Partial<Props>} [props] - The props to initialize the component with.
+       */
+      __bullet__setup(props = {}) {
+        const storage = new Map();
+        GLOBAL_DATA.set(this.bullet__instanceKey, storage);
+        storage.set('owner', this);
 
-    disconnectedCallback() {
-      CUSTOM_ELEMENT_INSTANCE_CACHE.delete(this.bullet__instanceKey);
-      GLOBAL_DATA.delete(this.bullet__instanceKey);
-      const globalStyles = CUSTOM_ELEMENT_GLOBAL_STYLES.get(elementTagname);
-      if (globalStyles) {
-        globalStyles.instances -= 1;
+        const finalProps = {
+          ...defaultProps,
+          ...props,
+        };
 
-        if (globalStyles.instances === 0) {
-          document
-            .querySelector(`style[blt-component="${elementTagname}"]`)
-            ?.remove();
+        this.bullet__finalProps = finalProps;
+
+        // Setup component data.
+        /** @type ComponentData */ // @ts-ignore
+        const data = componentData?.bind(this)?.(finalProps);
+        this.data = data;
+
+        /** @param {Template} children */
+        const appendTemplate = (children) => {
+          this.shadowRoot?.replaceChildren(...generateChildNodes(children));
+        };
+
+        const renderInitial = () => {
+          if (initial) {
+            /** @type {Template | Promise<Template>}*/ // @ts-ignore
+            const children = initial.bind(this)(finalProps, this.data);
+            appendTemplate(children);
+          }
+        };
+
+        /** @param {unknown} error */
+        const renderFallback = (error) => {
+          if (fallback) {
+            const finalFallbackProps = /** @type {any} */ (finalProps);
+            appendTemplate(fallback(error, finalFallbackProps, this.data));
+          } else {
+            throw error;
+          }
+        };
+
+        // Render the component.
+        try {
+          /** @type {Template | Promise<Template>}*/ // @ts-ignore
+          const renderResult = render.bind(this)(finalProps, this.data);
+          if (renderResult instanceof Promise) {
+            renderInitial();
+            renderResult.then(appendTemplate).catch(renderFallback);
+          } else {
+            appendTemplate(renderResult);
+          }
+        } catch (error) {
+          renderFallback(error);
         }
+
+        // Store component event listeners.
+        for (const [key, value] of Object.entries(finalProps)) {
+          if (key.startsWith('on:')) {
+            this.addEventListener(key.slice(3), value);
+          }
+        }
+
+        this.bullet__isSetup = true;
       }
 
-      this.bullet__onMountReturn?.();
-      this.bullet__onUnMounted?.();
+      /**
+       * @param {string} selector
+       * @returns {Element | null}
+       */
+      select = (selector) => {
+        const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
+        return shadowRoot.querySelector(selector);
+      };
+
+      /**
+       * @param {string} selector
+       * @returns {NodeListOf<Element>}
+       */
+      selectAll = (selector) => {
+        const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
+        return shadowRoot.querySelectorAll(selector);
+      };
+
+      toString() {
+        CUSTOM_ELEMENT_INSTANCE_CACHE.set(this.bullet__instanceKey, this);
+        return `<template bt-placeholder key=${this.bullet__instanceKey}></template>`;
+      }
+
+      connectedCallback() {
+        const attributes = getElementAttributes(this);
+        const props = /** @type {Props} */ (attributes);
+        if (!this.bullet__isSetup) {
+          this.__bullet__setup(props);
+
+          for (const key of Object.keys(attributes)) {
+            if (
+              (defaultProps && key in defaultProps) ||
+              GLOBAL_DATA.get(this.bullet__instanceKey)?.has(`props.${key}`)
+            ) {
+              this.removeAttribute(key);
+            }
+          }
+        }
+
+        this.bullet__onMountReturn = this.bullet__onMounted?.(
+          /** @type {any} */ (this.bullet__finalProps ?? props)
+        );
+      }
+
+      disconnectedCallback() {
+        CUSTOM_ELEMENT_INSTANCE_CACHE.delete(this.bullet__instanceKey);
+        GLOBAL_DATA.delete(this.bullet__instanceKey);
+        const globalStyles = CUSTOM_ELEMENT_GLOBAL_STYLES.get(elementTagname);
+        if (globalStyles) {
+          globalStyles.instances -= 1;
+
+          if (globalStyles.instances === 0) {
+            document
+              .querySelector(`style[blt-component="${elementTagname}"]`)
+              ?.remove();
+          }
+        }
+
+        this.bullet__onMountReturn?.();
+        this.bullet__onUnMounted?.();
+      }
     }
-  }
 
-  customElements.define(elementTagname, ComponentConstructor);
-  CUSTOM_ELEMENT_MAP.set(elementTagname, ComponentConstructor);
+    customElements.define(elementTagname, ComponentConstructor);
+    CUSTOM_ELEMENT_MAP.set(elementTagname, ComponentConstructor);
 
-  /** @param {Partial<Props>} [props] */
-  function factory(props) {
-    const Constructor = CUSTOM_ELEMENT_MAP.get(
-      factory.tagName.replace(/\\\./g, '.')
-    );
-    const element = /** @type {ComponentConstructor} */ (
-      new Constructor(props)
-    );
-    element.__bullet__setup(props);
+    /** @param {Partial<Props>} [props] */
+    function factory(props) {
+      const Constructor = CUSTOM_ELEMENT_MAP.get(
+        factory.tagName.replace(/\\\./g, '.')
+      );
+      const element = /** @type {ComponentConstructor} */ (
+        new Constructor(props)
+      );
+      element.__bullet__setup(props);
 
-    return replaceComponentPlaceholders(element);
-  }
+      return replaceComponentPlaceholders(element);
+    }
 
-  factory.tagName = elementTagname.replace(/\./g, '\\.');
+    factory.tagName = elementTagname.replace(/\./g, '\\.');
 
-  // @ts-ignore
-  return factory;
+    // @ts-ignore
+    return factory;
+  };
+
+  return {
+    // @ts-ignore
+    createElement,
+  };
 }
+
+/**
+ * @type {(setupOptions?: SetupOptions) => SetupResult}
+ */
+export const setup = setupInternal;
+export const { createElement } = setup();

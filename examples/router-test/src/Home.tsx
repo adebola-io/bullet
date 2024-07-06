@@ -1,7 +1,8 @@
-import { component, css } from '../../../library';
+import { css } from '../../../library';
 import Card, { type CardProps } from './Card';
+import { createElement } from './setup';
 
-export default component({
+export default createElement({
   tag: 'home-page',
 
   async render() {

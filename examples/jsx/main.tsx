@@ -1,8 +1,8 @@
-import { component, css, html } from '../../index.js';
+import { createElement, css, html } from '../../index.js';
 import { Signal } from '@adbl/signals';
 import '../../library/jsx-runtime.js';
 
-const Counter = component({
+const Counter = createElement({
   render() {
     const count = Signal.source(0);
     count.createEffect((newCount) => {
@@ -17,10 +17,10 @@ const Counter = component({
       </div>,
       <output>{count.value}</output>,
       <div class="ButtonRow">
-        <button onclick={() => count.value--} type="button">
+        <button on:click={() => count.value--} type="button">
           Decrement
         </button>
-        <button onclick={() => count.value++} type="button">
+        <button on:click={() => count.value++} type="button">
           Increment
         </button>
       </div>,

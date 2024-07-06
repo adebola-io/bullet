@@ -1,4 +1,4 @@
-import { component, css } from '../component.js';
+import { createElement, css } from '../component.js';
 import { LazyRoute } from './lazy.js';
 import { MatchedRoute, RouteTree } from './routeTree.js';
 
@@ -6,7 +6,11 @@ export * from './lazy.js';
 export * from './routeTree.js';
 
 /**
- * @typedef {import('./routeTree.js').RouteRecords<ReturnType<typeof component> | LazyRoute>} RouteRecords
+ * @typedef {import('../component.js').ElementConstructor} ElementConstructor
+ */
+
+/**
+ * @typedef {import('./routeTree.js').RouteRecords<ReturnType<ElementConstructor> | LazyRoute>} RouteRecords
  *
  */
 
@@ -29,13 +33,13 @@ let ROUTER_INSTANCE = null;
  */
 
 export class Router {
-  /** @private @type {ReturnType<ReturnType<typeof component>>[]} */
+  /** @private @type {ReturnType<ReturnType<ElementConstructor>>[]} */
   outlets = [];
 
   /** @private @type {HTMLElement[]} */
   links = [];
 
-  /** @private RouteTree<ReturnType<typeof component>> */ routeTree;
+  /** @private RouteTree<ReturnType<ElementConstructor>> */ routeTree;
 
   /** @param {RouterOptions} routeOptions */
   constructor(routeOptions) {
@@ -83,9 +87,9 @@ export class Router {
       return true;
     }
 
-    /** @type {MatchedRoute<ReturnType<typeof component> | LazyRoute> | null} */
+    /** @type {MatchedRoute<ReturnType<ElementConstructor> | LazyRoute> | null} */
     let lastMatchedRoute = matchResult.subTree;
-    /** @type {MatchedRoute<ReturnType<typeof component> | LazyRoute> | null} */
+    /** @type {MatchedRoute<ReturnType<ElementConstructor> | LazyRoute> | null} */
     let currentMatchedRoute = matchResult.subTree;
     let outletIndex = 0;
 
@@ -95,7 +99,7 @@ export class Router {
       if (outlet.dataset.routeName !== currentMatchedRoute.fullPath) {
         const matchedComponentOrLazyLoader = currentMatchedRoute.component;
 
-        /** @type {ReturnType<typeof component>} */
+        /** @type {ReturnType<ElementConstructor>} */
         let matchedComponent;
 
         if (matchedComponentOrLazyLoader === null) {
@@ -143,7 +147,6 @@ export class Router {
 
     for (const link of this.links) {
       link.toggleAttribute('active', link.dataset.href === path);
-      console.log(link);
     }
 
     return true;
@@ -158,7 +161,7 @@ export class Router {
    */
   Outlet = (() => {
     const self = this;
-    return component({
+    return createElement({
       tag: 'route-outlet',
       onMounted() {
         // @ts-ignore
@@ -182,7 +185,7 @@ export class Router {
   Link = ((/** @type {RouteLinkProps} */ props) => {
     const self = this;
 
-    return component({
+    return createElement({
       tag: 'route-link',
       defaultProps: props,
       onMounted() {

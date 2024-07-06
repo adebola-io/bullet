@@ -1,6 +1,7 @@
-import { component, css } from '../../../library';
+import { css } from '../../../library';
+import { createElement } from './setup';
 
-export default component({
+export default createElement({
   tag: 'about-page',
 
   render() {

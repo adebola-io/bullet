@@ -1,9 +1,5 @@
-import {
-  component,
-  css,
-  useRouter,
-  type BulletElement,
-} from '../../../library';
+import { css, useRouter, type BulletElement } from '../../../library';
+import { createElement } from './setup';
 import { searchBarText } from './signals';
 
 export interface CardProps {
@@ -15,7 +11,7 @@ export interface CardProps {
   tags: string[];
 }
 
-export default component({
+export default createElement({
   render(props: CardProps) {
     const { Link } = useRouter();
 

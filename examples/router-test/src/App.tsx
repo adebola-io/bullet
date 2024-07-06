@@ -1,4 +1,5 @@
-import { component, css, useRouter } from '../../../library';
+import { css, useRouter } from '../../../library';
+import { createElement } from './setup';
 import { searchBarText } from './signals';
 
 function updateSearchBarText(e: Event) {
@@ -6,7 +7,7 @@ function updateSearchBarText(e: Event) {
   searchBarText.value = target.value;
 }
 
-export default component({
+export default createElement({
   render() {
     const { Link, Outlet } = useRouter();
 

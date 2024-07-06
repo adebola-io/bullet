@@ -157,7 +157,7 @@ export class Router {
           continue;
         }
 
-        replacementNode = route?.component() ?? null;
+        replacementNode = route?.createElement() ?? null;
       } catch (error) {
         console.error(error);
       }
@@ -184,7 +184,7 @@ export class Router {
 
   Outlet = (() => {
     const self = this;
-    return component({
+    return createElement({
       tag: 'route-outlet',
       onMounted() {
         // @ts-ignore
@@ -210,7 +210,7 @@ export class Router {
   Link = ((/** @type {RouteLinkProps} */ props) => {
     const self = this;
 
-    return component({
+    return createElement({
       tag: 'route-link',
       defaultProps: props,
 

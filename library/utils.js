@@ -159,9 +159,9 @@ export function generateInstanceKey(elementIdentifier) {
  * @returns {string}
  */
 export function generateComponentName() {
-  let componentName = `.${Math.random().toString(36).slice(2, 10)}`;
+  let componentName = `bt-${Math.random().toString(36).slice(2, 10)}`;
   while (customElements.get(componentName)) {
-    componentName = `.${Math.random().toString(36).slice(2, 10)}`;
+    componentName = `bt-${Math.random().toString(36).slice(2, 10)}`;
   }
   return componentName;
 }

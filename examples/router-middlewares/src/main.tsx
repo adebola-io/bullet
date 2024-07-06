@@ -1,8 +1,8 @@
 import '../../../library/jsx-runtime';
 
-import { component } from '../../../library';
+import { createElement } from '../../../library';
 
-const App = component({
+const App = createElement({
   render() {
     return <div>Hello world.</div>;
   },

@@ -2,6 +2,7 @@ import { createWebRouter, type RouteRecords } from '../../../library/router';
 import Home from './Home';
 import App from './App';
 import { lazy } from '../../../library';
+import { createElement } from './setup';
 
 const routes: RouteRecords = [
   {
@@ -19,6 +20,11 @@ const routes: RouteRecords = [
         name: 'about page',
         path: 'about',
         component: lazy(() => import('./About')),
+      },
+      {
+        name: '404 not found',
+        path: '*',
+        component: createElement(() => 'This page does not exist.'),
       },
     ],
   },
