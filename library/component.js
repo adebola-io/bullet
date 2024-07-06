@@ -65,7 +65,7 @@ import {
  */
 
 /**
- * @typedef {AimRenderNode | AimRenderNode[]} Template
+ * @typedef {AimRenderNode | AimRenderNode[] | undefined} Template
  */
 
 /**
@@ -154,9 +154,6 @@ class BulletComponent extends HTMLElement {}
  * @property {string} [namespace]
  * A namespace to scope your custom elements to. This will ensure that they do not affect
  * other custom elements in the DOM.
- *
- * @property {CSSStyleSheet[]} [stylesheets]
- * This allows you to add stylesheets that should be available to every element that is created.
  */
 
 /**
@@ -170,7 +167,8 @@ class BulletComponent extends HTMLElement {}
 
 /** @param {SetupOptions} [setupOptions] */
 function setupInternal(setupOptions) {
-  const { namespace, stylesheets } = setupOptions ?? {};
+  const { namespace } = setupOptions ?? {};
+
   /**
    * Defines a custom HTML element with a shadow DOM and optional styles.
    *
@@ -324,17 +322,6 @@ function setupInternal(setupOptions) {
         if (stylesheet) {
           shadowRoot.adoptedStyleSheets = [stylesheet];
         }
-        const globalStyles = CUSTOM_ELEMENT_GLOBAL_STYLES.get(elementTagname);
-        if (globalStyles) {
-          globalStyles.instances += 1;
-
-          if (globalStyles.instances === 1) {
-            const styleElement = document.createElement('style');
-            styleElement.setAttribute('blt-component', elementTagname);
-            styleElement.innerHTML = globalStyles.data;
-            document.head.appendChild(styleElement);
-          }
-        }
 
         this.bullet__instanceKey = generateInstanceKey(elementTagname);
       }
@@ -443,6 +430,18 @@ function setupInternal(setupOptions) {
             ) {
               this.removeAttribute(key);
             }
+          }
+        }
+
+        const globalStyles = CUSTOM_ELEMENT_GLOBAL_STYLES.get(elementTagname);
+        if (globalStyles) {
+          globalStyles.instances += 1;
+
+          if (globalStyles.instances === 1) {
+            const styleElement = document.createElement('style');
+            styleElement.setAttribute('blt-component', elementTagname);
+            styleElement.innerHTML = globalStyles.data;
+            document.head.appendChild(styleElement);
           }
         }
 

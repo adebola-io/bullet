@@ -50,15 +50,15 @@ export class Router {
    * Pushes the specified path to the browser's history and renders the corresponding route component.
    *
    * @param {string} path - The path to navigate to.
-   * @throws {Error} If the specified path does not match any defined route.
+   * @return {undefined}
    */
   navigate(path) {
-    if (window.location.pathname === path) {
-      return;
-    }
-    this.load(path).then(() => {
-      history.pushState(null, '', path);
+    this.load(path).then((wasLoaded) => {
+      if (wasLoaded) {
+        history.pushState(null, '', path);
+      }
     });
+    return;
   }
 
   /**
@@ -128,7 +128,13 @@ export class Router {
         outlet.dataset.routeName = currentMatchedRoute.fullPath;
         const renderedComponent = matchedComponent();
 
-        outlet.shadowRoot?.replaceChildren(renderedComponent);
+        // if the component performs a redirect, it would change the route
+        // stored in the outlet's dataset, so we need to check before replacing.
+        if (outlet.dataset.routeName === currentMatchedRoute.fullPath) {
+          outlet.shadowRoot?.replaceChildren(renderedComponent);
+        } else {
+          return false;
+        }
       }
 
       outletIndex++;
