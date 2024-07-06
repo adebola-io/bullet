@@ -1,27 +1,46 @@
-import { component } from '../component.js';
+import { component, css } from '../component.js';
 import { LazyRoute } from './lazy.js';
+import { MatchedRoute, RouteTree } from './routeTree.js';
 
 export * from './lazy.js';
+export * from './routeTree.js';
 
-/** @type {Router | undefined } */
-let ROUTER_INSTANCE = undefined;
+/**
+ * @typedef {import('./routeTree.js').RouteRecords<ReturnType<typeof component> | LazyRoute>} RouteRecords
+ *
+ */
+
+/** @type {Router | null } */
+let ROUTER_INSTANCE = null;
+
+/**
+ * @typedef RouterOptions
+ * @property {RouteRecords} routes
+ */
+
+/**
+ * @typedef RouteLinkProps
+ * @property {string} to
+ * The path to navigate to when the link is clicked.
+ * @property {boolean} plain
+ * If `true`, the link will reset the default styles for the `<a>` element.
+ * @property {string} [class]
+ * The CSS class to apply to the link.
+ */
 
 export class Router {
-  /** @param {Route[]} routes */
-  constructor(routes) {
-    this.routes = routes;
-  }
-
-  currentHistoryIndex = 0;
-
-  /** @type {Map<Element, Route>} */
-  activeRoutes = new Map();
-
-  /** @type {Element[]} */
+  /** @private @type {ReturnType<ReturnType<typeof component>>[]} */
   outlets = [];
 
-  /** @type {import('../component.js').BulletElement<{to: string}>[]} */
+  /** @private @type {HTMLElement[]} */
   links = [];
+
+  /** @private RouteTree<ReturnType<typeof component>> */ routeTree;
+
+  /** @param {RouterOptions} routeOptions */
+  constructor(routeOptions) {
+    this.routeTree = RouteTree.fromRouteRecords(routeOptions.routes);
+  }
 
   /**
    * Pushes the specified path to the browser's history and renders the corresponding route component.
@@ -33,139 +52,98 @@ export class Router {
     if (window.location.pathname === path) {
       return;
     }
+    this.load(path).then(() => {
+      history.pushState(null, '', path);
+    });
+  }
 
-    if (this.load({ path })) {
-      history.pushState({ index: this.currentHistoryIndex }, '', path);
-    }
+  /**
+   * Navigates back in the browser's history.
+   */
+  async back() {
+    history.back();
   }
 
   /**
    * Loads the route component corresponding to the specified path into the `<router-outlet>`
    * element.
    *
-   * @param {{event?: PopStateEvent, path: string }} data
+   * @param {string} path
+   * @returns {Promise<boolean>} A promise that resolves to `true` if the route was loaded successfully, `false` otherwise.
    */
-  load(data) {
-    const { event, path } = data;
+  async load(path) {
+    const matchResult = this.routeTree.match(path);
+    matchResult.flattenTransientRoutes();
 
-    const newHistoryIndex = event?.state
-      ? event.state.index
-      : this.currentHistoryIndex;
-
-    let direction;
-    if (newHistoryIndex > this.currentHistoryIndex) {
-      direction = 'forward';
-    } else if (newHistoryIndex < this.currentHistoryIndex) {
-      direction = 'backward';
-    } else {
-      direction = 'undefined';
-    }
-
-    if (direction === 'forward' || direction === 'undefined') {
-      this.currentHistoryIndex += 1;
-    }
-
-    if (direction === 'backward') {
-      this.currentHistoryIndex -= 1;
-    }
-
-    // If the Outlet component has not been instantiated, do nothing.
-    if (!this.Outlet.tagName) {
-      return;
-    }
-
-    if (path.startsWith('/')) {
-      try {
-        new URL(window.location.origin + path);
-      } catch (error) {
-        console.error(`Invalid path: ${path}`);
-        return;
-      }
-    } else {
-      console.error(`Invalid path: ${path}`);
-      return;
-    }
-
-    const pathSegments = ['/'].concat(path.split('/').filter(Boolean));
-
-    // Find the route corresponding to the specified path.
-    /** @type {Route[]} */
-    const routeMatches = [];
-    findRouteMatches(this.routes, pathSegments, routeMatches);
-
-    if (
-      routeMatches.length === 0 ||
-      !routeMatches[routeMatches.length - 1].path.endsWith(
-        pathSegments[pathSegments.length - 1]
-      )
-    ) {
-      console.error(`No route matches path: ${path}`);
-      const outlet = this.outlets[this.outlets.length - 1];
-      this.activeRoutes.delete(outlet);
+    if (matchResult.subTree === null) {
+      console.warn(`No route matches path: ${path}`);
+      const outlet = this.outlets[0];
+      outlet?.removeAttribute('data-route-name');
       outlet?.shadowRoot?.replaceChildren(emptyRoute(path));
       return true;
     }
 
-    const newActiveRoutes = new Map();
+    /** @type {MatchedRoute<ReturnType<typeof component> | LazyRoute> | null} */
+    let lastMatchedRoute = matchResult.subTree;
+    /** @type {MatchedRoute<ReturnType<typeof component> | LazyRoute> | null} */
+    let currentMatchedRoute = matchResult.subTree;
+    let outletIndex = 0;
 
-    // Activate route links
-    for (const link of this.links) {
-      link.removeAttribute('active');
-    }
+    while (currentMatchedRoute) {
+      const outlet = this.outlets[outletIndex];
 
-    for (let i = 0; i < routeMatches.length; i++) {
-      const route = routeMatches[i];
-      const outlet = this.outlets[i];
-      const builtRoute = routeMatches
-        .slice(0, i + 1)
-        .map((r) => r.path.replace(/\//g, ''))
-        .join('/');
+      if (outlet.dataset.routeName !== currentMatchedRoute.fullPath) {
+        const matchedComponentOrLazyLoader = currentMatchedRoute.component;
 
-      newActiveRoutes.set(outlet, route);
-      const matchingLinks = this.links.filter((link) => {
-        return link.data.to === builtRoute;
-      });
-      for (const link of matchingLinks) {
-        link.toggleAttribute('active', true);
-      }
+        /** @type {ReturnType<typeof component>} */
+        let matchedComponent;
 
-      if (outlet === undefined || this.activeRoutes.get(outlet) === route) {
-        continue;
-      }
-
-      /** @type {Node?} */
-      let replacementNode = null;
-
-      try {
-        if (route?.component instanceof LazyRoute) {
-          const imported = route.component.importer();
-          if (imported instanceof Promise) {
-            imported.then((component) => {
-              replacementNode = component.default();
-              outlet.shadowRoot?.replaceChildren(replacementNode);
-            });
-
+        if (matchedComponentOrLazyLoader === null) {
+          if (currentMatchedRoute.child) {
+            currentMatchedRoute = currentMatchedRoute.child;
             continue;
           }
-
-          replacementNode = imported();
-          outlet.shadowRoot?.replaceChildren(replacementNode);
-
-          continue;
+          console.warn(`No component from route: ${path}`);
+          const outlet = this.outlets[outletIndex];
+          outlet?.removeAttribute('data-route-name');
+          outlet?.shadowRoot?.replaceChildren(emptyRoute(path));
+          return true;
         }
 
-        replacementNode = route?.component() ?? null;
-      } catch (error) {
-        console.error(error);
+        if (matchedComponentOrLazyLoader instanceof LazyRoute) {
+          const component = await matchedComponentOrLazyLoader.importer();
+          if ('default' in component) {
+            matchedComponent = component.default;
+          } else {
+            matchedComponent = component;
+          }
+        } else {
+          matchedComponent = matchedComponentOrLazyLoader;
+        }
+
+        outlet.dataset.routeName = currentMatchedRoute.fullPath;
+        const renderedComponent = matchedComponent();
+
+        outlet.shadowRoot?.replaceChildren(renderedComponent);
       }
 
-      outlet.shadowRoot?.replaceChildren(replacementNode ?? emptyRoute(path));
+      outletIndex++;
+      lastMatchedRoute = currentMatchedRoute;
+      currentMatchedRoute = currentMatchedRoute.child;
     }
-    this.activeRoutes = newActiveRoutes;
 
-    const lastRouteMatch = routeMatches[routeMatches.length - 1];
-    if (lastRouteMatch.redirect) {
-      this.navigate(lastRouteMatch.redirect);
+    for (const spareOutlet of this.outlets.slice(outletIndex)) {
+      spareOutlet.removeAttribute('data-route-name');
+      spareOutlet.shadowRoot?.replaceChildren();
+    }
+
+    if (lastMatchedRoute.redirect) {
+      this.navigate(lastMatchedRoute.redirect);
+    }
+
+    for (const link of this.links) {
+      link.toggleAttribute('active', link.dataset.href === path);
+      console.log(link);
     }
 
     return true;
@@ -178,7 +156,6 @@ export class Router {
    * This component is used internally by the `Router` class to handle route changes and
    * render the appropriate component.
    */
-
   Outlet = (() => {
     const self = this;
     return component({
@@ -187,12 +164,10 @@ export class Router {
         // @ts-ignore
         self.outlets.push(this);
       },
-
       onUnMounted() {
         // @ts-ignore
         self.outlets.splice(self.outlets.indexOf(this), 1);
       },
-
       render: () => document.createElement('slot'),
     });
   })();
@@ -210,21 +185,14 @@ export class Router {
     return component({
       tag: 'route-link',
       defaultProps: props,
-
       onMounted() {
         // @ts-ignore
         self.links.push(this);
       },
-
-      data(props) {
-        return {
-          to: props.to,
-        };
-      },
-
       render(props) {
         const a = document.createElement('a');
         a.href = props.to;
+        this.dataset.href = props.to;
 
         a.addEventListener('click', (event) => {
           event.preventDefault();
@@ -241,13 +209,11 @@ export class Router {
         }
         return a;
       },
-
       onUnMounted() {
         // @ts-ignore
         self.links.splice(self.links.indexOf(this), 1);
       },
-
-      styles: `
+      styles: css`
         :host([plain]) a {
           text-decoration: none;
           color: inherit;
@@ -256,49 +222,26 @@ export class Router {
     });
   })();
 }
+
 /**
- * Creates a new web router instance with the provided options.
+ * Creates a new web-based router instance with the provided route configurations.
  *
- * The web router is a client-side routing solution that allows for navigation between different components or views within a web application. It handles browser history management, URL updates, and rendering the appropriate component based on the current URL path.
+ * This function sets up the necessary event listeners for handling browser history events and initial page load, and assigns the created router instance to the global `ROUTER_INSTANCE` variable.
  *
- * @module Router
- * @param {RouterOptions} routerOptions - The options for configuring the router.
+ * @param {RouterOptions} routerOptions - The options object for configuring the router.
  * @returns {Router} The created router instance.
- *
- * @example
- * // import the routes.
- * import appHome from './components/app-home.js';
- * import appAbout from './components/app-about.js';
- * // Define the routes
- * const routes = [
- *   {
- *     path: '/',
- *     component: appHome
- *   },
- *   {
- *     path: '/about',
- *     component: appAbout
- *   }
- * ];
- *
- * // Create the router instance
- * const router = createWebRouter({ routes });
- *
- * // Start the router
- * document.querySelector('#root').append(router.Outlet());
  */
 export function createWebRouter(routerOptions) {
-  const router = new Router(/** @type {Route[]} */ (routerOptions.routes));
+  const router = new Router(routerOptions);
+  ROUTER_INSTANCE = router;
 
-  window.addEventListener('popstate', (event) => {
-    router.load({ event, path: location.pathname });
+  window.addEventListener('popstate', () => {
+    router.load(window.location.pathname);
   });
 
   window.addEventListener('load', () => {
-    router.load({ path: location.pathname });
+    router.load(window.location.pathname);
   });
-
-  ROUTER_INSTANCE = router;
 
   return router;
 }
@@ -325,36 +268,6 @@ export function useRouter() {
 }
 
 /**
- * @typedef RouteLinkProps
- * @property {string} to
- * The path to navigate to when the link is clicked.
- * @property {boolean} plain
- * If `true`, the link will reset the default styles for the `<a>` element.
- * @property {string} [class]
- * The CSS class to apply to the link.
- */
-
-/**
- * @typedef RouterOptions
- * @property {string} [namespace]
- * The namespace of the router, which would prevent it from clashing with other
- * instances of the Router class. If only one router is needed, this can be omitted.
- * @property {RouteItem[]} routes
- */
-
-/**
- * @typedef {RouteItem & { isActive: boolean }} Route
- */
-
-/**
- * @typedef RouteItem
- * @property {string} path
- * @property {import("../component.js").Component<{}> | LazyRoute} component
- * @property {RouteItem[]} [children]
- * @property {string} [redirect]
- */
-
-/**
  * Generates a DocumentFragment node with a text node indicating that the specified route path was not found.
  *
  * @param {string} path - The route path that was not found.
@@ -365,25 +278,4 @@ function emptyRoute(path) {
   const node = new DocumentFragment();
   node.appendChild(document.createTextNode(`Route not found: ${path}`));
   return node;
-}
-
-/**
- * Finds all routes that match the given path.
- *
- * @param {RouteItem[]} routes - An array of route items to search through.
- * @param {string[]} pathSegments - An array of path segments to search for in the routes.
- * @param {RouteItem[]} matches - The result array to append the matching routes to.
- */
-function findRouteMatches(routes, pathSegments, matches = []) {
-  for (const route of routes) {
-    if (route.path === pathSegments[0]) {
-      matches.push(route);
-
-      if (route.children !== undefined) {
-        findRouteMatches(route.children, pathSegments.slice(1), matches);
-      }
-
-      return;
-    }
-  }
 }
