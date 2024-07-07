@@ -86,12 +86,12 @@ import '@adbl/bullet/library/jsx-runtime.js';
 You can define your own custom elements with the `createElement` function.
 Here's an example of a simple component:
 
-```js
+```jsx
 import { createElement} from '@adbl/bullet';
 
 const MyElement = createElement({
   tag: 'my-counter',
-  render: () => <div>Hello, World!</div>)
+  render: () => <div>Hello, World!</div>
 });
 ```
 
@@ -108,7 +108,7 @@ You can then use your custom element like any other HTML tag:
 
 or you can instantiate the constructor in javascript:
 
-```js
+```jsx
 document.body.append(<MyElement />);
 ```
 
@@ -131,7 +131,7 @@ const Box = createElement({
 
 You can also use the html template function to automatically parse strings:
 
-```js
+```jsx
 import { component, html } from '@adbl/bullet';
 
 const Card = createElement({
@@ -151,7 +151,7 @@ const Card = createElement({
 
 Components can be styled using the `styles` property on the component object. All styles are generated as constructed stylesheets and are automatically scoped only to the parent web component.
 
-```ts
+```tsx
 const Button = createElement({
   tag: 'my-button',
   render: (props) => <button>{props.label}</button>,
@@ -169,7 +169,7 @@ const Button = createElement({
 
 By default, the button styles will only apply to buttons within the `Button` component. If you want to define styles that can apply to the whole document, you can use the `globalStyles` property instead:
 
-```ts
+```tsx
 const Button = createElement({
   tag: 'my-button',
   render: (props) => <button>{props.label}</button>,
@@ -200,7 +200,7 @@ Whenever there is at least one instance of the component in the DOM, the documen
 
 You can also declare custom elements without tag names, meaning the tag names will be auto-generated:
 
-```js
+```jsx
 const Heading = createElement((props) => <h1>{props.text}</h1>);
 
 document.body.append(<Heading text="Hello there" />);
@@ -405,7 +405,7 @@ Bullet includes a straightforward yet powerful routing system for single-page ap
 
 To implement routing in your Bullet application, use the `createWebRouter` function:
 
-```javascript
+```tsx
 import {
   createWebRouter,
   type RouteRecords,
@@ -468,7 +468,7 @@ After creating a router, you can use it from within your elements with the `useR
 1. `Link`: For creating navigation links
 2. `Outlet`: Renders the current route's component
 
-```javascript
+```jsx
 import { createElement, useRouter } from '@adbl/bullet';
 
 const App = createElement({
@@ -511,7 +511,7 @@ const routes: RouteRecords = [
     children: [
       {
         name: 'overview',
-        path: '',
+        path: 'overview',
         component: Overview,
       },
       {
@@ -537,7 +537,7 @@ const Dashboard = createElement({
       <div>
         <h1>Dashboard</h1>
         <nav>
-          <Link to="/dashboard">Overview</Link>
+          <Link to="/dashboard/overview">Overview</Link>
           <Link to="/dashboard/stats">Stats</Link>
         </nav>
         <Outlet /> {/* This will render the active child route */}
@@ -547,7 +547,7 @@ const Dashboard = createElement({
 });
 ```
 
-With this setup, when you navigate to `/dashboard`, the Dashboard component will render, and its inner Outlet will display the Overview component. When you navigate to `/dashboard/stats`, the Dashboard component will still be rendered, but the inner Outlet will now display the Stats component.
+With this setup, when you navigate to `/dashboard/overview`, the Dashboard component will render, and its inner Outlet will display the Overview component. When you navigate to `/dashboard/stats`, the Dashboard component will still be rendered, but the inner Outlet will now display the Stats component.
 
 ### Lazy Loading Routes
 
@@ -563,7 +563,7 @@ This technique allows for code splitting and on-demand loading of components.
 
 For programmatic navigation, use the router's `navigate` method:
 
-```javascript
+```jsx
 const ProfileButton = createElement({
   render: () => {
     const router = useRouter();
@@ -588,7 +588,7 @@ You can define routes with dynamic parameters:
 
 Access these parameters in your component:
 
-```javascript
+```jsx
 const Profile = createElement({
   render() {
     const router = useRouter();
