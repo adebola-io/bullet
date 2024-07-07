@@ -5,6 +5,7 @@ import {
   css,
   useRouter,
 } from '../../../library';
+import auth from './middlewares/auth';
 
 let authenticated = false;
 
@@ -86,6 +87,8 @@ const router = createWebRouter({
       ],
     },
   ],
+
+  middlewares: [auth],
 });
 
 document.body.appendChild(<router.Outlet />);

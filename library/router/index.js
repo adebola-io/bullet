@@ -1,9 +1,11 @@
 import { createElement, css } from '../component.js';
 import { LazyRoute } from './lazy.js';
+import { RouterMiddleware, RouterMiddlewareResponse } from './middleware.js';
 import { MatchedRoute, RouteTree } from './routeTree.js';
 
 export * from './lazy.js';
 export * from './routeTree.js';
+export * from './middleware.js';
 
 /**
  * @typedef {import('../component.js').ElementConstructor} ElementConstructor
@@ -20,6 +22,7 @@ let ROUTER_INSTANCE = null;
 /**
  * @typedef RouterOptions
  * @property {RouteRecords} routes
+ * @property {RouterMiddleware[]} [middlewares]
  */
 
 /**
@@ -42,11 +45,19 @@ export class Router {
   /** @type {Map<string, string>} */
   params = new Map();
 
-  /** @private RouteTree<ReturnType<ElementConstructor>> */ routeTree;
+  /** @private RouteTree<ReturnType<ElementConstructor>> */
+  routeTree;
+
+  /** @private RouterMiddleware[] */
+  middlewares;
+
+  /** @private @type {import('./middleware.js').RouteData | null} */
+  currentPath = null;
 
   /** @param {RouterOptions} routeOptions */
   constructor(routeOptions) {
     this.routeTree = RouteTree.fromRouteRecords(routeOptions.routes);
+    this.middlewares = routeOptions.middlewares ?? [];
   }
 
   /**
@@ -82,6 +93,40 @@ export class Router {
     const matchResult = this.routeTree.match(path);
     matchResult.flattenTransientRoutes();
     this.params = matchResult.params;
+
+    const targetMatch = matchResult.leaf();
+    if (targetMatch !== null) {
+      const sourcePath = this.currentPath
+        ? {
+            name: this.currentPath.name,
+            params: this.currentPath.params,
+            query: this.currentPath.query,
+            fullPath: this.currentPath.fullPath,
+          }
+        : null;
+
+      const targetPath = {
+        name: targetMatch.name,
+        params: matchResult.params,
+        query: matchResult.searchQueryParams,
+        fullPath: targetMatch.fullPath,
+      };
+
+      const middlewareArgs = {
+        from: sourcePath,
+        to: targetPath,
+      };
+
+      for (const middleware of this.middlewares) {
+        let middlewareResponse = await middleware.callback(middlewareArgs);
+        if (middlewareResponse instanceof RouterMiddlewareResponse) {
+          if (middlewareResponse.type === 'redirect') {
+            this.navigate(middlewareResponse.path);
+            return false;
+          }
+        }
+      }
+    }
 
     if (matchResult.subTree === null) {
       console.warn(`No route matches path: ${path}`);
@@ -160,6 +205,13 @@ export class Router {
     if (lastMatchedRoute.redirect) {
       this.navigate(lastMatchedRoute.redirect);
     }
+
+    this.currentPath = {
+      name: lastMatchedRoute.name,
+      params: matchResult.params,
+      query: matchResult.searchQueryParams,
+      fullPath: lastMatchedRoute.fullPath,
+    };
 
     for (const link of this.links) {
       link.toggleAttribute('active', link.dataset.href === path);

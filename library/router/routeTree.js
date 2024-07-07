@@ -131,6 +131,18 @@ export class MatchResult {
       current = current.child;
     }
   }
+
+  /**
+   * Traverses the `subTree` property and returns the last non-null `child` node, effectively returning the leaf node of the subtree.
+   * @returns {MatchedRoute<T> | null} The leaf node of the subtree, or `null` if the subtree is empty.
+   */
+  leaf() {
+    let current = this.subTree;
+    while (current?.child) {
+      current = current.child;
+    }
+    return current;
+  }
 }
 
 /** @template T */
