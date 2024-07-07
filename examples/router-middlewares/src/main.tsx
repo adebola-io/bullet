@@ -80,6 +80,7 @@ const router = createWebRouter({
         {
           name: 'Profile',
           path: ':id',
+          title: 'Profile Page',
           component: Profile,
         },
       ],

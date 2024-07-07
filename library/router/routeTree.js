@@ -7,6 +7,9 @@
  * The path pattern to match against the URL.
  * @property {string} [redirect]
  * The path to redirect to when the route is matched, if there is no component.
+ * @property {string} [title]
+ * The title to give the document when the route is matched.
+ * if there are nested routes with a title set, the title will be overwritten.
  * @property {T} [component]
  * The component to render when the route is matched.
  * @property {RouteRecord<T>[]} children
@@ -22,6 +25,9 @@
  * The path pattern to match against the URL.
  * @property {string} [redirect]
  * The path to redirect to when the route is matched, if there is no component.
+ * @property {string} [title]
+ * The title to give the document when the route is matched.
+ * if there are nested routes with a title set, the title will be overwritten.
  * @property {T} component
  */
 
@@ -38,6 +44,7 @@
 /** @template T */
 export class Route {
   /** @type {string | null} */ name = null;
+  /** @type {string | null} */ title = null;
   /** @type {string} */ fullPath = '';
   /** @type {string | null} */ redirect = null;
   /** @type {T | null} */ component = null;
@@ -62,6 +69,7 @@ export class MatchedRoute {
   /** @type {string | null} */ name;
   /** @type {string} */ fullPath;
   /** @type {string | null} */ redirect;
+  /** @type {string | null} */ title;
   /** @type {T | null} */ component;
   /** @type {boolean} */ isDynamic;
   /** @type {boolean} */ isTransient;
@@ -78,6 +86,7 @@ export class MatchedRoute {
     this.redirect = route.redirect;
     this.isTransient = route.isTransient;
     this.child = null;
+    this.title = route.title;
   }
 }
 
@@ -359,6 +368,7 @@ RouteTree.fromRouteRecords = (routeRecords, parent = null) => {
     current.name = routeRecord.name ?? null;
     current.component = routeRecord.component;
     current.redirect = routeRecord.redirect ?? null;
+    current.title = routeRecord.title ?? null;
 
     const fullPath = `${parentFullPath}/${routeRecord.path}`;
     current.fullPath = fullPath.replace(/\/+/g, '/');

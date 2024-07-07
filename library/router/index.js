@@ -139,6 +139,9 @@ export class Router {
         // stored in the outlet's dataset, so we need to check before replacing.
         if (outlet.dataset.path === currentMatchedRoute.fullPath) {
           outlet.shadowRoot?.replaceChildren(renderedComponent);
+          if (currentMatchedRoute.title) {
+            document.title = currentMatchedRoute.title;
+          }
         } else {
           return false;
         }
