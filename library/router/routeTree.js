@@ -104,7 +104,12 @@ export class MatchResult {
   }
 
   /**
-   * Flattens the transient routes in the current match result.
+   * This method removes any intermediate transient routes from the current match result's subtree.
+   * It traverses the subtree and skips over any transient routes, effectively flattening the subtree
+   * by directly linking non-transient routes to their respective child routes.
+   *
+   * After calling this method, the `subTree` property will point to the first non-transient route in the subtree,
+   * and any remaining transient routes will be skipped over.
    */
   flattenTransientRoutes() {
     while (this.subTree?.isTransient) {

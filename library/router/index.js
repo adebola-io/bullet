@@ -86,7 +86,7 @@ export class Router {
     if (matchResult.subTree === null) {
       console.warn(`No route matches path: ${path}`);
       const outlet = this.outlets[0];
-      outlet?.removeAttribute('data-route-name');
+      outlet?.removeAttribute('data-path');
       outlet?.shadowRoot?.replaceChildren(emptyRoute(path));
       return true;
     }
@@ -100,7 +100,7 @@ export class Router {
     while (currentMatchedRoute) {
       const outlet = this.outlets[outletIndex];
 
-      if (outlet.dataset.routeName !== currentMatchedRoute.fullPath) {
+      if (outlet.dataset.path !== currentMatchedRoute.fullPath) {
         const matchedComponentOrLazyLoader = currentMatchedRoute.component;
 
         /** @type {ReturnType<ElementConstructor>} */
@@ -116,7 +116,7 @@ export class Router {
           }
           console.warn(`No component from route: ${path}`);
           const outlet = this.outlets[outletIndex];
-          outlet?.removeAttribute('data-route-name');
+          outlet?.removeAttribute('data-path');
           outlet?.shadowRoot?.replaceChildren(emptyRoute(path));
           return true;
         }
@@ -132,12 +132,12 @@ export class Router {
           matchedComponent = matchedComponentOrLazyLoader;
         }
 
-        outlet.dataset.routeName = currentMatchedRoute.fullPath;
+        outlet.dataset.path = currentMatchedRoute.fullPath;
         const renderedComponent = matchedComponent();
 
         // if the component performs a redirect, it would change the route
         // stored in the outlet's dataset, so we need to check before replacing.
-        if (outlet.dataset.routeName === currentMatchedRoute.fullPath) {
+        if (outlet.dataset.path === currentMatchedRoute.fullPath) {
           outlet.shadowRoot?.replaceChildren(renderedComponent);
         } else {
           return false;
@@ -175,12 +175,12 @@ export class Router {
   Outlet = (() => {
     const self = this;
     return createElement({
-      tag: 'route-outlet',
-      connected() {
+      tag: 'router-outlet',
+      connected: function () {
         // @ts-ignore
         self.outlets.push(this);
       },
-      disconnected() {
+      disconnected: function () {
         // @ts-ignore
         self.outlets.splice(self.outlets.indexOf(this), 1);
       },
@@ -189,23 +189,23 @@ export class Router {
   })();
 
   /**
-   * Defines a custom `<route-link>` component that renders an `<a>` element and handles click events to navigate to the specified route.
+   * Defines a custom `<router-link>` component that renders an `<a>` element and handles click events to navigate to the specified route.
    *
    * @param {RouteLinkProps} props - The component props.
    * @param {string} props.to - The path to navigate to when the link is clicked.
-   * @returns {HTMLElement} The rendered `<route-link>` component.
+   * @returns {HTMLElement} The rendered `<router-link>` component.
    */
   Link = ((/** @type {RouteLinkProps} */ props) => {
     const self = this;
 
     return createElement({
-      tag: 'route-link',
+      tag: 'router-link',
       defaultProps: props,
-      connected() {
+      connected: function () {
         // @ts-ignore
         self.links.push(this);
       },
-      render(props) {
+      render: function (props) {
         const a = document.createElement('a');
         a.href = props.to;
         this.dataset.href = props.to;
@@ -225,7 +225,7 @@ export class Router {
         }
         return a;
       },
-      disconnected() {
+      disconnected: function () {
         // @ts-ignore
         self.links.splice(self.links.indexOf(this), 1);
       },

@@ -362,30 +362,30 @@ function setupInternal(setupOptions) {
         const data = componentData?.bind(this)?.(finalProps);
         this.data = data;
 
+        /** @param {Template} children */
+        const appendTemplate = (children) => {
+          this.shadowRoot?.replaceChildren(...generateChildNodes(children));
+        };
+
+        const renderInitial = () => {
+          if (initial) {
+            /** @type {Template | Promise<Template>}*/ // @ts-ignore
+            const children = initial.bind(this)(finalProps, this.data);
+            appendTemplate(children);
+          }
+        };
+
+        /** @param {unknown} error */
+        const renderFallback = (error) => {
+          if (fallback) {
+            const finalFallbackProps = /** @type {any} */ (finalProps);
+            appendTemplate(fallback(error, finalFallbackProps, this.data));
+          } else {
+            throw error;
+          }
+        };
+
         this.render = function () {
-          /** @param {Template} children */
-          const appendTemplate = (children) => {
-            this.shadowRoot?.replaceChildren(...generateChildNodes(children));
-          };
-
-          const renderInitial = () => {
-            if (initial) {
-              /** @type {Template | Promise<Template>}*/ // @ts-ignore
-              const children = initial.bind(this)(finalProps, this.data);
-              appendTemplate(children);
-            }
-          };
-
-          /** @param {unknown} error */
-          const renderFallback = (error) => {
-            if (fallback) {
-              const finalFallbackProps = /** @type {any} */ (finalProps);
-              appendTemplate(fallback(error, finalFallbackProps, this.data));
-            } else {
-              throw error;
-            }
-          };
-
           // Render the component.
           try {
             /** @type {Template | Promise<Template>}*/ // @ts-ignore

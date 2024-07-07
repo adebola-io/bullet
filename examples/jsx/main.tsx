@@ -1,26 +1,33 @@
-import { createElement, css, html } from '../../index.js';
-import { Signal } from '@adbl/signals';
+import { createElement, css } from '../../index.js';
 import '../../library/jsx-runtime.js';
 
 const Counter = createElement({
+  data() {
+    return {
+      count: 0,
+    };
+  },
   render() {
-    const count = Signal.source(0);
-    count.createEffect((newCount) => {
-      const output = this.select('output') as HTMLOutputElement;
-      output.textContent = `${newCount}`;
-    });
+    const decrement = () => {
+      this.data.count--;
+      this.render();
+    };
+    const increment = () => {
+      this.data.count++;
+      this.render();
+    };
 
     return [
       <div class="Heading">
         <h1>Counter</h1>
         <p>A simple counter built in Bullet.</p>
       </div>,
-      <output>{count.value}</output>,
+      <output>{this.data.count}</output>,
       <div class="ButtonRow">
-        <button on:click={() => count.value--} type="button">
+        <button on:click={decrement} type="button">
           Decrement
         </button>
-        <button on:click={() => count.value++} type="button">
+        <button on:click={increment} type="button">
           Increment
         </button>
       </div>,
