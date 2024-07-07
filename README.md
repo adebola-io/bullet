@@ -26,6 +26,7 @@ A tiny, experimental, and ill-advised library for Web Components.
     - [Setting Up the Router](#setting-up-the-router)
     - [Route Configuration](#route-configuration)
     - [Implementing the Router](#implementing-the-router)
+    - [Nested Routing with Inner Outlets](#nested-routing-with-inner-outlets)
     - [Lazy Loading Routes](#lazy-loading-routes)
     - [Programmatic Navigation](#programmatic-navigation)
     - [Dynamic Route Parameters](#dynamic-route-parameters)
@@ -492,6 +493,61 @@ const App = createElement({
 
 export default App;
 ```
+
+### Nested Routing with Inner Outlets
+
+Bullet supports nested routing, allowing you to create more complex route structures with child routes. This is particularly useful for creating layouts with multiple levels of navigation or for organizing related routes.
+
+To implement nested routing:
+
+1. Define child routes in your route configuration:
+
+```javascript
+const routes: RouteRecords = [
+  {
+    name: 'dashboard',
+    path: '/dashboard',
+    component: Dashboard,
+    children: [
+      {
+        name: 'overview',
+        path: '',
+        component: Overview,
+      },
+      {
+        name: 'stats',
+        path: 'stats',
+        component: Stats,
+      },
+    ],
+  },
+];
+```
+
+In your parent component (e.g., Dashboard), use an inner Outlet to render child routes:
+
+```jsx
+const Dashboard = createElement({
+  tag: 'dashboard-page',
+  render: () => {
+    const router = useRouter();
+    const { Link, Outlet } = router;
+
+    return (
+      <div>
+        <h1>Dashboard</h1>
+        <nav>
+          <Link to="/dashboard">Overview</Link>
+          <Link to="/dashboard/stats">Stats</Link>
+        </nav>
+        <Outlet /> {/* This will render the active child route */}
+      </div>
+    );
+  },
+});
+```
+
+With this setup, when you navigate to `/dashboard`, the Dashboard component will render, and its inner Outlet will display the Overview component. When you navigate to `/dashboard/stats`, the Dashboard component will still be rendered, but the inner Outlet will now display the Stats component.
 
 ### Lazy Loading Routes
 
