@@ -8,11 +8,7 @@ export * from './routeTree.js';
 export * from './middleware.js';
 
 /**
- * @typedef {import('../component.js').ElementConstructor} ElementConstructor
- */
-
-/**
- * @typedef {import('./routeTree.js').RouteRecords<ReturnType<ElementConstructor> | LazyRoute>} RouteRecords
+ * @typedef {import('./routeTree.js').RouteRecords<ReturnType<import('../component.js').ElementConstructor> | LazyRoute>} RouteRecords
  *
  */
 
@@ -36,7 +32,7 @@ let ROUTER_INSTANCE = null;
  */
 
 export class Router {
-  /** @private @type {ReturnType<ReturnType<ElementConstructor>>[]} */
+  /** @private @type {ReturnType<ReturnType<import('../component.js').ElementConstructor>>[]} */
   outlets = [];
 
   /** @private @type {HTMLElement[]} */
@@ -45,7 +41,7 @@ export class Router {
   /** @type {Map<string, string>} */
   params = new Map();
 
-  /** @private RouteTree<ReturnType<ElementConstructor>> */
+  /** @private RouteTree<ReturnType<import('../component.js').ElementConstructor>> */
   routeTree;
 
   /** @private RouterMiddleware[] */
@@ -136,9 +132,9 @@ export class Router {
       return true;
     }
 
-    /** @type {MatchedRoute<ReturnType<ElementConstructor> | LazyRoute> | null} */
+    /** @type {MatchedRoute<ReturnType<import('../component.js').ElementConstructor> | LazyRoute> | null} */
     let lastMatchedRoute = matchResult.subTree;
-    /** @type {MatchedRoute<ReturnType<ElementConstructor> | LazyRoute> | null} */
+    /** @type {MatchedRoute<ReturnType<import('../component.js').ElementConstructor> | LazyRoute> | null} */
     let currentMatchedRoute = matchResult.subTree;
     let outletIndex = 0;
 
@@ -148,7 +144,7 @@ export class Router {
       if (outlet.dataset.path !== currentMatchedRoute.fullPath) {
         const matchedComponentOrLazyLoader = currentMatchedRoute.component;
 
-        /** @type {ReturnType<ElementConstructor>} */
+        /** @type {ReturnType<import('../component.js').ElementConstructor>} */
         let matchedComponent;
 
         if (
