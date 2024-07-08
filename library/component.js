@@ -216,7 +216,7 @@ function setupInternal(setupOptions) {
    * |  RenderFunction<ComponentData, RenderProps, DefaultProps, true>} elementConfig
    * The configuration object for the custom element.
    *
-   * @returns {keyof Props extends never ? Component<Partial<DefaultProps>>: Component<Props>} A function that creates instances of the custom element.
+   * @returns {keyof Props extends never ? Component<Partial<DefaultProps>>: Component<Props, ComponentData>} A function that creates instances of the custom element.
    * @example
    * // Define a custom element with a simple render function
    * const MyElement = createElement(() => <div>Hello, World!</div>);
