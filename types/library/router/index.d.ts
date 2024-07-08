@@ -80,7 +80,7 @@ export class Router {
      * This component is used internally by the `Router` class to handle route changes and
      * render the appropriate component.
      */
-    Outlet: import("../component.js").Component<Partial<{}>>;
+    Outlet: import("../component.js").Component<Partial<{}>, {}>;
     /**
      * Defines a custom `<router-link>` component that renders an `<a>` element and handles click events to navigate to the specified route.
      *
@@ -88,7 +88,7 @@ export class Router {
      * @param {string} props.to - The path to navigate to when the link is clicked.
      * @returns {HTMLElement} The rendered `<router-link>` component.
      */
-    Link: import("../component.js").Component<Partial<RouteLinkProps>>;
+    Link: import("../component.js").Component<Partial<RouteLinkProps>, {}>;
 }
 export type RouteRecords = import("./routeTree.js").RouteRecords<ReturnType<import("../component.js").ElementConstructor> | LazyRoute>;
 export type RouterOptions = {

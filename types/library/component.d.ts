@@ -53,8 +53,9 @@
  */
 /**
  * @template Props
+ * @template [Data={}]
  * @typedef {{ tagName: string } &
- *  (keyof Props extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props>) => BulletElement<{}>)} Component
+ *  (keyof Props extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props>) => BulletElement<Data>)} Component
  */
 /**
  * @template [ComponentData={}]
@@ -212,6 +213,9 @@ export type SetupOptions = {
 };
 export type ElementConstructor = ReturnType<typeof setupInternal>["createElement"];
 export type SetupResult = {
+    /**
+     * Defines a custom HTML element with a shadow DOM and optional styles.
+     */
     createElement: ElementConstructor;
 };
 export type AimRenderNode = Node | string;
@@ -249,9 +253,9 @@ export type GetCustomEvents<Component extends (...args: any[]) => any> = { [K in
 export type HandlerFor<Component extends (...args: any[]) => any, EventName extends keyof GetCustomEvents<Component>> = Required<GetCustomEvents<Component>>[EventName];
 export type Template = AimRenderNode | AimRenderNode[] | undefined;
 export type ComponentProps<Props_1> = Props_1 & JSX.JSXNativeProps;
-export type Component<Props_1> = {
+export type Component<Props_1, Data = {}> = {
     tagName: string;
-} & (keyof Props_1 extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props_1>) => BulletElement<{}>);
+} & (keyof Props_1 extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props_1>) => BulletElement<Data>);
 export type CustomElementProperties<ComponentData = {}> = {
     /**
      * The extra data associated with the custom element.
@@ -345,6 +349,7 @@ import { generateChildNodes } from './utils.js';
 /**
  * @typedef SetupResult
  * @property {ElementConstructor} createElement
+ * Defines a custom HTML element with a shadow DOM and optional styles.
  */
 /** @param {SetupOptions} [setupOptions] */
 declare function setupInternal(setupOptions?: SetupOptions | undefined): {
