@@ -73,6 +73,12 @@
  * Triggers a re-render of the element's template.
  * This is useful when you want to update the element's content based on changes in the component's data,
  * but it should not be used liberally, as it can lead to performance issues.
+ *
+ * @property {boolean} isFormAssociated
+ * Whether or not the component is associated with a form.
+ *
+ * @property {ElementInternals} elementInternals
+ * Returns the internals of the element.
  */
 /**
  * @template [ComponentData={}]
@@ -130,6 +136,9 @@
  * @property {RenderFunction<ExtraData, RenderProps, DefaultProps, false>} [initial]
  * A function that generates a starting template for the component. It will be render as a placeholder if the `render()` function
  * is async, and is yet to be resolved.
+ *
+ * @property {boolean} [formAssociated]
+ * Whether or not the component is associated with a form.
  */
 export const html: typeof generateChildNodes;
 export const css: (template: {
@@ -262,6 +271,14 @@ export type CustomElementProperties<ComponentData = {}> = {
      * but it should not be used liberally, as it can lead to performance issues.
      */
     render: () => void;
+    /**
+     * Whether or not the component is associated with a form.
+     */
+    isFormAssociated: boolean;
+    /**
+     * Returns the internals of the element.
+     */
+    elementInternals: ElementInternals;
 };
 export type BulletElement<ComponentData = {}> = (HTMLElement & CustomElementProperties<ComponentData>);
 export type RenderFunction<ExtraData, RenderProps, DefaultProps, Async extends boolean> = (this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Async extends true ? Template | Promise<Template> : Template;
@@ -310,6 +327,10 @@ export type ElementConfig<Props_1 extends DefaultProps = never, ExtraData extend
      * is async, and is yet to be resolved.
      */
     initial?: RenderFunction<ExtraData, RenderProps, DefaultProps, false> | undefined;
+    /**
+     * Whether or not the component is associated with a form.
+     */
+    formAssociated?: boolean | undefined;
 };
 import { generateChildNodes } from './utils.js';
 /**

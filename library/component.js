@@ -75,8 +75,9 @@ import {
 
 /**
  * @template Props
+ * @template [Data={}]
  * @typedef {{ tagName: string } &
- *  (keyof Props extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props>) => BulletElement<{}>)} Component
+ *  (keyof Props extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props>) => BulletElement<Data>)} Component
  */
 
 /**
@@ -96,6 +97,12 @@ import {
  * Triggers a re-render of the element's template.
  * This is useful when you want to update the element's content based on changes in the component's data,
  * but it should not be used liberally, as it can lead to performance issues.
+ *
+ * @property {boolean} isFormAssociated
+ * Whether or not the component is associated with a form.
+ *
+ * @property {ElementInternals} elementInternals
+ * Returns the internals of the element.
  */
 
 /**
@@ -157,6 +164,9 @@ import {
  * @property {RenderFunction<ExtraData, RenderProps, DefaultProps, false>} [initial]
  * A function that generates a starting template for the component. It will be render as a placeholder if the `render()` function
  * is async, and is yet to be resolved.
+ *
+ * @property {boolean} [formAssociated]
+ * Whether or not the component is associated with a form.
  */
 
 export const html = generateChildNodes;
@@ -178,6 +188,7 @@ class BulletComponent extends HTMLElement {}
 /**
  * @typedef SetupResult
  * @property {ElementConstructor} createElement
+ * Defines a custom HTML element with a shadow DOM and optional styles.
  */
 
 /** @param {SetupOptions} [setupOptions] */
@@ -246,6 +257,7 @@ function setupInternal(setupOptions) {
       defaultProps,
       data: componentData,
       tag,
+      formAssociated,
       connected,
       disconnected,
       fallback,
@@ -257,6 +269,7 @@ function setupInternal(setupOptions) {
           defaultProps: undefined,
           data: undefined,
           tag: undefined,
+          formAssociated: undefined,
           globalStyles: undefined,
           connected: undefined,
           disconnected: undefined,
@@ -295,6 +308,7 @@ function setupInternal(setupOptions) {
     }
 
     class ComponentConstructor extends BulletComponent {
+      static formAssociated = formAssociated ?? false;
       /**
        * Whether or not the component has been rendered by Aim.
        * @private
@@ -331,6 +345,8 @@ function setupInternal(setupOptions) {
       constructor() {
         super();
         this.attachShadow({ mode: 'open' });
+        this.elementInternals = this.attachInternals();
+        this.isFormAssociated = ComponentConstructor.formAssociated;
         const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
 
         const stylesheet = CUSTOM_ELEMENT_STYLES.get(elementTagname);

@@ -63,6 +63,9 @@ export class Router {
    * @return {undefined}
    */
   navigate(path) {
+    if (path === '#') {
+      return;
+    }
     this.load(path).then((wasLoaded) => {
       if (wasLoaded) {
         history.pushState(null, '', path);
@@ -86,6 +89,9 @@ export class Router {
    * @returns {Promise<boolean>} A promise that resolves to `true` if the route was loaded successfully, `false` otherwise.
    */
   async load(path) {
+    if (path === '#') {
+      return false;
+    }
     const matchResult = this.routeTree.match(path);
     matchResult.flattenTransientRoutes();
     this.params = matchResult.params;
@@ -114,7 +120,7 @@ export class Router {
       };
 
       for (const middleware of this.middlewares) {
-        let middlewareResponse = await middleware.callback(middlewareArgs);
+        const middlewareResponse = await middleware.callback(middlewareArgs);
         if (middlewareResponse instanceof RouterMiddlewareResponse) {
           if (middlewareResponse.type === 'redirect') {
             this.navigate(middlewareResponse.path);
@@ -140,6 +146,9 @@ export class Router {
 
     while (currentMatchedRoute) {
       const outlet = this.outlets[outletIndex];
+      if (outlet === undefined) {
+        break;
+      }
 
       if (outlet.dataset.path !== currentMatchedRoute.fullPath) {
         const matchedComponentOrLazyLoader = currentMatchedRoute.component;

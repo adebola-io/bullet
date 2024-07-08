@@ -36,7 +36,12 @@ export function h(tagname, props, ...children) {
     return component;
   }
 
-  const element = document.createElement(tagname);
+  const element =
+    tagname === 'svg'
+      ? document.createElementNS('http://www.w3.org/2000/svg', tagname)
+      : tagname === 'math'
+      ? document.createElementNS('http://www.w3.org/1998/Math/MathML', tagname)
+      : document.createElement(tagname);
 
   if (props !== null)
     for (const [key, value] of Object.entries(props)) {
@@ -70,7 +75,26 @@ export function h(tagname, props, ...children) {
     }
 
   for (const child of children) {
-    element.appendChild(normalizeChild(child));
+    const childNode = normalizeChild(child);
+    if (
+      childNode instanceof HTMLElement &&
+      customElements.get(childNode.tagName.toLowerCase())
+    ) {
+      element.appendChild(childNode);
+      continue;
+    }
+
+    if (
+      (tagname === 'svg' || tagname === 'math') &&
+      childNode instanceof HTMLElement
+    ) {
+      const temp = document.createElementNS(element.namespaceURI ?? '', 'div');
+      temp.innerHTML = childNode.outerHTML;
+      element.append(...temp.children);
+      continue;
+    }
+
+    element.appendChild(childNode);
   }
 
   // @ts-ignore

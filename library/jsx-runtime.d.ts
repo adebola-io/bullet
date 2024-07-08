@@ -440,7 +440,7 @@ declare namespace JSXUtils {
       popovertarget: string;
       popovertargetaction: string;
       readonly: string;
-      required: string;
+      required: Booleanish;
       size: string;
       src: string;
       step: string;
@@ -749,6 +749,121 @@ declare namespace JSXUtils {
       width: string;
     };
   };
+
+  export type SvgElementToAttributeMap = {
+    svg: {
+      width: import('csstype').Property.Width;
+      height: import('csstype').Property.Height;
+      viewBox: string;
+      preserveAspectRatio: string;
+      xmlns: string;
+    };
+    circle: {
+      cx: string;
+      cy: string;
+      r: string;
+    };
+    ellipse: {
+      cx: string;
+      cy: string;
+      rx: string;
+      ry: string;
+    };
+    line: {
+      x1: string;
+      y1: string;
+      x2: string;
+      y2: string;
+    };
+    path: {
+      d: string;
+    };
+    polygon: {
+      points: string;
+    };
+    polyline: {
+      points: string;
+    };
+    rect: {
+      x: string;
+      y: string;
+      width: string;
+      height: string;
+      rx: string;
+      ry: string;
+    };
+    text: {
+      x: string;
+      y: string;
+      dx: string;
+      dy: string;
+      rotate: string;
+      textLength: string;
+      lengthAdjust: string;
+    };
+    g: object;
+    defs: object;
+    use: {
+      href: string;
+      x: string;
+      y: string;
+      width: string;
+      height: string;
+    };
+    clipPath: {
+      clipPathUnits: string;
+    };
+    mask: {
+      maskUnits: string;
+      maskContentUnits: string;
+    };
+    linearGradient: {
+      x1: string;
+      y1: string;
+      x2: string;
+      y2: string;
+      gradientUnits: string;
+      gradientTransform: string;
+    };
+    radialGradient: {
+      cx: string;
+      cy: string;
+      r: string;
+      fx: string;
+      fy: string;
+      gradientUnits: string;
+      gradientTransform: string;
+    };
+    stop: {
+      offset: string;
+      'stop-color': string;
+      'stop-opacity': string;
+    };
+    animate: {
+      attributeName: string;
+      from: string;
+      to: string;
+      dur: string;
+      repeatCount: string;
+    };
+    animateTransform: {
+      attributeName: string;
+      type: 'translate' | 'scale' | 'rotate' | 'skewX' | 'skewY';
+      from: string;
+      to: string;
+      dur: string;
+      repeatCount: string;
+    };
+  };
+
+  // Common attributes for most SVG elements
+  export type GlobalSVGAttributesMap = {
+    fill?: string;
+    stroke?: string;
+    'stroke-width'?: string;
+    opacity?: string;
+    transform?: string;
+  };
 }
 
 // ------------------------------------
@@ -763,12 +878,14 @@ declare namespace JSX {
     Partial<
       U extends keyof JSXUtils.HtmlElementToAttributeMap
         ? JSXUtils.HtmlElementToAttributeMap[U]
+        : U extends keyof JSXUtils.SvgElementToAttributeMap
+        ? JSXUtils.SvgElementToAttributeMap[U] & JSXUtils.GlobalSVGAttributesMap
         : object
     > &
     JSXNativeProps;
 
   type JSXNativeProps = {
-    children?: Node;
+    children?: Node | Node[];
     key?: string | number | boolean;
     dangerouslySetInnerHTML?: { __html: string };
     style?: JSXUtils.CSSProperties | string;
