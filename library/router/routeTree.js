@@ -226,6 +226,15 @@ export class RouteTree {
       const subPath = path.slice(rootFullPath.length);
       if (subPath.length === 0 && !root.isTransient) {
         root.isActive = true;
+        // match any fallthrough routes
+        for (const child of root.children) {
+          if (
+            root.fullPath === child.fullPath &&
+            this.selectActiveRoutes(path, child)
+          ) {
+            break;
+          }
+        }
         return true;
       }
 
@@ -362,14 +371,6 @@ RouteTree.fromRouteRecords = (routeRecords, parent = null) => {
 
         child.isDynamic = pathSegment.startsWith(':');
         child.isWildcard = pathSegment.startsWith('*');
-
-        console.log(
-          'Transient path segment:',
-          pathSegment,
-          JSON.stringify(child),
-          pathSegment.startsWith(':'),
-          child.isDynamic
-        );
         current.isTransient = true;
 
         current.children.push(child);

@@ -164,6 +164,10 @@ export class Router {
             currentMatchedRoute = currentMatchedRoute.child;
             continue;
           }
+          if (currentMatchedRoute.redirect) {
+            this.navigate(currentMatchedRoute.redirect);
+            return false;
+          }
           console.warn(`No component from route: ${path}`);
           const outlet = this.outlets[outletIndex];
           outlet?.removeAttribute('data-path');
