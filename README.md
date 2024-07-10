@@ -16,7 +16,6 @@ A tiny, experimental, and ill-advised library for Web Components.
   - [Styling](#styling)
   - [Anonymous components](#anonymous-components)
   - [Event Handling](#event-handling)
-    - [Custom Events](#custom-events)
   - [Lifecycle Methods](#lifecycle-methods)
     - [`connected`](#connected)
     - [`disconnected`](#disconnected)
@@ -87,11 +86,11 @@ You can define your own custom elements with the `createElement` function.
 Here's an example of a simple component:
 
 ```jsx
-import { createElement} from '@adbl/bullet';
+import { createElement } from '@adbl/bullet';
 
 const MyElement = createElement({
   tag: 'my-counter',
-  render: () => <div>Hello, World!</div>
+  render: () => <div>Hello, World!</div>,
 });
 ```
 
@@ -149,14 +148,16 @@ const Card = createElement({
 
 ## Styling
 
-Components can be styled using the `styles` property on the component object. All styles are generated as constructed stylesheets and are automatically scoped only to the parent web component.
+Components can be styled using the `styles` property on the component object, and the `css` function, which can be used to generate CSS stylesheets. All styles are generated as constructed stylesheets and are automatically scoped only to the parent component.
 
 ```tsx
+import { createElement, css } from '@adbl/bullet';
+
 const Button = createElement({
   tag: 'my-button',
   render: (props) => <button>{props.label}</button>,
 
-  styles: `
+  styles: css`
     button {
       background-color: red;
       color: white;
@@ -170,25 +171,27 @@ const Button = createElement({
 By default, the button styles will only apply to buttons within the `Button` component. If you want to define styles that can apply to the whole document, you can use the `globalStyles` property instead:
 
 ```tsx
+import { createElement, css } from '@adbl/bullet';
+
 const Button = createElement({
   tag: 'my-button',
   render: (props) => <button>{props.label}</button>,
 
-  styles: `
+  styles: css`
     button {
       background-color: red;
       color: white;
       border-radius: 1rem;
       padding: 4rem 8rem;
     }
-`,
+  `,
 
-  globalStyles: `
+  globalStyles: css`
     body {
       font-family: sans-serif;
       background-color: black;
     }
-`,
+  `,
 });
 ```
 
@@ -210,14 +213,14 @@ document.body.append(<Heading text="Hello there" />);
 
 ## Event Handling
 
-In Bullet, you can pass event handlers as props to components using the `on:` prefix. These event handlers will be automatically bound to the corresponding event on the component's root element.
+In Bullet, you can pass event handlers to elements using the regular JSX syntax.
 
 ```tsx
+import { createElement } from '@adbl/bullet';
+
 const Button = createElement({
   tag: 'my-button',
-  render: (props) => (
-    <button on:click={props.onButtonClick}>{props.label}</button>
-  ),
+  render: (props) => <button onClick={props.onClick}>{props.label}</button>,
 });
 
 const handleClick = () => {
@@ -225,48 +228,10 @@ const handleClick = () => {
 };
 
 // Usage
-<Button onButtonClick={handleClick} label="Click me" />;
+<Button onClick={handleClick} label="Click me" />;
 ```
 
 In this example, the handleClick function is passed as the onButtonClick prop to the Button component. When the button is clicked, the handleClick function will be called, and "Button clicked!" will be logged to the console.
-
-### Custom Events
-
-More conventionally, Bullet also allows you to create and dispatch custom events from within your components. This can be useful for communicating between parent and child components, or for integrating with other libraries or frameworks that rely on custom events.
-
-Example:
-
-```tsx
-const CustomEventComponent = createElement({
-  tag: 'custom-event-component',
-  render: function () {
-    const handleClick = () => {
-      const event = new CustomEvent('custom', {
-        detail: { message: 'Hello, World!' },
-      });
-      this.dispatchEvent(event);
-    };
-
-    return <button on:click={handleClick}>Dispatch Event</button>;
-  },
-});
-```
-
-// Usage
-
-```tsx
-const logMessage = (event) => {
-  console.log(event.detail.message); // Output: "Hello, World!"
-};
-const myComponent = <CustomEvent on:custom={logMessage} />;
-document.body.append(myComponent);
-```
-
-In this example, the CustomEvent component defines a handleClick function that creates a new CustomEvent with a detail object containing a message. When the button is clicked, the custom event is dispatched using this.dispatchEvent(event).
-
-To listen for the custom event, you can also use the addEventListener method on the component instance, just like you would with a regular DOM element.
-
----
 
 ## Lifecycle Methods
 
@@ -569,7 +534,7 @@ const ProfileButton = createElement({
     const router = useRouter();
     const goToProfile = () => router.navigate('/profile/123');
 
-    return <button on:click={goToProfile}>View Profile</button>;
+    return <button onClick={goToProfile}>View Profile</button>;
   },
 });
 ```

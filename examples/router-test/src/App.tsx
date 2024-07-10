@@ -25,7 +25,7 @@ export default createElement({
     return (
       <>
         <header>
-          <input type="search" on:input={updateSearchBarText} />
+          <input type="search" onInput={updateSearchBarText} />
           <nav>
             {links.map(({ to, text }) => (
               <Link plain class="NavLink" to={to} key={to}>

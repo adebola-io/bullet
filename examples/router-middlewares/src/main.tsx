@@ -18,7 +18,7 @@ const App = createElement({
     }
     return (
       <div>
-        <button on:click={() => router.navigate('/profile/123')}>
+        <button type="button" onClick={() => router.navigate('/profile/123')}>
           Profile
         </button>
       </div>
@@ -42,7 +42,8 @@ const Login = createElement({
     const router = useRouter();
     return (
       <button
-        on:click={() => {
+        type="button"
+        onClick={() => {
           authenticated = true;
           router.navigate('/');
         }}

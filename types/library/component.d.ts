@@ -2,54 +2,11 @@
  * @typedef {Node | string} AimRenderNode
  */
 /**
- * @template {(...args: any[]) => any} Component
- * @typedef {Parameters<Component>[0]} ExtractPropTypes
- */
-/**
- * @template {(...args: any[]) => any} Component
- * @typedef {{
- *    [K in keyof ExtractPropTypes<Component> as K extends `on:${infer L}` ? L : never]: ExtractPropTypes<Component>[K]
- * }} GetCustomEvents
- */
-/**
- * @template {(...args: any[]) => any} Component
- * @template {keyof GetCustomEvents<Component>} EventName
- * @typedef {Required<GetCustomEvents<Component>>[EventName]} HandlerFor
- *
- * Extracts the type of an event handler from a component.
- *
- * ### Example
- * ```typescript
- * interface ComponentProps {
- *   'on:btn-click': (event: CustomEvent<MouseEvent>) => void
- * }
- *
- * // Define a component with a custom event
- * const MyComponent = createElement({
- *   tag: 'my-component',
- *
- *   render(props: ComponentProps) {
- *     const emitButtonClick = (event: MouseEvent) => {
- *       this.dispatchEvent(new CustomEvent('btn-click', { detail: event }));
- *     };
- *
- *     return <button on:click={emitButtonClick}>Click me</button>;
- *   }
- * });
- *
- * // Extract the type of the click event
- * type ButtonClickEventHandler = HandlerFor<typeof MyComponent, 'btn-click'>;
- *
- * // Use the extracted type for a function
- * const handleClick: ButtonClickEventHandler = (event) => { console.log(event); };
- * ```
- */
-/**
  * @typedef {AimRenderNode | AimRenderNode[] | undefined} Template
  */
 /**
  * @template Props
- * @typedef {Props & JSX.JSXNativeProps} ComponentProps
+ * @typedef {Props & JSX.JsxNativeProps} ComponentProps
  */
 /**
  * @template Props
@@ -107,27 +64,27 @@
  * @property {string} [tag]
  * The HTML tag name to use for the custom element.
  *
- * @property {string | Partial<CSSStyleDeclaration>} [styles]
+ * @property {CSSStyleSheet} [styles]
  * The CSS styles to apply within the custom element. The styles are scoped to the custom element's shadow root.
  *
- * @property {string | Partial<CSSStyleDeclaration>} [globalStyles]
+ * @property {CSSStyleSheet} [globalStyles]
  * CSS styles that should be applied globally to the parent document. They are only valid as long as there is at least one
  * instance of the component in the document.
  *
- * @property {RenderFunction<ExtraData, RenderProps, DefaultProps, true>} render
+ * @property {RenderFunction<ExtraData, RenderProps, DefaultProps, true>} [render]
  * A function that generates the content for the component's shadow root. It accepts the props of the component and the component data as arguments.
  *
  * @property {DefaultProps} [defaultProps]
  * Defines the default props for the custom element.
  *
- * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData & ThisType<BulletElement<ExtraData>>} [data]
+ * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData} [data]
  * Additional data for the custom element.
  *
- * @property {ThisType<BulletElement<ExtraData>> & ((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => (void | (() => void)))} [connected]
+ * @property {((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => (void | (() => void) | Array<() => void>))} [connected]
  * Called when the component is mounted to the DOM.
  * It can optionally return a function that will be called when the component is unmounted from the DOM.
  *
- * @property {ThisType<BulletElement<ExtraData>> & (() => void)} [disconnected]
+ * @property {(() => void)} [disconnected]
  * Called when the component is unmounted from the DOM.
  *
  * @property {(error: unknown, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Template} [fallback]
@@ -141,10 +98,14 @@
  * @property {boolean} [formAssociated]
  * Whether or not the component is associated with a form.
  */
+/**
+ * Generates a set of child nodes from an HTML string.
+ *
+ * @param {string} html - The HTML string to generate child nodes from.
+ * @returns {Node[]} - An array of child nodes generated from the HTML string.
+ */
 export const html: typeof generateChildNodes;
-export const css: (template: {
-    raw: readonly string[] | ArrayLike<string>;
-}, ...substitutions: any[]) => string;
+export function css(template: string | TemplateStringsArray, ...substitutions: any[]): CSSStyleSheet;
 /**
  * @type {(setupOptions?: SetupOptions) => SetupResult}
  */
@@ -170,7 +131,7 @@ export const setup: (setupOptions?: SetupOptions) => SetupResult;
  * |  RenderFunction<ComponentData, RenderProps, DefaultProps, true>} elementConfig
  * The configuration object for the custom element.
  *
- * @returns {keyof Props extends never ? Component<Partial<DefaultProps>>: Component<Props>} A function that creates instances of the custom element.
+ * @returns {keyof Props extends never ? Component<Partial<DefaultProps>>: Component<Props, ComponentData>} A function that creates instances of the custom element.
  * @example
  * // Define a custom element with a simple render function
  * const MyElement = createElement(() => <div>Hello, World!</div>);
@@ -203,7 +164,7 @@ export const setup: (setupOptions?: SetupOptions) => SetupResult;
  * // Or by defining the element directly as html:
  * document.body.innerHtml = '<my-button color="red" label="Click here"></my-button>';
  */
-export function createElement<RenderPropsInitial extends object, ComponentData extends object = {}, Props_1 extends object = RenderPropsInitial, DefaultProps extends object = {}, RenderProps extends Props & DefaultProps = Props & DefaultProps>(elementConfig: ElementConfig<Props_1 & DefaultProps & RenderProps, ComponentData, DefaultProps, RenderPropsInitial> | RenderFunction<ComponentData, RenderProps, DefaultProps, true>): keyof Props_1 extends never ? Component<Partial<DefaultProps>> : Component<Props_1>;
+export function createElement<RenderPropsInitial extends object, ComponentData extends object = {}, Props_1 extends object = RenderPropsInitial, DefaultProps extends object = {}, RenderProps extends Props & DefaultProps = Props & DefaultProps>(elementConfig: ElementConfig<Props_1 & DefaultProps & RenderProps, ComponentData, DefaultProps, RenderPropsInitial> | RenderFunction<ComponentData, RenderProps, DefaultProps, true>): keyof Props_1 extends never ? Component<Partial<DefaultProps>> : Component<Props_1, ComponentData>;
 export type SetupOptions = {
     /**
      * A namespace to scope your custom elements to. This will ensure that they do not affect
@@ -219,40 +180,8 @@ export type SetupResult = {
     createElement: ElementConstructor;
 };
 export type AimRenderNode = Node | string;
-export type ExtractPropTypes<Component extends (...args: any[]) => any> = Parameters<Component>[0];
-export type GetCustomEvents<Component extends (...args: any[]) => any> = { [K in keyof ExtractPropTypes<Component> as K extends `on:${infer L}` ? L : never]: ExtractPropTypes<Component>[K]; };
-/**
- * Extracts the type of an event handler from a component.
- *
- * ### Example
- * ```typescript
- * interface ComponentProps {
- *   'on:btn-click': (event: CustomEvent<MouseEvent>) => void
- * }
- *
- * // Define a component with a custom event
- * const MyComponent = createElement({
- *   tag: 'my-component',
- *
- *   render(props: ComponentProps) {
- *     const emitButtonClick = (event: MouseEvent) => {
- *       this.dispatchEvent(new CustomEvent('btn-click', { detail: event }));
- *     };
- *
- *     return <button on:click={emitButtonClick}>Click me</button>;
- *   }
- * });
- *
- * // Extract the type of the click event
- * type ButtonClickEventHandler = HandlerFor<typeof MyComponent, 'btn-click'>;
- *
- * // Use the extracted type for a function
- * const handleClick: ButtonClickEventHandler = (event) => { console.log(event); };
- * ```
- */
-export type HandlerFor<Component extends (...args: any[]) => any, EventName extends keyof GetCustomEvents<Component>> = Required<GetCustomEvents<Component>>[EventName];
 export type Template = AimRenderNode | AimRenderNode[] | undefined;
-export type ComponentProps<Props_1> = Props_1 & JSX.JSXNativeProps;
+export type ComponentProps<Props_1> = Props_1 & JSX.JsxNativeProps;
 export type Component<Props_1, Data = {}> = {
     tagName: string;
 } & (keyof Props_1 extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props_1>) => BulletElement<Data>);
@@ -294,16 +223,16 @@ export type ElementConfig<Props_1 extends DefaultProps = never, ExtraData extend
     /**
      * The CSS styles to apply within the custom element. The styles are scoped to the custom element's shadow root.
      */
-    styles?: string | Partial<CSSStyleDeclaration> | undefined;
+    styles?: CSSStyleSheet | undefined;
     /**
      * CSS styles that should be applied globally to the parent document. They are only valid as long as there is at least one
      * instance of the component in the document.
      */
-    globalStyles?: string | Partial<CSSStyleDeclaration> | undefined;
+    globalStyles?: CSSStyleSheet | undefined;
     /**
      * A function that generates the content for the component's shadow root. It accepts the props of the component and the component data as arguments.
      */
-    render: RenderFunction<ExtraData, RenderProps, DefaultProps, true>;
+    render?: RenderFunction<ExtraData, RenderProps, DefaultProps, true> | undefined;
     /**
      * Defines the default props for the custom element.
      */
@@ -311,16 +240,16 @@ export type ElementConfig<Props_1 extends DefaultProps = never, ExtraData extend
     /**
      * Additional data for the custom element.
      */
-    data?: ((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData & ThisType<BulletElement<ExtraData>>) | undefined;
+    data?: ((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData) | undefined;
     /**
      * Called when the component is mounted to the DOM.
      * It can optionally return a function that will be called when the component is unmounted from the DOM.
      */
-    connected?: (ThisType<BulletElement<ExtraData>> & ((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => (void | (() => void)))) | undefined;
+    connected?: ((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => (void | (() => void) | Array<() => void>)) | undefined;
     /**
      * Called when the component is unmounted from the DOM.
      */
-    disconnected?: (ThisType<BulletElement<ExtraData>> & (() => void)) | undefined;
+    disconnected?: (() => void) | undefined;
     /**
      * If the render function throws an error, this function will be called to render a fallback template for the component.
      * It is most useful for asynchronous rendering, where the render function returns a promise that may be rejected.
@@ -353,6 +282,6 @@ import { generateChildNodes } from './utils.js';
  */
 /** @param {SetupOptions} [setupOptions] */
 declare function setupInternal(setupOptions?: SetupOptions | undefined): {
-    createElement: <RenderPropsInitial extends object, ComponentData extends object = {}, Props_1 extends object = RenderPropsInitial, DefaultProps extends object = {}, RenderProps extends Props & DefaultProps = Props & DefaultProps>(elementConfig: ElementConfig<Props_1 & DefaultProps & RenderProps, ComponentData, DefaultProps, RenderPropsInitial> | RenderFunction<ComponentData, RenderProps, DefaultProps, true>) => keyof Props_1 extends never ? Component<Partial<DefaultProps>> : Component<Props_1>;
+    createElement: <RenderPropsInitial extends object, ComponentData extends object = {}, Props_1 extends object = RenderPropsInitial, DefaultProps extends object = {}, RenderProps extends Props & DefaultProps = Props & DefaultProps>(elementConfig: ElementConfig<Props_1 & DefaultProps & RenderProps, ComponentData, DefaultProps, RenderPropsInitial> | RenderFunction<ComponentData, RenderProps, DefaultProps, true>) => keyof Props_1 extends never ? Component<Partial<DefaultProps>> : Component<Props_1, ComponentData>;
 };
 export {};

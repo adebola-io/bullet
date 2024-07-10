@@ -29,13 +29,13 @@ export default createElement({
     );
   },
 
-  fallback(error) {
-    return (
-      <main>
-        <span class="ErrorScreen">Could not render Home page: {error}</span>
-      </main>
-    );
-  },
+  // fallback(error) {
+  //   return (
+  //     <main>
+  //       <span class="ErrorScreen">Could not render Home page: {error}</span>
+  //     </main>
+  //   );
+  // },
 
   styles: css`
     main {

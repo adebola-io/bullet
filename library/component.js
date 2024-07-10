@@ -6,7 +6,6 @@ import {
   GLOBAL_DATA,
 } from './constants.js';
 import {
-  convertObjectToCssStylesheet,
   generateInstanceKey,
   getElementAttributes,
   replaceComponentPlaceholders,
@@ -19,58 +18,12 @@ import {
  */
 
 /**
- * @template {(...args: any[]) => any} Component
- * @typedef {Parameters<Component>[0]} ExtractPropTypes
- */
-
-/**
- * @template {(...args: any[]) => any} Component
- * @typedef {{
- *    [K in keyof ExtractPropTypes<Component> as K extends `on:${infer L}` ? L : never]: ExtractPropTypes<Component>[K]
- * }} GetCustomEvents
- */
-
-/**
- * @template {(...args: any[]) => any} Component
- * @template {keyof GetCustomEvents<Component>} EventName
- * @typedef {Required<GetCustomEvents<Component>>[EventName]} HandlerFor
- *
- * Extracts the type of an event handler from a component.
- *
- * ### Example
- * ```typescript
- * interface ComponentProps {
- *   'on:btn-click': (event: CustomEvent<MouseEvent>) => void
- * }
- *
- * // Define a component with a custom event
- * const MyComponent = createElement({
- *   tag: 'my-component',
- *
- *   render(props: ComponentProps) {
- *     const emitButtonClick = (event: MouseEvent) => {
- *       this.dispatchEvent(new CustomEvent('btn-click', { detail: event }));
- *     };
- *
- *     return <button on:click={emitButtonClick}>Click me</button>;
- *   }
- * });
- *
- * // Extract the type of the click event
- * type ButtonClickEventHandler = HandlerFor<typeof MyComponent, 'btn-click'>;
- *
- * // Use the extracted type for a function
- * const handleClick: ButtonClickEventHandler = (event) => { console.log(event); };
- * ```
- */
-
-/**
  * @typedef {AimRenderNode | AimRenderNode[] | undefined} Template
  */
 
 /**
  * @template Props
- * @typedef {Props & JSX.JSXNativeProps} ComponentProps
+ * @typedef {Props & JSX.JsxNativeProps} ComponentProps
  */
 
 /**
@@ -134,27 +87,27 @@ import {
  * @property {string} [tag]
  * The HTML tag name to use for the custom element.
  *
- * @property {string | Partial<CSSStyleDeclaration>} [styles]
+ * @property {CSSStyleSheet} [styles]
  * The CSS styles to apply within the custom element. The styles are scoped to the custom element's shadow root.
  *
- * @property {string | Partial<CSSStyleDeclaration>} [globalStyles]
+ * @property {CSSStyleSheet} [globalStyles]
  * CSS styles that should be applied globally to the parent document. They are only valid as long as there is at least one
  * instance of the component in the document.
  *
- * @property {RenderFunction<ExtraData, RenderProps, DefaultProps, true>} render
+ * @property {RenderFunction<ExtraData, RenderProps, DefaultProps, true>} [render]
  * A function that generates the content for the component's shadow root. It accepts the props of the component and the component data as arguments.
  *
  * @property {DefaultProps} [defaultProps]
  * Defines the default props for the custom element.
  *
- * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData & ThisType<BulletElement<ExtraData>>} [data]
+ * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData} [data]
  * Additional data for the custom element.
  *
- * @property {ThisType<BulletElement<ExtraData>> & ((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => (void | (() => void)))} [connected]
+ * @property {((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => (void | (() => void) | Array<() => void>))} [connected]
  * Called when the component is mounted to the DOM.
  * It can optionally return a function that will be called when the component is unmounted from the DOM.
  *
- * @property {ThisType<BulletElement<ExtraData>> & (() => void)} [disconnected]
+ * @property {(() => void)} [disconnected]
  * Called when the component is unmounted from the DOM.
  *
  * @property {(error: unknown, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Template} [fallback]
@@ -169,8 +122,31 @@ import {
  * Whether or not the component is associated with a form.
  */
 
+/**
+ * Generates a set of child nodes from an HTML string.
+ *
+ * @param {string} html - The HTML string to generate child nodes from.
+ * @returns {Node[]} - An array of child nodes generated from the HTML string.
+ */
 export const html = generateChildNodes;
-export const css = String.raw;
+
+/**
+ * Generates a CSS stylesheet from a CSS text string.
+ *
+ * @param {string | TemplateStringsArray} template - The CSS text to create the stylesheet from.
+ * @param {any[]} substitutions
+ * @returns {CSSStyleSheet} - The generated CSS stylesheet.
+ */
+export const css = (template, ...substitutions) => {
+  const stylesheet = new CSSStyleSheet();
+  if (typeof template === 'string') {
+    stylesheet.replaceSync(template);
+  } else {
+    const cssText = String.raw(template, ...substitutions);
+    stylesheet.replaceSync(cssText);
+  }
+  return stylesheet;
+};
 
 class BulletComponent extends HTMLElement {}
 
@@ -283,32 +259,18 @@ function setupInternal(setupOptions) {
 
     // Load component CSS.
     if (styles) {
-      const stylesheet = new CSSStyleSheet();
-      switch (typeof styles) {
-        case 'string':
-          stylesheet.replace(styles);
-          break;
-        case 'object':
-          stylesheet.replace(convertObjectToCssStylesheet(styles));
-          break;
-      }
-      CUSTOM_ELEMENT_STYLES.set(elementTagname, stylesheet);
+      CUSTOM_ELEMENT_STYLES.set(elementTagname, styles);
     }
 
     // Load global CSS.
     if (globalStyles) {
-      const styleString =
-        typeof globalStyles === 'string'
-          ? globalStyles
-          : convertObjectToCssStylesheet(globalStyles);
       CUSTOM_ELEMENT_GLOBAL_STYLES.set(elementTagname, {
-        data: styleString,
+        data: globalStyles,
         instances: 0,
       });
     }
 
     class ComponentConstructor extends BulletComponent {
-      static formAssociated = formAssociated ?? false;
       /**
        * Whether or not the component has been rendered by Aim.
        * @private
@@ -404,6 +366,10 @@ function setupInternal(setupOptions) {
         this.render = function () {
           // Render the component.
           try {
+            if (render === undefined) {
+              renderInitial();
+              return;
+            }
             /** @type {Template | Promise<Template>}*/ // @ts-ignore
             const renderResult = render.bind(this)(finalProps, this.data);
             if (renderResult instanceof Promise) {
@@ -418,13 +384,6 @@ function setupInternal(setupOptions) {
         };
 
         this.render();
-
-        // Store component event listeners.
-        for (const [key, value] of Object.entries(finalProps)) {
-          if (key.startsWith('on:')) {
-            this.addEventListener(key.slice(3), value);
-          }
-        }
 
         this.bullet__isSetup = true;
       }
@@ -473,10 +432,7 @@ function setupInternal(setupOptions) {
           globalStyles.instances += 1;
 
           if (globalStyles.instances === 1) {
-            const styleElement = document.createElement('style');
-            styleElement.setAttribute('blt-component', elementTagname);
-            styleElement.innerHTML = globalStyles.data;
-            document.head.appendChild(styleElement);
+            document.adoptedStyleSheets.push(globalStyles.data);
           }
         }
 
@@ -493,16 +449,24 @@ function setupInternal(setupOptions) {
           globalStyles.instances -= 1;
 
           if (globalStyles.instances === 0) {
-            document
-              .querySelector(`style[blt-component="${elementTagname}"]`)
-              ?.remove();
+            document.adoptedStyleSheets = document.adoptedStyleSheets.filter(
+              (style) => style !== globalStyles.data
+            );
           }
         }
 
-        this.bullet__connectedReturn?.();
+        if (typeof this.bullet__connectedReturn === 'function') {
+          this.bullet__connectedReturn();
+        } else if (Array.isArray(this.bullet__connectedReturn)) {
+          for (const fn of this.bullet__connectedReturn) {
+            fn();
+          }
+        }
         this.bullet__disconnected?.();
       }
     }
+
+    ComponentConstructor.formAssociated = formAssociated;
 
     customElements.define(elementTagname, ComponentConstructor);
     CUSTOM_ELEMENT_MAP.set(elementTagname, ComponentConstructor);

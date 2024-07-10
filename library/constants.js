@@ -4,7 +4,7 @@ export const CUSTOM_ELEMENT_MAP = new Map();
 /** @type {Map<string, CSSStyleSheet>} */
 export const CUSTOM_ELEMENT_STYLES = new Map();
 
-/** @type {Map<string, {  data: string, instances: number }>} */
+/** @type {Map<string, {  data: CSSStyleSheet, instances: number }>} */
 export const CUSTOM_ELEMENT_GLOBAL_STYLES = new Map();
 
 /** @type {Map<string, HTMLElement>} */

@@ -18,16 +18,16 @@ const Counter = createElement({
     };
 
     return [
-      <div class="Heading">
+      <div key={1} class="Heading">
         <h1>Counter</h1>
         <p>A simple counter built in Bullet.</p>
       </div>,
-      <output>{this.data.count}</output>,
-      <div class="ButtonRow">
-        <button on:click={decrement} type="button">
+      <output key={2}>{this.data.count}</output>,
+      <div key={3} class="ButtonRow">
+        <button onClick={decrement} type="button">
           Decrement
         </button>
-        <button on:click={increment} type="button">
+        <button id="name" onClick={increment} type="button">
           Increment
         </button>
       </div>,
