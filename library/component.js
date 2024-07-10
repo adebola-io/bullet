@@ -103,7 +103,7 @@ import {
  * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData} [data]
  * Additional data for the custom element.
  *
- * @property {((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => (void | (() => void) | Array<() => void>))} [connected]
+ * @property {((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => (void | (() => void) | Array<(() => void) | void | null>))} [connected]
  * Called when the component is mounted to the DOM.
  * It can optionally return a function that will be called when the component is unmounted from the DOM.
  *
@@ -459,7 +459,9 @@ function setupInternal(setupOptions) {
           this.bullet__connectedReturn();
         } else if (Array.isArray(this.bullet__connectedReturn)) {
           for (const fn of this.bullet__connectedReturn) {
-            fn();
+            if (typeof fn === 'function') {
+              fn();
+            }
           }
         }
         this.bullet__disconnected?.();
