@@ -1045,6 +1045,7 @@ declare namespace JSX {
     dangerouslySetInnerHTML?: {
       __html: string;
     };
+    xmlns?: string;
   }
 
   type DatasetAttributes = Record<`data-${string}`, string>;
