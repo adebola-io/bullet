@@ -1,6 +1,6 @@
 {
   "name": "@adbl/bullet",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "Basic framework for building web apps.",
   "private": false,
   "type": "module",
