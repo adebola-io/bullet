@@ -62,7 +62,7 @@ export class Router {
    * @param {string} path - The path to navigate to.
    * @return {undefined}
    */
-  navigate(path) {
+  navigate = (path) => {
     if (path === '#') {
       return;
     }
@@ -72,7 +72,7 @@ export class Router {
       }
     });
     return;
-  }
+  };
 
   /**
    * Navigates back in the browser's history.
@@ -88,7 +88,7 @@ export class Router {
    * @param {string} path
    * @returns {Promise<boolean>} A promise that resolves to `true` if the route was loaded successfully, `false` otherwise.
    */
-  async load(path) {
+  load = async (path) => {
     if (path === '#') {
       return false;
     }
@@ -227,7 +227,7 @@ export class Router {
     }
 
     return true;
-  }
+  };
 
   /**
    * Defines a custom component that serves as the router outlet, rendering the component

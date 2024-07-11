@@ -60,7 +60,7 @@ export class Router {
      * @param {string} path - The path to navigate to.
      * @return {undefined}
      */
-    navigate(path: string): undefined;
+    navigate: (path: string) => undefined;
     /**
      * Navigates back in the browser's history.
      */
@@ -72,7 +72,7 @@ export class Router {
      * @param {string} path
      * @returns {Promise<boolean>} A promise that resolves to `true` if the route was loaded successfully, `false` otherwise.
      */
-    load(path: string): Promise<boolean>;
+    load: (path: string) => Promise<boolean>;
     /**
      * Defines a custom component that serves as the router outlet, rendering the component
      * associated with the current route.
