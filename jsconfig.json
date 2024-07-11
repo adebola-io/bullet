@@ -16,8 +16,7 @@
 
     "outDir": "types",
 
-    "jsx": "react-jsx",
-    "jsxImportSource": "tsx-dom"
+    "jsx": "react-jsx"
   },
   "include": ["library/**/*", "index.js", "library/jsx.js"],
   "exclude": ["types/**/*", "tests/**/*"]
