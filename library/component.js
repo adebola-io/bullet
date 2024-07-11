@@ -103,7 +103,7 @@ import {
  * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData} [data]
  * Additional data for the custom element.
  *
- * @property {((props: keyof RenderProps extends never ? DefaultProps : RenderProps) => (void | (() => void) | Array<(() => void) | void | null>))} [connected]
+ * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => any} [connected]
  * Called when the component is mounted to the DOM.
  * It can optionally return a function that will be called when the component is unmounted from the DOM.
  *
