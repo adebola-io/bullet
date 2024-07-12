@@ -12,3 +12,9 @@ export const CUSTOM_ELEMENT_INSTANCE_CACHE = new Map();
 
 /** @type {Map<string, Map<string, any>>} */
 export const GLOBAL_DATA = new Map();
+
+/**
+ * Keeps track of constructed custom elements so they can be reached during HMR.
+ * @type {Map<string, Map<HTMLElement, boolean>>}
+ */
+export const CUSTOM_ELEMENT_NODE_LIST = new Map();

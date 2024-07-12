@@ -106,6 +106,8 @@
  */
 export const html: typeof generateChildNodes;
 export function css(template: string | TemplateStringsArray, ...substitutions: any[]): CSSStyleSheet;
+export class BulletComponent extends HTMLElement {
+}
 /**
  * @type {(setupOptions?: SetupOptions) => SetupResult}
  */

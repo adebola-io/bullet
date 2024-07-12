@@ -59,25 +59,18 @@ If you wish to use the JSX syntax in a Vite project, create a `vite.config.js` f
 
 ```js
 import { defineConfig } from 'vite';
+import { bullet } from '@adbl/bullet/library/plugin';
 
 export default defineConfig({
-  esbuild: {
-    jsxFactory: '__bullet__jsx',
-    jsxFragment: '__bullet__jsxFragment',
-  },
+  plugins: [bullet()],
 });
 ```
 
 In your `tsconfig.json` or `jsconfig.json` file, add the compiler option:
 
 ```json
-  "jsx": "preserve"
-```
-
-Lastly, at the entry file to your project, add the following at the very top:
-
-```js
-import '@adbl/bullet/library/jsx-runtime.js';
+  "jsx": "preserve",
+  "types": ["@adbl/bullet/library/jsx-runtime"]
 ```
 
 ## Usage

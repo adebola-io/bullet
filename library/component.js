@@ -4,6 +4,7 @@ import {
   CUSTOM_ELEMENT_STYLES,
   CUSTOM_ELEMENT_GLOBAL_STYLES,
   GLOBAL_DATA,
+  CUSTOM_ELEMENT_NODE_LIST,
 } from './constants.js';
 import {
   generateInstanceKey,
@@ -148,7 +149,7 @@ export const css = (template, ...substitutions) => {
   return stylesheet;
 };
 
-class BulletComponent extends HTMLElement {}
+export class BulletComponent extends HTMLElement {}
 
 /**
  * @typedef SetupOptions
@@ -270,7 +271,8 @@ function setupInternal(setupOptions) {
       });
     }
 
-    class ComponentConstructor extends BulletComponent {
+    let ComponentConstructor = class extends BulletComponent {
+      bullet__isRandomTagname = tag === undefined;
       /**
        * Whether or not the component has been rendered by Aim.
        * @private
@@ -412,6 +414,11 @@ function setupInternal(setupOptions) {
       }
 
       connectedCallback() {
+        const nodeList =
+          CUSTOM_ELEMENT_NODE_LIST.get(elementTagname) ?? new Map();
+        nodeList.set(this, true);
+        CUSTOM_ELEMENT_NODE_LIST.set(elementTagname, nodeList);
+
         const attributes = getElementAttributes(this);
         const props = /** @type {Props} */ (attributes);
         if (!this.bullet__isSetup) {
@@ -444,6 +451,7 @@ function setupInternal(setupOptions) {
       disconnectedCallback() {
         CUSTOM_ELEMENT_INSTANCE_CACHE.delete(this.bullet__instanceKey);
         GLOBAL_DATA.delete(this.bullet__instanceKey);
+        CUSTOM_ELEMENT_NODE_LIST.get(elementTagname)?.delete(this);
         const globalStyles = CUSTOM_ELEMENT_GLOBAL_STYLES.get(elementTagname);
         if (globalStyles) {
           globalStyles.instances -= 1;
@@ -466,11 +474,30 @@ function setupInternal(setupOptions) {
         }
         this.bullet__disconnected?.();
       }
-    }
+    };
 
     ComponentConstructor.formAssociated = formAssociated;
 
-    customElements.define(elementTagname, ComponentConstructor);
+    // @ts-ignore
+    const previousConstructor = CUSTOM_ELEMENT_MAP.get(elementTagname);
+
+    if (previousConstructor) {
+      previousConstructor.prototype.__bullet__setup =
+        ComponentConstructor.prototype.__bullet__setup;
+      ComponentConstructor = previousConstructor;
+    }
+
+    const previouslyDefined = customElements.get(elementTagname);
+    if (previouslyDefined && previouslyDefined !== ComponentConstructor) {
+      throw new Error(
+        `A custom element with the tag name "${elementTagname}" has already been defined.`
+      );
+    }
+
+    if (!previouslyDefined && !previousConstructor) {
+      customElements.define(elementTagname, ComponentConstructor);
+    }
+
     CUSTOM_ELEMENT_MAP.set(elementTagname, ComponentConstructor);
 
     /** @param {Partial<Props>} [props] */
@@ -487,6 +514,7 @@ function setupInternal(setupOptions) {
     }
 
     factory.tagName = elementTagname.replace(/\./g, '\\.');
+    factory.__isBulletConstructor__ = true;
 
     // @ts-ignore
     return factory;

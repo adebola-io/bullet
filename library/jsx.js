@@ -237,9 +237,4 @@ export function normalizeChild(child) {
   return document.createTextNode(child?.toString() ?? '');
 }
 
-// @ts-ignore
-globalThis.__bullet__jsx = h;
-// @ts-ignore
-globalThis.__bullet__jsxFragment = DocumentFragment;
-
 export default h;
