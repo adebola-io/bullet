@@ -524,8 +524,8 @@ For programmatic navigation, use the router's `navigate` method:
 ```jsx
 const ProfileButton = createElement({
   render: () => {
-    const router = useRouter();
-    const goToProfile = () => router.navigate('/profile/123');
+    const { navigate } = useRouter();
+    const goToProfile = () => navigate('/profile/123');
 
     return <button onClick={goToProfile}>View Profile</button>;
   },
