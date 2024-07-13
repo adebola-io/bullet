@@ -7,7 +7,8 @@ export function update(module) {
   const elementConstructors = Object.values(module).filter(
     (exportedValue) =>
       typeof exportedValue === 'function' &&
-      exportedValue.__isBulletConstructor__
+      exportedValue.__isBulletConstructor__ &&
+      !exportedValue.__isRandomTagname
   );
   let elementsUpdated = 0;
 

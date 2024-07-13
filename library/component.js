@@ -522,6 +522,7 @@ function setupInternal(setupOptions) {
 
     factory.tagName = elementTagname.replace(/\./g, '\\.');
     factory.__isBulletConstructor__ = true;
+    factory.__isRandomTagname = tag === undefined;
 
     // @ts-ignore
     return factory;
