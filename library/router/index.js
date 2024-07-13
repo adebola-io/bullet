@@ -319,9 +319,7 @@ export function createWebRouter(routerOptions) {
     router.load(window.location.pathname);
   });
 
-  window.addEventListener('load', () => {
-    router.load(window.location.pathname);
-  });
+  router.load(window.location.pathname);
 
   return router;
 }

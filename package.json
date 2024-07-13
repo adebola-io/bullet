@@ -16,6 +16,13 @@
     "web",
     "javascript"
   ],
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "homepage": "https://github.com/adebola-io/bullet#readme",
+  "bugs": {
+    "url": "https://github.com/adebola-io/bullet/issues"
+  },
   "author": "Adebola Akomolafe",
   "repository": {
     "directory": "github.com/adebola-io/bullet",
