@@ -1542,14 +1542,19 @@ declare namespace JSX {
     max?: number | string;
 
     /**
-     * Specifies the maximum number of characters allowed in an input field.
+     * Specifies the maximum number of characters allowed in the textarea.
      */
-    maxLength?: number;
+    maxlength?: Numberish;
 
     /**
      * Specifies a minimum value for an input field.
      */
     min?: number | string;
+
+    /**
+     * Specifies the minimum number of characters allowed in the textarea.
+     */
+    minlength?: Numberish;
 
     /**
      * Specifies that a user can enter more than one value in an input field.
@@ -2032,12 +2037,12 @@ declare namespace JSX {
     /**
      * Specifies the maximum number of characters allowed in the textarea.
      */
-    maxLength?: number;
+    maxlength?: number;
 
     /**
      * Specifies the minimum number of characters allowed in the textarea.
      */
-    minLength?: number;
+    minlength?: number;
 
     /**
      * Specifies the name of the textarea.

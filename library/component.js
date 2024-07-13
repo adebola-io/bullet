@@ -101,17 +101,17 @@ import {
  * @property {DefaultProps} [defaultProps]
  * Defines the default props for the custom element.
  *
- * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData} [data]
+ * @property {(this: BulletElement, props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData} [data]
  * Additional data for the custom element.
  *
- * @property {(props: keyof RenderProps extends never ? DefaultProps : RenderProps) => any} [connected]
+ * @property {(this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps) => any} [connected]
  * Called when the component is mounted to the DOM.
  * It can optionally return a function that will be called when the component is unmounted from the DOM.
  *
  * @property {(() => void)} [disconnected]
  * Called when the component is unmounted from the DOM.
  *
- * @property {(error: unknown, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Template} [fallback]
+ * @property {(this: BulletElement<ExtraData>, error: unknown, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Template} [fallback]
  * If the render function throws an error, this function will be called to render a fallback template for the component.
  * It is most useful for asynchronous rendering, where the render function returns a promise that may be rejected.
  *
@@ -289,12 +289,13 @@ function setupInternal(setupOptions) {
        * Called when the component is mounted to the DOM.
        *
        */
-      bullet__connected = connected;
+      //@ts-ignore
+      bullet__connected = connected?.bind(this);
 
       /**
        * Called when the component is unmounted from the DOM.
        */
-      bullet__disconnected = disconnected;
+      bullet__disconnected = disconnected?.bind(this);
 
       /**
        * The data signal for the component instance.
@@ -359,7 +360,13 @@ function setupInternal(setupOptions) {
         const renderFallback = (error) => {
           if (fallback) {
             const finalFallbackProps = /** @type {any} */ (finalProps);
-            appendTemplate(fallback(error, finalFallbackProps, this.data));
+            // @ts-ignore
+            const children = fallback.bind(this)(
+              error,
+              finalFallbackProps,
+              this.data
+            );
+            appendTemplate(children);
           } else {
             throw error;
           }
