@@ -1031,6 +1031,11 @@ declare namespace JSX {
       | 'numeric'
       | 'decimal'
       | 'search';
+
+    /**
+     * Turns an element into a popover element; takes a popover state ("auto" or "manual") as its value.
+     */
+    popover?: Booleanish | 'auto' | 'manual';
   }
 
   type JsxGlobalEventHandlers = {
@@ -1266,6 +1271,16 @@ declare namespace JSX {
      * Specifies the initial value for the button.
      */
     value?: string | ReadonlyArray<string> | number;
+
+    /**
+     * Adds a popover control to the button taking the ID of the popover element to control as its value.
+     */
+    popoverTarget?: string;
+
+    /**
+     * Specifies the action to be triggered on the popover element set as the popover target.
+     */
+    popoverTargetAction?: 'hide' | 'show' | 'toggle';
   }
 
   interface JsxCanvasElement extends JsxHtmlElement {
@@ -1610,6 +1625,16 @@ declare namespace JSX {
      * Specifies the value of the input element.
      */
     value?: string | ReadonlyArray<string> | number;
+
+    /**
+     * Adds a popover control to the button taking the ID of the popover element to control as its value.
+     */
+    popoverTarget?: string;
+
+    /**
+     * Specifies the action to be triggered on the popover element set as the popover target.
+     */
+    popoverTargetAction?: 'hide' | 'show' | 'toggle';
   }
 
   interface JsxLabelElement extends JsxHtmlElement {

@@ -148,7 +148,7 @@ export function h(tagname, props, ...children) {
         continue;
       }
 
-      if (key.startsWith('form')) {
+      if (key.startsWith('form') || key.startsWith('popover')) {
         element.setAttribute(key.toLowerCase(), value);
         continue;
       }
