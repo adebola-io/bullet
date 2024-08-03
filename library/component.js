@@ -108,7 +108,7 @@ import {
  * Called when the component is mounted to the DOM.
  * It can optionally return a function that will be called when the component is unmounted from the DOM.
  *
- * @property {(() => void)} [disconnected]
+ * @property {(this: BulletElement<ExtraData>) => void} [disconnected]
  * Called when the component is unmounted from the DOM.
  *
  * @property {(this: BulletElement<ExtraData>, error: unknown, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Template} [fallback]
@@ -295,6 +295,7 @@ function setupInternal(setupOptions) {
       /**
        * Called when the component is unmounted from the DOM.
        */
+      //@ts-ignore
       bullet__disconnected = disconnected?.bind(this);
 
       /**
