@@ -1040,7 +1040,7 @@ declare namespace JSX {
 
   type JsxGlobalEventHandlers = {
     [K in keyof JsxGlobalEventHandlersEventMap]?: (
-      event: JsxGlobalEventHandlersEventMap[K]
+      event: JsxGlobalEventHandlersEventMap[K],
     ) => void;
   };
 
@@ -3043,5 +3043,5 @@ declare namespace JSX {
 
   export type IntrinsicElements = JsxHtmlElementMap & JsxSvgElementMap;
 
-  export type Element = globalThis.Element;
+  export type Element = globalThis.Node | Promise<globalThis.Node>;
 }

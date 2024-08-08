@@ -64,10 +64,10 @@
  * @property {string} [tag]
  * The HTML tag name to use for the custom element.
  *
- * @property {CSSStyleSheet} [styles]
+ * @property {CSSStyleSheet | Promise<CSSStyleSheet> | Array<CSSStyleSheet | Promise<CSSStyleSheet>>} [styles]
  * The CSS styles to apply within the custom element. The styles are scoped to the custom element's shadow root.
  *
- * @property {CSSStyleSheet} [globalStyles]
+ * @property {CSSStyleSheet | Promise<CSSStyleSheet> | Array<CSSStyleSheet | Promise<CSSStyleSheet>>} [globalStyles]
  * CSS styles that should be applied globally to the parent document. They are only valid as long as there is at least one
  * instance of the component in the document.
  *
@@ -84,7 +84,7 @@
  * Called when the component is mounted to the DOM.
  * It can optionally return a function that will be called when the component is unmounted from the DOM.
  *
- * @property {(() => void)} [disconnected]
+ * @property {(this: BulletElement<ExtraData>) => void} [disconnected]
  * Called when the component is unmounted from the DOM.
  *
  * @property {(this: BulletElement<ExtraData>, error: unknown, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Template} [fallback]
@@ -97,6 +97,9 @@
  *
  * @property {boolean} [formAssociated]
  * Whether or not the component is associated with a form.
+ *
+ * @property {string} [part]
+ * The part attribute to attach to the base element.
  */
 /**
  * Generates a set of child nodes from an HTML string.
@@ -105,7 +108,7 @@
  * @returns {Node[]} - An array of child nodes generated from the HTML string.
  */
 export const html: typeof generateChildNodes;
-export function css(template: string | TemplateStringsArray, ...substitutions: any[]): CSSStyleSheet;
+export function css(template: CSSorStringArray, ...substitutions: any[]): Array<CSSStyleSheet>;
 export class BulletComponent extends HTMLElement {
 }
 /**
@@ -173,6 +176,12 @@ export type SetupOptions = {
      * other custom elements in the DOM.
      */
     namespace?: string | undefined;
+    /**
+     * An optional array of CSS stylesheets or strings to be applied to every component created with this setup.
+     * These styles will be scoped to the component's shadow DOM if it has one.
+     * Can be a mix of CSSStyleSheet objects, strings, or promises that resolve to either.
+     */
+    styles?: (CSSStyleSheet | Promise<CSSStyleSheet>)[] | undefined;
 };
 export type ElementConstructor = ReturnType<typeof setupInternal>["createElement"];
 export type SetupResult = {
@@ -225,12 +234,12 @@ export type ElementConfig<Props_1 extends DefaultProps = never, ExtraData extend
     /**
      * The CSS styles to apply within the custom element. The styles are scoped to the custom element's shadow root.
      */
-    styles?: CSSStyleSheet | undefined;
+    styles?: CSSStyleSheet | Promise<CSSStyleSheet> | (CSSStyleSheet | Promise<CSSStyleSheet>)[] | undefined;
     /**
      * CSS styles that should be applied globally to the parent document. They are only valid as long as there is at least one
      * instance of the component in the document.
      */
-    globalStyles?: CSSStyleSheet | undefined;
+    globalStyles?: CSSStyleSheet | Promise<CSSStyleSheet> | (CSSStyleSheet | Promise<CSSStyleSheet>)[] | undefined;
     /**
      * A function that generates the content for the component's shadow root. It accepts the props of the component and the component data as arguments.
      */
@@ -251,7 +260,7 @@ export type ElementConfig<Props_1 extends DefaultProps = never, ExtraData extend
     /**
      * Called when the component is unmounted from the DOM.
      */
-    disconnected?: (() => void) | undefined;
+    disconnected?: ((this: BulletElement<ExtraData>) => void) | undefined;
     /**
      * If the render function throws an error, this function will be called to render a fallback template for the component.
      * It is most useful for asynchronous rendering, where the render function returns a promise that may be rejected.
@@ -266,14 +275,28 @@ export type ElementConfig<Props_1 extends DefaultProps = never, ExtraData extend
      * Whether or not the component is associated with a form.
      */
     formAssociated?: boolean | undefined;
+    /**
+     * The part attribute to attach to the base element.
+     */
+    part?: string | undefined;
 };
+export type CSSorStringArray = string | TemplateStringsArray | Promise<string | {
+    default: string;
+}> | Array<string | TemplateStringsArray | Promise<string | {
+    default: string;
+}>>;
 import { generateChildNodes } from './utils.js';
 /**
  * @typedef SetupOptions
+ *
  * @property {string} [namespace]
  * A namespace to scope your custom elements to. This will ensure that they do not affect
  * other custom elements in the DOM.
- */
+ *
+ * @property {Array<CSSStyleSheet | Promise<CSSStyleSheet>>} [styles]
+ * An optional array of CSS stylesheets or strings to be applied to every component created with this setup.
+ * These styles will be scoped to the component's shadow DOM if it has one.
+ * Can be a mix of CSSStyleSheet objects, strings, or promises that resolve to either. */
 /**
  * @typedef {ReturnType<typeof setupInternal>['createElement']} ElementConstructor
  */

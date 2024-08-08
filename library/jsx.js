@@ -91,11 +91,11 @@ const camelCasedAttributes = new Set([
  * Creates a new DOM element with the specified tag name, props, and children.
  *
  * @template {object} Props
- * @template {string | ((props: Props & { children: any } | typeof DocumentFragment) => Element)} TagName
+ * @template {string | ((props: Props & { children: any } | typeof DocumentFragment) => Node | Promise<Node>)} TagName
  * @param {TagName} tagname - The HTML tag name for the element.
  * @param {Props} props - An object containing the element's properties.
  * @param {...*} children - The child elements of the element.
- * @returns {TagName extends keyof HTMLElementTagNameMap ? HTMLElementTagNameMap[TagName]: Element} A new virtual DOM element.
+ * @returns {Node} A new virtual DOM element.
  */
 export function h(tagname, props, ...children) {
   if (Object.is(tagname, DocumentFragment)) {
@@ -113,6 +113,20 @@ export function h(tagname, props, ...children) {
       ...props,
     });
 
+    if (component instanceof Promise) {
+      const placeholder = document.createComment('---');
+      component.then((component) => {
+        if (component instanceof Element) {
+          for (const child of children) {
+            component.appendChild(normalizeChild(child));
+          }
+        }
+        placeholder.replaceWith(component);
+      });
+      // @ts-ignore
+      return placeholder;
+    }
+
     if (component instanceof Element) {
       for (const child of children) {
         component.appendChild(normalizeChild(child));
@@ -127,8 +141,11 @@ export function h(tagname, props, ...children) {
     tagname === 'svg'
       ? document.createElementNS('http://www.w3.org/2000/svg', tagname)
       : tagname === 'math'
-      ? document.createElementNS('http://www.w3.org/1998/Math/MathML', tagname)
-      : document.createElement(tagname);
+        ? document.createElementNS(
+            'http://www.w3.org/1998/Math/MathML',
+            tagname,
+          )
+        : document.createElement(tagname);
 
   if (props !== null)
     for (const [key, value] of Object.entries(props)) {
@@ -167,7 +184,7 @@ export function h(tagname, props, ...children) {
       if (key === 'style' && typeof value === 'object' && value !== null) {
         element.setAttribute(
           'style',
-          convertObjectToCssStylesheet(value, false)
+          convertObjectToCssStylesheet(value, false),
         );
         continue;
       }
@@ -183,7 +200,7 @@ export function h(tagname, props, ...children) {
         key.replace(/([A-Z])/g, (match) => {
           return `-${match.toLowerCase()}`;
         }),
-        value
+        value,
       );
     }
 

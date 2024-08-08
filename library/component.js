@@ -88,10 +88,10 @@ import {
  * @property {string} [tag]
  * The HTML tag name to use for the custom element.
  *
- * @property {CSSStyleSheet} [styles]
+ * @property {CSSStyleSheet | Promise<CSSStyleSheet> | Array<CSSStyleSheet | Promise<CSSStyleSheet>>} [styles]
  * The CSS styles to apply within the custom element. The styles are scoped to the custom element's shadow root.
  *
- * @property {CSSStyleSheet} [globalStyles]
+ * @property {CSSStyleSheet | Promise<CSSStyleSheet> | Array<CSSStyleSheet | Promise<CSSStyleSheet>>} [globalStyles]
  * CSS styles that should be applied globally to the parent document. They are only valid as long as there is at least one
  * instance of the component in the document.
  *
@@ -121,6 +121,9 @@ import {
  *
  * @property {boolean} [formAssociated]
  * Whether or not the component is associated with a form.
+ *
+ * @property {string} [part]
+ * The part attribute to attach to the base element.
  */
 
 /**
@@ -131,32 +134,66 @@ import {
  */
 export const html = generateChildNodes;
 
+/** @param {Error} error  */
+const logError = (error) => {
+  console.error(error instanceof Error ? error.message : error);
+};
+
+/**
+ * @typedef {string | TemplateStringsArray | Promise<string | {default: string}> | Array<string | TemplateStringsArray | Promise<string | {default: string}>>} CSSorStringArray
+ */
+
 /**
  * Generates a CSS stylesheet from a CSS text string.
  *
- * @param {string | TemplateStringsArray} template - The CSS text to create the stylesheet from.
+ * @param {CSSorStringArray} template - The CSS text to create the stylesheet from.
  * @param {any[]} substitutions
- * @returns {CSSStyleSheet} - The generated CSS stylesheet.
+ * @returns {Array<CSSStyleSheet>} - The generated CSS stylesheet.
  */
 export const css = (template, ...substitutions) => {
-  const stylesheet = new CSSStyleSheet();
-  if (typeof template === 'string') {
-    stylesheet.replaceSync(template);
-  } else {
-    const cssText = String.raw(template, ...substitutions);
-    stylesheet.replaceSync(cssText);
+  switch (true) {
+    case typeof template === 'string': {
+      const stylesheet = new CSSStyleSheet();
+      stylesheet.replaceSync(template);
+      return [stylesheet];
+    }
+    case template instanceof Promise: {
+      const stylesheet = new CSSStyleSheet();
+      template.then((imported) => {
+        const data = typeof imported === 'string' ? imported : imported.default;
+        stylesheet.replaceSync(data);
+      });
+      return [stylesheet];
+    }
+    case Array.isArray(template): {
+      const data = [];
+      for (const templ of template) {
+        data.push(...css(templ));
+      }
+      return data;
+    }
+    default: {
+      const stylesheet = new CSSStyleSheet();
+      const cssText = String.raw(template, ...substitutions);
+      stylesheet.replaceSync(cssText);
+      return [stylesheet];
+    }
   }
-  return stylesheet;
 };
 
 export class BulletComponent extends HTMLElement {}
 
 /**
  * @typedef SetupOptions
+ *
  * @property {string} [namespace]
  * A namespace to scope your custom elements to. This will ensure that they do not affect
  * other custom elements in the DOM.
- */
+ *
+ * @property {Array<CSSStyleSheet | Promise<CSSStyleSheet>>} [styles]
+ * An optional array of CSS stylesheets or strings to be applied to every component created with this setup.
+ * These styles will be scoped to the component's shadow DOM if it has one.
+ * Can be a mix of CSSStyleSheet objects, strings, or promises that resolve to either. */
 
 /**
  * @typedef {ReturnType<typeof setupInternal>['createElement']} ElementConstructor
@@ -170,7 +207,21 @@ export class BulletComponent extends HTMLElement {}
 
 /** @param {SetupOptions} [setupOptions] */
 function setupInternal(setupOptions) {
-  const { namespace } = setupOptions ?? {};
+  const { namespace, styles } = setupOptions ?? {};
+  /** @type {Array<CSSStyleSheet>} */
+  const injectedStyles = [];
+
+  if (styles) {
+    for (const style of styles) {
+      if (style instanceof Promise) {
+        style.then((imported) => {
+          injectedStyles.push(imported);
+        });
+      } else {
+        injectedStyles.push(style);
+      }
+    }
+  }
 
   /**
    * Defines a custom HTML element with a shadow DOM and optional styles.
@@ -239,6 +290,7 @@ function setupInternal(setupOptions) {
       disconnected,
       fallback,
       initial,
+      part,
     } = typeof elementConfig === 'function'
       ? {
           render: elementConfig,
@@ -252,6 +304,7 @@ function setupInternal(setupOptions) {
           disconnected: undefined,
           fallback: undefined,
           initial: undefined,
+          part: undefined,
         }
       : elementConfig;
     const elementTagname = `${namespace ? `${namespace}-` : ''}${
@@ -260,13 +313,16 @@ function setupInternal(setupOptions) {
 
     // Load component CSS.
     if (styles) {
-      CUSTOM_ELEMENT_STYLES.set(elementTagname, styles);
+      CUSTOM_ELEMENT_STYLES.set(
+        elementTagname,
+        Array.isArray(styles) ? styles : [styles]
+      );
     }
 
     // Load global CSS.
     if (globalStyles) {
       CUSTOM_ELEMENT_GLOBAL_STYLES.set(elementTagname, {
-        data: globalStyles,
+        data: Array.isArray(globalStyles) ? globalStyles : [globalStyles],
         instances: 0,
       });
     }
@@ -313,11 +369,26 @@ function setupInternal(setupOptions) {
         this.attachShadow({ mode: 'open' });
         this.elementInternals = this.attachInternals();
         this.isFormAssociated = ComponentConstructor.formAssociated;
+        if (ComponentConstructor.part) {
+          this.setAttribute('part', ComponentConstructor.part);
+        }
         const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
+        shadowRoot.adoptedStyleSheets = [...injectedStyles];
 
-        const stylesheet = CUSTOM_ELEMENT_STYLES.get(elementTagname);
-        if (stylesheet) {
-          shadowRoot.adoptedStyleSheets = [stylesheet];
+        const stylesheetArray = CUSTOM_ELEMENT_STYLES.get(elementTagname);
+        if (stylesheetArray) {
+          for (const [index, stylesheet] of stylesheetArray.entries()) {
+            if (!(stylesheet instanceof Promise)) {
+              shadowRoot.adoptedStyleSheets.push(stylesheet);
+              continue;
+            }
+            stylesheet
+              .then((sheet) => {
+                stylesheetArray.splice(index, 1, sheet);
+                shadowRoot.adoptedStyleSheets.push(sheet);
+              })
+              .catch(logError);
+          }
         }
 
         this.bullet__instanceKey = generateInstanceKey(elementTagname);
@@ -447,7 +518,19 @@ function setupInternal(setupOptions) {
           globalStyles.instances += 1;
 
           if (globalStyles.instances === 1) {
-            document.adoptedStyleSheets.push(globalStyles.data);
+            const stylesheetArray = globalStyles.data;
+            for (const [index, stylesheet] of stylesheetArray.entries()) {
+              if (!(stylesheet instanceof Promise)) {
+                document.adoptedStyleSheets.push(stylesheet);
+                continue;
+              }
+              stylesheet
+                .then((sheet) => {
+                  stylesheetArray.splice(index, 1, sheet);
+                  document.adoptedStyleSheets.push(sheet);
+                })
+                .catch(logError);
+            }
           }
         }
 
@@ -465,8 +548,9 @@ function setupInternal(setupOptions) {
           globalStyles.instances -= 1;
 
           if (globalStyles.instances === 0) {
+            const array = globalStyles.data;
             document.adoptedStyleSheets = document.adoptedStyleSheets.filter(
-              (style) => style !== globalStyles.data
+              (stylesheet) => array.indexOf(stylesheet) === -1
             );
           }
         }
@@ -485,6 +569,7 @@ function setupInternal(setupOptions) {
     };
 
     ComponentConstructor.formAssociated = formAssociated;
+    ComponentConstructor.part = part;
 
     // @ts-ignore
     const previousConstructor = CUSTOM_ELEMENT_MAP.get(elementTagname);

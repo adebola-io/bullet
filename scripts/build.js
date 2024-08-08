@@ -1,5 +1,5 @@
 import fs from 'node:fs';
-import { exec } from 'node:child_process';
+import { execSync } from 'node:child_process';
 
 if (fs.existsSync('types')) {
   console.log('Removing types directory...');
@@ -10,20 +10,15 @@ fs.writeFileSync(
   'index.js',
   fs
     .readFileSync('index.js', 'utf8')
-    .replace('/// <reference path="./types/index.d.ts" />', '')
+    .replace('/// <reference path="./types/index.d.ts" />\n', '')
+    .replace('/// <reference path="./types/helpers/index.d.ts" />\n', ''),
 );
 
-exec('npx tsc --project jsconfig.json', (error, stdout, stderr) => {
-  if (error) {
-    console.error(`exec error: ${error}`);
-    return;
-  }
-  console.log(`stdout: ${stdout}`);
-  console.log(`stderr: ${stderr}`);
-
-  fs.writeFileSync(
-    'index.js',
-    `/// <reference path="./types/index.d.ts" />
-${fs.readFileSync('index.js', 'utf8')}`
-  );
-});
+console.log('Building types...');
+execSync('npx tsc --project jsconfig.json', { stdio: 'inherit' });
+fs.writeFileSync(
+  'index.js',
+  `/// <reference path="./types/index.d.ts" />
+/// <reference path="./types/helpers/index.d.ts" />
+${fs.readFileSync('index.js', 'utf8')}`,
+);
