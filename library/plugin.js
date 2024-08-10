@@ -23,7 +23,12 @@ export const bullet = () => ({
    * @param {string} id
    */
   transform(code, id) {
-    if (id.endsWith('.jsx') || id.endsWith('.tsx')) {
+    if (
+      id.endsWith('.jsx') ||
+      id.endsWith('.tsx') ||
+      id.endsWith('.js') ||
+      id.endsWith('.ts')
+    ) {
       return {
         code: `
 import { update as __BULLET_HMR__ } from '@adbl/bullet/library/hmr';
@@ -34,7 +39,10 @@ ${code}
 
 if (import.meta.hot) {
   import.meta.hot.accept((newModule) => {
-    if (newModule) __BULLET_HMR__(newModule)
+    if (newModule) {
+      const updated = __BULLET_HMR__(newModule);
+      if (!updated) window.location.reload();
+    }
   });
 }
 `,

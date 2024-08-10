@@ -11,7 +11,6 @@ fs.writeFileSync(
   fs
     .readFileSync('index.js', 'utf8')
     .replace('/// <reference path="./types/index.d.ts" />\n', '')
-    .replace('/// <reference path="./types/helpers/index.d.ts" />\n', ''),
 );
 
 console.log('Building types...');
@@ -19,6 +18,5 @@ execSync('npx tsc --project jsconfig.json', { stdio: 'inherit' });
 fs.writeFileSync(
   'index.js',
   `/// <reference path="./types/index.d.ts" />
-/// <reference path="./types/helpers/index.d.ts" />
-${fs.readFileSync('index.js', 'utf8')}`,
+${fs.readFileSync('index.js', 'utf8')}`
 );

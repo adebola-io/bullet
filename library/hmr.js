@@ -2,6 +2,7 @@ import { CUSTOM_ELEMENT_NODE_LIST } from './constants.js';
 
 /**
  * @param {{[key: string] : any}} module
+ * @returns {boolean}
  */
 export function update(module) {
   const elementConstructors = Object.values(module).filter(
@@ -46,4 +47,6 @@ export function update(module) {
       elementsUpdated += 1;
     }
   }
+
+  return elementsUpdated > 0;
 }

@@ -37,6 +37,10 @@
  *
  * @property {ElementInternals} elementInternals
  * Returns the internals of the element.
+ *
+ * @property {AbortController} controller
+ * A controller for the element that aborts when the element is disconnected. It can be used to cancel
+ * long-running tasks or unsubscribe from events.
  */
 /**
  * @template [ComponentData={}]
@@ -51,7 +55,12 @@
  * @template RenderProps
  * @template DefaultProps
  * @template {boolean} Async
- * @typedef {(this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Async extends true ? Template | Promise<Template>: Template} RenderFunction
+ * @typedef {(
+ *    this: BulletElement<ExtraData>,
+ *    props: keyof RenderProps extends never ? DefaultProps : RenderProps,
+ *    data: ExtraData,
+ *    element: BulletElement<ExtraData>
+ *  ) => Async extends true ? Template | Promise<Template>: Template} RenderFunction
  */
 /**
  * @template {DefaultProps} [Props=never]
@@ -80,11 +89,11 @@
  * @property {(this: BulletElement, props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData} [data]
  * Additional data for the custom element.
  *
- * @property {(this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps) => any} [connected]
+ * @property {(this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps, element: BulletElement<ExtraData>) => any} [connected]
  * Called when the component is mounted to the DOM.
  * It can optionally return a function that will be called when the component is unmounted from the DOM.
  *
- * @property {(this: BulletElement<ExtraData>) => void} [disconnected]
+ * @property {(this: BulletElement<ExtraData>, element: BulletElement<ExtraData>) => void} [disconnected]
  * Called when the component is unmounted from the DOM.
  *
  * @property {(this: BulletElement<ExtraData>, error: unknown, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Template} [fallback]
@@ -100,6 +109,9 @@
  *
  * @property {string} [part]
  * The part attribute to attach to the base element.
+ *
+ * @property {string} [className]
+ * The class attribute to attach to the base element.
  */
 /**
  * Generates a set of child nodes from an HTML string.
@@ -111,6 +123,7 @@ export const html: typeof generateChildNodes;
 export function css(template: CSSorStringArray, ...substitutions: any[]): Array<CSSStyleSheet>;
 export class BulletComponent extends HTMLElement {
 }
+export function getCurrentElement(): BulletElement<unknown> | undefined;
 /**
  * @type {(setupOptions?: SetupOptions) => SetupResult}
  */
@@ -170,26 +183,6 @@ export const setup: (setupOptions?: SetupOptions) => SetupResult;
  * document.body.innerHtml = '<my-button color="red" label="Click here"></my-button>';
  */
 export function createElement<RenderPropsInitial extends object, ComponentData extends object = {}, Props_1 extends object = RenderPropsInitial, DefaultProps extends object = {}, RenderProps extends Props & DefaultProps = Props & DefaultProps>(elementConfig: ElementConfig<Props_1 & DefaultProps & RenderProps, ComponentData, DefaultProps, RenderPropsInitial> | RenderFunction<ComponentData, RenderProps, DefaultProps, true>): keyof Props_1 extends never ? Component<Partial<DefaultProps>> : Component<Props_1, ComponentData>;
-export type SetupOptions = {
-    /**
-     * A namespace to scope your custom elements to. This will ensure that they do not affect
-     * other custom elements in the DOM.
-     */
-    namespace?: string | undefined;
-    /**
-     * An optional array of CSS stylesheets or strings to be applied to every component created with this setup.
-     * These styles will be scoped to the component's shadow DOM if it has one.
-     * Can be a mix of CSSStyleSheet objects, strings, or promises that resolve to either.
-     */
-    styles?: (CSSStyleSheet | Promise<CSSStyleSheet>)[] | undefined;
-};
-export type ElementConstructor = ReturnType<typeof setupInternal>["createElement"];
-export type SetupResult = {
-    /**
-     * Defines a custom HTML element with a shadow DOM and optional styles.
-     */
-    createElement: ElementConstructor;
-};
 export type AimRenderNode = Node | string;
 export type Template = AimRenderNode | AimRenderNode[] | undefined;
 export type ComponentProps<Props_1> = Props_1 & JSX.JsxNativeProps;
@@ -223,9 +216,14 @@ export type CustomElementProperties<ComponentData = {}> = {
      * Returns the internals of the element.
      */
     elementInternals: ElementInternals;
+    /**
+     * A controller for the element that aborts when the element is disconnected. It can be used to cancel
+     * long-running tasks or unsubscribe from events.
+     */
+    controller: AbortController;
 };
 export type BulletElement<ComponentData = {}> = (HTMLElement & CustomElementProperties<ComponentData>);
-export type RenderFunction<ExtraData, RenderProps, DefaultProps, Async extends boolean> = (this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Async extends true ? Template | Promise<Template> : Template;
+export type RenderFunction<ExtraData, RenderProps, DefaultProps, Async extends boolean> = (this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData, element: BulletElement<ExtraData>) => Async extends true ? Template | Promise<Template> : Template;
 export type ElementConfig<Props_1 extends DefaultProps = never, ExtraData extends object = never, DefaultProps extends Partial<Props_1> = {}, RenderProps extends object = Props_1> = {
     /**
      * The HTML tag name to use for the custom element.
@@ -256,11 +254,11 @@ export type ElementConfig<Props_1 extends DefaultProps = never, ExtraData extend
      * Called when the component is mounted to the DOM.
      * It can optionally return a function that will be called when the component is unmounted from the DOM.
      */
-    connected?: ((this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps) => any) | undefined;
+    connected?: ((this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps, element: BulletElement<ExtraData>) => any) | undefined;
     /**
      * Called when the component is unmounted from the DOM.
      */
-    disconnected?: ((this: BulletElement<ExtraData>) => void) | undefined;
+    disconnected?: ((this: BulletElement<ExtraData>, element: BulletElement<ExtraData>) => void) | undefined;
     /**
      * If the render function throws an error, this function will be called to render a fallback template for the component.
      * It is most useful for asynchronous rendering, where the render function returns a promise that may be rejected.
@@ -279,34 +277,40 @@ export type ElementConfig<Props_1 extends DefaultProps = never, ExtraData extend
      * The part attribute to attach to the base element.
      */
     part?: string | undefined;
+    /**
+     * The class attribute to attach to the base element.
+     */
+    className?: string | undefined;
 };
 export type CSSorStringArray = string | TemplateStringsArray | Promise<string | {
     default: string;
 }> | Array<string | TemplateStringsArray | Promise<string | {
     default: string;
 }>>;
+export type SetupOptions = {
+    /**
+     * A namespace to scope your custom elements to. This will ensure that they do not affect
+     * other custom elements in the DOM.
+     */
+    namespace?: string | undefined;
+    /**
+     * An optional array of CSS stylesheets or strings to be applied to every component created with this setup.
+     * These styles will be scoped to the component's shadow DOM if it has one.
+     * Can be a mix of CSSStyleSheet objects, strings, or promises that resolve to either.
+     */
+    styles?: (CSSStyleSheet | Promise<CSSStyleSheet>)[] | undefined;
+};
+export type ElementConstructor = ReturnType<typeof setupInternal>["createElement"];
+export type SetupResult = {
+    /**
+     * Returns the custom element that is currently being rendered.
+     */
+    createElement: ElementConstructor;
+};
 import { generateChildNodes } from './utils.js';
-/**
- * @typedef SetupOptions
- *
- * @property {string} [namespace]
- * A namespace to scope your custom elements to. This will ensure that they do not affect
- * other custom elements in the DOM.
- *
- * @property {Array<CSSStyleSheet | Promise<CSSStyleSheet>>} [styles]
- * An optional array of CSS stylesheets or strings to be applied to every component created with this setup.
- * These styles will be scoped to the component's shadow DOM if it has one.
- * Can be a mix of CSSStyleSheet objects, strings, or promises that resolve to either. */
-/**
- * @typedef {ReturnType<typeof setupInternal>['createElement']} ElementConstructor
- */
-/**
- * @typedef SetupResult
- * @property {ElementConstructor} createElement
- * Defines a custom HTML element with a shadow DOM and optional styles.
- */
 /** @param {SetupOptions} [setupOptions] */
 declare function setupInternal(setupOptions?: SetupOptions | undefined): {
     createElement: <RenderPropsInitial extends object, ComponentData extends object = {}, Props_1 extends object = RenderPropsInitial, DefaultProps extends object = {}, RenderProps extends Props & DefaultProps = Props & DefaultProps>(elementConfig: ElementConfig<Props_1 & DefaultProps & RenderProps, ComponentData, DefaultProps, RenderPropsInitial> | RenderFunction<ComponentData, RenderProps, DefaultProps, true>) => keyof Props_1 extends never ? Component<Partial<DefaultProps>> : Component<Props_1, ComponentData>;
+    getCurrentElement: () => BulletElement<unknown> | undefined;
 };
 export {};

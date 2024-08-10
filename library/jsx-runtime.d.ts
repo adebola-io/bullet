@@ -1040,7 +1040,7 @@ declare namespace JSX {
 
   type JsxGlobalEventHandlers = {
     [K in keyof JsxGlobalEventHandlersEventMap]?: (
-      event: JsxGlobalEventHandlersEventMap[K],
+      event: JsxGlobalEventHandlersEventMap[K]
     ) => void;
   };
 
@@ -3041,7 +3041,16 @@ declare namespace JSX {
     view: JsxSVGViewElement;
   }
 
-  export type IntrinsicElements = JsxHtmlElementMap & JsxSvgElementMap;
+  export type IntrinsicElementsBase = JsxHtmlElementMap & JsxSvgElementMap;
+  export type IntrinsicElements = {
+    [key in keyof IntrinsicElementsBase]: {
+      [attribute in keyof IntrinsicElementsBase[key]]:
+        | IntrinsicElementsBase[key][attribute]
+        | {
+            value: IntrinsicElementsBase[key][attribute];
+          };
+    };
+  };
 
-  export type Element = globalThis.Node | Promise<globalThis.Node>;
+  export type Element = globalThis.Node | globalThis.Node[];
 }

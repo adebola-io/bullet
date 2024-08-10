@@ -57,6 +57,10 @@ import {
  *
  * @property {ElementInternals} elementInternals
  * Returns the internals of the element.
+ *
+ * @property {AbortController} controller
+ * A controller for the element that aborts when the element is disconnected. It can be used to cancel
+ * long-running tasks or unsubscribe from events.
  */
 
 /**
@@ -74,7 +78,12 @@ import {
  * @template RenderProps
  * @template DefaultProps
  * @template {boolean} Async
- * @typedef {(this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Async extends true ? Template | Promise<Template>: Template} RenderFunction
+ * @typedef {(
+ *    this: BulletElement<ExtraData>,
+ *    props: keyof RenderProps extends never ? DefaultProps : RenderProps,
+ *    data: ExtraData,
+ *    element: BulletElement<ExtraData>
+ *  ) => Async extends true ? Template | Promise<Template>: Template} RenderFunction
  */
 
 /**
@@ -104,11 +113,11 @@ import {
  * @property {(this: BulletElement, props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData} [data]
  * Additional data for the custom element.
  *
- * @property {(this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps) => any} [connected]
+ * @property {(this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps, element: BulletElement<ExtraData>) => any} [connected]
  * Called when the component is mounted to the DOM.
  * It can optionally return a function that will be called when the component is unmounted from the DOM.
  *
- * @property {(this: BulletElement<ExtraData>) => void} [disconnected]
+ * @property {(this: BulletElement<ExtraData>, element: BulletElement<ExtraData>) => void} [disconnected]
  * Called when the component is unmounted from the DOM.
  *
  * @property {(this: BulletElement<ExtraData>, error: unknown, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Template} [fallback]
@@ -124,6 +133,9 @@ import {
  *
  * @property {string} [part]
  * The part attribute to attach to the base element.
+ *
+ * @property {string} [className]
+ * The class attribute to attach to the base element.
  */
 
 /**
@@ -167,8 +179,8 @@ export const css = (template, ...substitutions) => {
     }
     case Array.isArray(template): {
       const data = [];
-      for (const templ of template) {
-        data.push(...css(templ));
+      for (const temp of template) {
+        data.push(...css(temp));
       }
       return data;
     }
@@ -202,8 +214,19 @@ export class BulletComponent extends HTMLElement {}
 /**
  * @typedef SetupResult
  * @property {ElementConstructor} createElement
- * Defines a custom HTML element with a shadow DOM and optional styles.
+ * Returns the custom element that is currently being rendered.
  */
+
+/** @type {Array<any>} */
+const RENDERING_TREE = [];
+
+/**
+ * Returns the last element in the rendering tree, if it is a `BulletElement`.
+ * @returns {BulletElement<unknown> | undefined} The last element in the rendering tree, or `undefined` if it is not a `BulletElement`.
+ */
+export const getCurrentElement = () => {
+  return RENDERING_TREE.at(-1);
+};
 
 /** @param {SetupOptions} [setupOptions] */
 function setupInternal(setupOptions) {
@@ -291,6 +314,7 @@ function setupInternal(setupOptions) {
       fallback,
       initial,
       part,
+      className,
     } = typeof elementConfig === 'function'
       ? {
           render: elementConfig,
@@ -305,6 +329,7 @@ function setupInternal(setupOptions) {
           fallback: undefined,
           initial: undefined,
           part: undefined,
+          className: undefined,
         }
       : elementConfig;
     const elementTagname = `${namespace ? `${namespace}-` : ''}${
@@ -328,6 +353,9 @@ function setupInternal(setupOptions) {
     }
 
     let ComponentConstructor = class extends BulletComponent {
+      static formAssociated = formAssociated;
+      static part = part;
+
       bullet__isRandomTagname = tag === undefined;
       /**
        * Whether or not the component has been rendered by Aim.
@@ -368,7 +396,10 @@ function setupInternal(setupOptions) {
         super();
         this.attachShadow({ mode: 'open' });
         this.elementInternals = this.attachInternals();
-        this.isFormAssociated = ComponentConstructor.formAssociated;
+        if (ComponentConstructor.formAssociated) {
+          this.isFormAssociated = true;
+        }
+        this.className = className ?? '';
         if (ComponentConstructor.part) {
           this.setAttribute('part', ComponentConstructor.part);
         }
@@ -399,6 +430,7 @@ function setupInternal(setupOptions) {
        * @param {Partial<Props>} [props] - The props to initialize the component with.
        */
       __bullet__setup(props = {}) {
+        this.controller = new AbortController();
         const storage = new Map();
         GLOBAL_DATA.set(this.bullet__instanceKey, storage);
         storage.set('owner', this);
@@ -423,7 +455,7 @@ function setupInternal(setupOptions) {
         const renderInitial = () => {
           if (initial) {
             /** @type {Template | Promise<Template>}*/ // @ts-ignore
-            const children = initial.bind(this)(finalProps, this.data);
+            const children = initial.bind(this)(finalProps, this.data, this);
             appendTemplate(children);
           }
         };
@@ -445,6 +477,8 @@ function setupInternal(setupOptions) {
         };
 
         this.render = function () {
+          RENDERING_TREE.push(this);
+
           // Render the component.
           try {
             if (render === undefined) {
@@ -452,7 +486,7 @@ function setupInternal(setupOptions) {
               return;
             }
             /** @type {Template | Promise<Template>}*/ // @ts-ignore
-            const renderResult = render.bind(this)(finalProps, this.data);
+            const renderResult = render.bind(this)(finalProps, this.data, this);
             if (renderResult instanceof Promise) {
               renderInitial();
               renderResult.then(appendTemplate).catch(renderFallback);
@@ -462,6 +496,8 @@ function setupInternal(setupOptions) {
           } catch (error) {
             renderFallback(error);
           }
+
+          RENDERING_TREE.pop();
         };
 
         this.render();
@@ -500,6 +536,9 @@ function setupInternal(setupOptions) {
 
         const attributes = getElementAttributes(this);
         const props = /** @type {Props} */ (attributes);
+        if (this.controller) {
+          this.controller = new AbortController();
+        }
         if (!this.bullet__isSetup) {
           this.__bullet__setup(props);
 
@@ -535,7 +574,8 @@ function setupInternal(setupOptions) {
         }
 
         this.bullet__connectedReturn = this.bullet__connected?.(
-          /** @type {any} */ (this.bullet__finalProps ?? props)
+          /** @type {any} */ (this.bullet__finalProps ?? props),
+          /** @type {any} */ (this)
         );
       }
 
@@ -543,6 +583,7 @@ function setupInternal(setupOptions) {
         CUSTOM_ELEMENT_INSTANCE_CACHE.delete(this.bullet__instanceKey);
         GLOBAL_DATA.delete(this.bullet__instanceKey);
         CUSTOM_ELEMENT_NODE_LIST.get(elementTagname)?.delete(this);
+        this.controller?.abort();
         const globalStyles = CUSTOM_ELEMENT_GLOBAL_STYLES.get(elementTagname);
         if (globalStyles) {
           globalStyles.instances -= 1;
@@ -556,7 +597,7 @@ function setupInternal(setupOptions) {
         }
 
         if (typeof this.bullet__connectedReturn === 'function') {
-          this.bullet__connectedReturn();
+          this.bullet__connectedReturn(this);
         } else if (Array.isArray(this.bullet__connectedReturn)) {
           for (const fn of this.bullet__connectedReturn) {
             if (typeof fn === 'function') {
@@ -564,12 +605,9 @@ function setupInternal(setupOptions) {
             }
           }
         }
-        this.bullet__disconnected?.();
+        this.bullet__disconnected?.(/** @type {any} */ (this));
       }
     };
-
-    ComponentConstructor.formAssociated = formAssociated;
-    ComponentConstructor.part = part;
 
     // @ts-ignore
     const previousConstructor = CUSTOM_ELEMENT_MAP.get(elementTagname);
@@ -617,6 +655,7 @@ function setupInternal(setupOptions) {
   return {
     // @ts-ignore
     createElement,
+    getCurrentElement,
   };
 }
 
