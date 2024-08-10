@@ -1,3 +1,8 @@
+// @ts-ignore
+/// <reference types="node" />
+
+import { resolve } from 'node:path';
+
 /**
  * A plugin for transforming JSX/TSX files and configuring esbuild for Bullet.
  *
@@ -8,6 +13,11 @@
  */
 
 /**
+ * @typedef {Object} BulletPluginOptions
+ * @property {string} [alias] - The aliasing path for the bullet library.
+ */
+
+/**
  * The Bullet plugin for Vite.
  *
  * This plugin handles the transformation of JSX and TSX files,
@@ -15,14 +25,17 @@
  * esbuild to use Bullet's JSX factory and fragment.
  *
  * @type {() => BulletPlugin}
+ * @param {BulletPluginOptions} [options]
  */
-export const bullet = () => ({
+export const bullet = (options) => ({
   name: 'bullet-plugin',
   /**
    * @param {string} code
    * @param {string} id
    */
   transform(code, id) {
+    const alias = options?.alias ? resolve(options.alias) : '@adbl/bullet';
+
     if (
       id.endsWith('.jsx') ||
       id.endsWith('.tsx') ||
@@ -31,8 +44,8 @@ export const bullet = () => ({
     ) {
       return {
         code: `
-import { update as __BULLET_HMR__ } from '@adbl/bullet/library/hmr';
-import { h as __bullet__jsx } from '@adbl/bullet/library/jsx-runtime'
+import { update as __BULLET_HMR__ } from '${alias}/library/hmr';
+import { h as __bullet__jsx } from '${alias}/library/jsx-runtime'
 const __bullet__jsxFragment = globalThis.DocumentFragment;
 
 ${code}

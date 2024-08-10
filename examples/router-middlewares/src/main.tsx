@@ -92,4 +92,4 @@ const router = createWebRouter({
   middlewares: [auth],
 });
 
-document.body.appendChild(<router.Outlet />);
+document.body.appendChild((<router.Outlet />) as Node);

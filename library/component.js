@@ -225,7 +225,7 @@ const RENDERING_TREE = [];
  * @returns {BulletElement<unknown> | undefined} The last element in the rendering tree, or `undefined` if it is not a `BulletElement`.
  */
 export const getCurrentElement = () => {
-  return RENDERING_TREE.at(-1);
+  return RENDERING_TREE[RENDERING_TREE.length - 1];
 };
 
 /** @param {SetupOptions} [setupOptions] */

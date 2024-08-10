@@ -17,21 +17,24 @@ const Counter = createElement({
       this.render();
     };
 
-    return [
-      <div key={1} class="Heading">
-        <h1>Counter</h1>
-        <p>A simple counter built in Bullet.</p>
-      </div>,
-      <output key={2}>{this.data.count}</output>,
-      <div key={3} class="ButtonRow">
-        <button onClick={decrement} type="button">
-          Decrement
-        </button>
-        <button id="name" onClick={increment} type="button">
-          Increment
-        </button>
-      </div>,
-    ];
+    return (
+      <>
+        <div key={1} class="Heading">
+          <h1>Counter</h1>
+          <p>A simple counter built in Bullet.</p>
+        </div>
+        ,<output key={2}>{this.data.count}</output>,
+        <div key={3} class="ButtonRow">
+          <button onClick={decrement} type="button">
+            Decrement
+          </button>
+          <button id="name" onClick={increment} type="button">
+            Increment
+          </button>
+        </div>
+        ,
+      </>
+    );
   },
 
   styles: css`

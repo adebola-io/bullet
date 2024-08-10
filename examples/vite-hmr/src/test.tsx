@@ -1,4 +1,4 @@
-import { createElement } from './';
+import { createElement } from '../../../index.js';
 
 export const test = createElement({
   tag: 'test-document',

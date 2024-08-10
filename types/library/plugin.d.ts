@@ -7,6 +7,10 @@
  * @property {function(): Object} config - Provides esbuild configuration.
  */
 /**
+ * @typedef {Object} BulletPluginOptions
+ * @property {string} [alias] - The aliasing path for the bullet library.
+ */
+/**
  * The Bullet plugin for Vite.
  *
  * This plugin handles the transformation of JSX and TSX files,
@@ -14,6 +18,7 @@
  * esbuild to use Bullet's JSX factory and fragment.
  *
  * @type {() => BulletPlugin}
+ * @param {BulletPluginOptions} [options]
  */
 export const bullet: () => BulletPlugin;
 /**
@@ -32,4 +37,10 @@ export type BulletPlugin = {
      * - Provides esbuild configuration.
      */
     config: () => Object;
+};
+export type BulletPluginOptions = {
+    /**
+     * - The aliasing path for the bullet library.
+     */
+    alias?: string | undefined;
 };
