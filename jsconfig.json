@@ -18,10 +18,8 @@
     "checkJs": true,
     "strict": true,
 
-    "outDir": "types",
-
-    "jsx": "react-jsx"
+    "outDir": "types"
   },
-  "include": ["library/**/*", "index.js", "library/jsx.js"],
-  "exclude": ["types/**/*", "tests/**/*"]
+  "include": ["library/**/*", "library/jsx.js"],
+  "exclude": ["types/**/*", "tests/**/*", "node_modules/**/*"]
 }

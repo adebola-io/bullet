@@ -1,12 +1,20 @@
-import { createElement, css } from '../../index.js';
-import '../../library/jsx-runtime.js';
+import { createElement, css } from '@adbl/bullet';
 
-const Counter = createElement({
-  data() {
-    return {
-      count: 0,
-    };
+interface CounterProps {
+  initialCount?: number;
+}
+
+interface CounterData {
+  count: number;
+}
+
+const Counter = createElement<CounterProps, CounterData>({
+  defaultProps: {
+    initialCount: 0,
   },
+
+  data: (props) => ({ count: props.initialCount }),
+
   render() {
     const decrement = () => {
       this.data.count--;
@@ -19,12 +27,12 @@ const Counter = createElement({
 
     return (
       <>
-        <div key={1} class="Heading">
+        <div class="Heading">
           <h1>Counter</h1>
           <p>A simple counter built in Bullet.</p>
         </div>
-        ,<output key={2}>{this.data.count}</output>,
-        <div key={3} class="ButtonRow">
+        <output>{this.data.count}</output>,
+        <div class="ButtonRow">
           <button onClick={decrement} type="button">
             Decrement
           </button>
@@ -32,13 +40,13 @@ const Counter = createElement({
             Increment
           </button>
         </div>
-        ,
       </>
     );
   },
 
   styles: css`
     :host {
+      position: relative;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -47,6 +55,9 @@ const Counter = createElement({
       border-radius: 13px;
       border: 2px solid #ccc;
       padding: 4rem 2rem;
+      height: fit-content;
+      width: fit-content;
+      cursor: grab;
     }
 
     .Heading {
@@ -89,7 +100,14 @@ const Counter = createElement({
 });
 
 document.body.appendChild(
-  <div style={{ display: 'grid', placeContent: 'center', height: '100vh' }}>
+  <div
+    style={{
+      display: 'grid',
+      placeItems: 'center',
+      height: '100vh',
+      width: '100vw',
+    }}
+  >
     <Counter />
   </div>
 );

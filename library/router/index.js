@@ -1,3 +1,5 @@
+/// @adbl-bullet
+
 import { createElement, css } from '../component.js';
 import { LazyRoute } from './lazy.js';
 import { RouterMiddleware, RouterMiddlewareResponse } from './middleware.js';
@@ -9,7 +11,15 @@ export * from './middleware.js';
 
 /**
  * @typedef {import('./routeTree.js').RouteRecords<ReturnType<import('../component.js').ElementConstructor> | LazyRoute>} RouteRecords
- *
+ */
+
+/**
+ * @template T
+ * @typedef {T extends Array<infer U> ? U : T} UnwrapArray
+ */
+
+/**
+ * @typedef {UnwrapArray<RouteRecords>} RouteRecord
  */
 
 /** @type {Router | null } */
@@ -18,7 +28,11 @@ let ROUTER_INSTANCE = null;
 /**
  * @typedef RouterOptions
  * @property {RouteRecords} routes
+ * The routes to be rendered by the router.
  * @property {RouterMiddleware[]} [middlewares]
+ * Middleware to be executed before each route change.
+ * @property {number} [maxRedirects]
+ * The maximum number of redirects to allow before the router stops and throws an error.
  */
 
 /**
@@ -48,12 +62,21 @@ export class Router {
   middlewares;
 
   /** @private @type {import('./middleware.js').RouteData | null} */
-  currentPath = null;
+  currentPath;
+
+  /** @private @type {number} */
+  redirectStackCount;
+
+  /** @private @type {number} */
+  maxRedirects;
 
   /** @param {RouterOptions} routeOptions */
   constructor(routeOptions) {
     this.routeTree = RouteTree.fromRouteRecords(routeOptions.routes);
     this.middlewares = routeOptions.middlewares ?? [];
+    this.maxRedirects = routeOptions.maxRedirects ?? 50;
+    this.currentPath = null;
+    this.redirectStackCount = 0;
   }
 
   /**
@@ -123,6 +146,19 @@ export class Router {
         const middlewareResponse = await middleware.callback(middlewareArgs);
         if (middlewareResponse instanceof RouterMiddlewareResponse) {
           if (middlewareResponse.type === 'redirect') {
+            // Block deep redirects
+            if (this.redirectStackCount > this.maxRedirects) {
+              const message = `Your router redirected too many times (${this.maxRedirects}). This is probably due to a circular redirect in your route configuration.`;
+              console.warn(message);
+              return false;
+            }
+
+            // Ignore same-path redirects
+            if (middlewareResponse.path === path) {
+              continue;
+            }
+
+            this.redirectStackCount++;
             this.navigate(middlewareResponse.path);
             return false;
           }
@@ -146,6 +182,7 @@ export class Router {
 
     while (currentMatchedRoute) {
       const outlet = this.outlets[outletIndex];
+
       if (outlet === undefined) {
         break;
       }
@@ -211,7 +248,7 @@ export class Router {
       spareOutlet.shadowRoot?.replaceChildren();
     }
 
-    if (lastMatchedRoute.redirect) {
+    if (lastMatchedRoute.redirect && lastMatchedRoute.redirect !== path) {
       this.navigate(lastMatchedRoute.redirect);
     }
 
@@ -226,6 +263,9 @@ export class Router {
       link.toggleAttribute('active', link.dataset.href === path);
     }
 
+    if (this.redirectStackCount > 0) {
+      this.redirectStackCount--;
+    }
     return true;
   };
 
@@ -241,11 +281,10 @@ export class Router {
     return createElement({
       tag: 'router-outlet',
       connected: function () {
-        // @ts-ignore
         self.outlets.push(this);
+        self.load(window.location.pathname);
       },
       disconnected: function () {
-        // @ts-ignore
         self.outlets.splice(self.outlets.indexOf(this), 1);
       },
       render: () => document.createElement('slot'),
@@ -266,9 +305,9 @@ export class Router {
       tag: 'router-link',
       defaultProps: props,
       connected: function () {
-        // @ts-ignore
         self.links.push(this);
       },
+      /** @param {RouteLinkProps} props */
       render: function (props) {
         const a = document.createElement('a');
         a.href = props.to;
@@ -290,7 +329,6 @@ export class Router {
         return a;
       },
       disconnected: function () {
-        // @ts-ignore
         self.links.splice(self.links.indexOf(this), 1);
       },
       styles: css`
@@ -316,10 +354,14 @@ export function createWebRouter(routerOptions) {
   ROUTER_INSTANCE = router;
 
   window.addEventListener('popstate', () => {
-    router.load(window.location.pathname);
+    if (Reflect.get(router, 'outlets').length > 0) {
+      router.load(window.location.pathname);
+    }
   });
 
-  router.load(window.location.pathname);
+  if (Reflect.get(router, 'outlets').length > 0) {
+    router.load(window.location.pathname);
+  }
 
   return router;
 }

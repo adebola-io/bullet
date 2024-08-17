@@ -1,3 +1,5 @@
+/// @adbl-bullet
+
 import {
   CUSTOM_ELEMENT_INSTANCE_CACHE,
   CUSTOM_ELEMENT_MAP,
@@ -6,12 +8,15 @@ import {
   GLOBAL_DATA,
   CUSTOM_ELEMENT_NODE_LIST,
 } from './constants.js';
+import { setAttributeFromProps } from './jsx.js';
 import {
   generateInstanceKey,
   getElementAttributes,
   replaceComponentPlaceholders,
   generateChildNodes,
   generateComponentName,
+  RENDERING_TREE,
+  BulletComponent,
 } from './utils.js';
 
 /**
@@ -24,7 +29,13 @@ import {
 
 /**
  * @template Props
- * @typedef {Props & JSX.JsxNativeProps} ComponentProps
+ * @typedef {Props & JSX.JsxNativeProps & JSX.JsxCustomElementAttributes} ComponentProps
+ */
+
+/**
+ * @typedef {object} ComponentMeta
+ * @property {boolean} [createdByJsx]
+ * Whether or not the component was created using the JSX syntax.
  */
 
 /**
@@ -69,62 +80,90 @@ import {
  */
 
 /**
+ * Merges two types, making overlapping properties optional and preferring the type from T when different.
+ * @template {object} T The primary type
+ * @template {object} U The secondary type
+ * @typedef {Omit<T, keyof U> & {[K in Extract<keyof T, keyof U>]?: T[K]}} Merge
+ */
+
+/**
+ * @template {object} T
+ * @template {object} U
+ * @typedef {T extends U ? true : keyof T extends keyof U ? true : false} IsSubObject
+ */
+
+/**
+ * @typedef {CSSStyleSheet
+ *  | Promise<CSSStyleSheet>
+ *  | Array<CSSStyleSheet
+ *  | Promise<CSSStyleSheet>>
+ * } CustomElementStyles
+ * Styles to apply to the component/element.
+ */
+
+/**
+ * @typedef {string
+ *  | TemplateStringsArray
+ *  | Promise<string | {default: string}>
+ *  | Array<string | TemplateStringsArray | Promise<string | {default: string}>>
+ * } CSSorStringArray
+ * A CSS or string array.
+ */
+
+/**
  * @template {string} TagName
  * @template {object} [Props=never]} ElementOptions
  */
 
 /**
+ * @template Props
  * @template ExtraData
- * @template RenderProps
- * @template DefaultProps
- * @template {boolean} Async
  * @typedef {(
  *    this: BulletElement<ExtraData>,
- *    props: keyof RenderProps extends never ? DefaultProps : RenderProps,
+ *    props: Props,
  *    data: ExtraData,
  *    element: BulletElement<ExtraData>
- *  ) => Async extends true ? Template | Promise<Template>: Template} RenderFunction
+ *  ) =>  Template | Promise<Template>} RenderFunction
  */
 
 /**
- * @template {DefaultProps} [Props=never]
+ * @template {object} [Props={}]
+ * @template {keyof Props extends never ? object : Partial<Props>} [DefaultProps=never]
  * @template {object} [ExtraData=never]
- * @template {Partial<Props>} [DefaultProps={}]
- * @template {object} [RenderProps=Props]
  *
  * @typedef ElementConfig
  *
  * @property {string} [tag]
  * The HTML tag name to use for the custom element.
  *
- * @property {CSSStyleSheet | Promise<CSSStyleSheet> | Array<CSSStyleSheet | Promise<CSSStyleSheet>>} [styles]
+ * @property {CustomElementStyles} [styles]
  * The CSS styles to apply within the custom element. The styles are scoped to the custom element's shadow root.
  *
- * @property {CSSStyleSheet | Promise<CSSStyleSheet> | Array<CSSStyleSheet | Promise<CSSStyleSheet>>} [globalStyles]
+ * @property {CustomElementStyles} [globalStyles]
  * CSS styles that should be applied globally to the parent document. They are only valid as long as there is at least one
  * instance of the component in the document.
  *
- * @property {RenderFunction<ExtraData, RenderProps, DefaultProps, true>} [render]
+ * @property {RenderFunction<Props, ExtraData>} [render]
  * A function that generates the content for the component's shadow root. It accepts the props of the component and the component data as arguments.
  *
- * @property {DefaultProps} [defaultProps]
+ * @property {DefaultProps & Partial<Props>} [defaultProps]
  * Defines the default props for the custom element.
  *
- * @property {(this: BulletElement, props: keyof RenderProps extends never ? DefaultProps : RenderProps) => ExtraData} [data]
+ * @property {(this: BulletElement, props: Props) => ExtraData} [data]
  * Additional data for the custom element.
  *
- * @property {(this: BulletElement<ExtraData>, props: keyof RenderProps extends never ? DefaultProps : RenderProps, element: BulletElement<ExtraData>) => any} [connected]
+ * @property {(this: BulletElement<ExtraData>, props: Props, element: BulletElement<ExtraData>) => any} [connected]
  * Called when the component is mounted to the DOM.
  * It can optionally return a function that will be called when the component is unmounted from the DOM.
  *
  * @property {(this: BulletElement<ExtraData>, element: BulletElement<ExtraData>) => void} [disconnected]
  * Called when the component is unmounted from the DOM.
  *
- * @property {(this: BulletElement<ExtraData>, error: unknown, props: keyof RenderProps extends never ? DefaultProps : RenderProps, data: ExtraData) => Template} [fallback]
+ * @property {(this: BulletElement<ExtraData>, error: unknown, props: Props, data: ExtraData) => Template} [fallback]
  * If the render function throws an error, this function will be called to render a fallback template for the component.
  * It is most useful for asynchronous rendering, where the render function returns a promise that may be rejected.
  *
- * @property {RenderFunction<ExtraData, RenderProps, DefaultProps, false>} [initial]
+ * @property {(this: BulletElement<ExtraData>, props: Props, data: ExtraData) => Template} [initial]
  * A function that generates a starting template for the component. It will be render as a placeholder if the `render()` function
  * is async, and is yet to be resolved.
  *
@@ -134,7 +173,7 @@ import {
  * @property {string} [part]
  * The part attribute to attach to the base element.
  *
- * @property {string} [className]
+ * @property {string} [class]
  * The class attribute to attach to the base element.
  */
 
@@ -150,10 +189,6 @@ export const html = generateChildNodes;
 const logError = (error) => {
   console.error(error instanceof Error ? error.message : error);
 };
-
-/**
- * @typedef {string | TemplateStringsArray | Promise<string | {default: string}> | Array<string | TemplateStringsArray | Promise<string | {default: string}>>} CSSorStringArray
- */
 
 /**
  * Generates a CSS stylesheet from a CSS text string.
@@ -193,8 +228,6 @@ export const css = (template, ...substitutions) => {
   }
 };
 
-export class BulletComponent extends HTMLElement {}
-
 /**
  * @typedef SetupOptions
  *
@@ -217,17 +250,6 @@ export class BulletComponent extends HTMLElement {}
  * Returns the custom element that is currently being rendered.
  */
 
-/** @type {Array<any>} */
-const RENDERING_TREE = [];
-
-/**
- * Returns the last element in the rendering tree, if it is a `BulletElement`.
- * @returns {BulletElement<unknown> | undefined} The last element in the rendering tree, or `undefined` if it is not a `BulletElement`.
- */
-export const getCurrentElement = () => {
-  return RENDERING_TREE[RENDERING_TREE.length - 1];
-};
-
 /** @param {SetupOptions} [setupOptions] */
 function setupInternal(setupOptions) {
   const { namespace, styles } = setupOptions ?? {};
@@ -237,9 +259,7 @@ function setupInternal(setupOptions) {
   if (styles) {
     for (const style of styles) {
       if (style instanceof Promise) {
-        style.then((imported) => {
-          injectedStyles.push(imported);
-        });
+        style.then((imported) => injectedStyles.push(imported));
       } else {
         injectedStyles.push(style);
       }
@@ -249,25 +269,20 @@ function setupInternal(setupOptions) {
   /**
    * Defines a custom HTML element with a shadow DOM and optional styles.
    *
-   * @template {object} RenderPropsInitial
-   *
+   * @template {object} [Props={}]
+   * The type of properties that the component accepts.
    *
    * @template {object} [ComponentData={}]
    * Additional data for the custom element.
    *
-   * @template {object} [Props=RenderPropsInitial]
-   * The type of properties that the component accepts.
-   *
    * @template {object} [DefaultProps={}]
-   * Defines the default props for the custom element.
+   * The default props for the custom element.
    *
-   * @template {Props & DefaultProps} [RenderProps=Props & DefaultProps]
-   *
-   * @param {ElementConfig<Props & DefaultProps & RenderProps, ComponentData, DefaultProps, RenderPropsInitial>
-   * |  RenderFunction<ComponentData, RenderProps, DefaultProps, true>} elementConfig
+   * @param {ElementConfig<Props, DefaultProps, ComponentData> | (() => Template | Promise<Template>)} elementConfig
    * The configuration object for the custom element.
    *
-   * @returns {keyof Props extends never ? Component<Partial<DefaultProps>>: Component<Props, ComponentData>} A function that creates instances of the custom element.
+   * @returns {Component<IsSubObject<DefaultProps, Props> extends true ? Props : Merge<Props, DefaultProps>,ComponentData>}
+   * A function that creates instances of the custom element.
    * @example
    * // Define a custom element with a simple render function
    * const MyElement = createElement(() => <div>Hello, World!</div>);
@@ -314,7 +329,7 @@ function setupInternal(setupOptions) {
       fallback,
       initial,
       part,
-      className,
+      class: className,
     } = typeof elementConfig === 'function'
       ? {
           render: elementConfig,
@@ -329,7 +344,7 @@ function setupInternal(setupOptions) {
           fallback: undefined,
           initial: undefined,
           part: undefined,
-          className: undefined,
+          class: undefined,
         }
       : elementConfig;
     const elementTagname = `${namespace ? `${namespace}-` : ''}${
@@ -389,8 +404,17 @@ function setupInternal(setupOptions) {
       // @ts-ignore
       data = {};
 
-      /** @type {any} */
-      bullet__finalProps;
+      /** @type {Partial<Props>} */
+      bullet__finalProps = {};
+
+      /** @type {boolean} */
+      bullet__createdByJsx = false;
+
+      /** @type {Map<string, () => void>} */
+      bullet__eventListenerList = new Map();
+
+      /** @type {Array<[object, (value: any) => void]>} */
+      bullet__attributeCells = [];
 
       constructor() {
         super();
@@ -428,23 +452,42 @@ function setupInternal(setupOptions) {
       /**
        * Sets up the component instance with the provided props and extra data.
        * @param {Partial<Props>} [props] - The props to initialize the component with.
+       * @param {ComponentMeta} [meta] - Metadata about the component instance.
        */
-      __bullet__setup(props = {}) {
+      __bullet__setup(props = {}, meta = {}) {
         this.controller = new AbortController();
         const storage = new Map();
         GLOBAL_DATA.set(this.bullet__instanceKey, storage);
         storage.set('owner', this);
 
-        const finalProps = {
-          ...defaultProps,
-          ...props,
-        };
+        /** @type {Partial<Props>} */
+        let allProps = {};
+        if (defaultProps) {
+          allProps = { ...defaultProps, ...props };
+        } else {
+          allProps = props;
+        }
 
-        this.bullet__finalProps = finalProps;
+        if (meta.createdByJsx) {
+          this.bullet__createdByJsx = true;
+        }
+
+        for (const [key, value] of Object.entries(allProps)) {
+          if (key.startsWith('attr:')) {
+            setAttributeFromProps(this, key.slice(5), value);
+          }
+        }
+
+        /** @type {Partial<Props>} */ // @ts-ignore
+        const fullProps = Object.fromEntries(
+          Object.entries(allProps).filter(([key]) => !key.startsWith('attr:'))
+        );
+
+        this.bullet__finalProps = fullProps;
 
         // Setup component data.
         /** @type ComponentData */ // @ts-ignore
-        const data = componentData?.bind(this)?.(finalProps);
+        const data = componentData?.bind(this)?.(fullProps);
         this.data = data;
 
         /** @param {Template} children */
@@ -454,8 +497,8 @@ function setupInternal(setupOptions) {
 
         const renderInitial = () => {
           if (initial) {
-            /** @type {Template | Promise<Template>}*/ // @ts-ignore
-            const children = initial.bind(this)(finalProps, this.data, this);
+            /** @type {Template}*/ // @ts-ignore
+            const children = initial.bind(this)(fullProps, this.data, this);
             appendTemplate(children);
           }
         };
@@ -463,7 +506,7 @@ function setupInternal(setupOptions) {
         /** @param {unknown} error */
         const renderFallback = (error) => {
           if (fallback) {
-            const finalFallbackProps = /** @type {any} */ (finalProps);
+            const finalFallbackProps = /** @type {any} */ (fullProps);
             // @ts-ignore
             const children = fallback.bind(this)(
               error,
@@ -486,7 +529,7 @@ function setupInternal(setupOptions) {
               return;
             }
             /** @type {Template | Promise<Template>}*/ // @ts-ignore
-            const renderResult = render.bind(this)(finalProps, this.data, this);
+            const renderResult = render.bind(this)(fullProps, this.data, this);
             if (renderResult instanceof Promise) {
               renderInitial();
               renderResult.then(appendTemplate).catch(renderFallback);
@@ -544,7 +587,7 @@ function setupInternal(setupOptions) {
 
           for (const key of Object.keys(attributes)) {
             if (
-              (defaultProps && key in defaultProps) ||
+              (defaultProps && Reflect.has(defaultProps, key)) ||
               GLOBAL_DATA.get(this.bullet__instanceKey)?.has(`props.${key}`)
             ) {
               this.removeAttribute(key);
@@ -631,15 +674,18 @@ function setupInternal(setupOptions) {
 
     CUSTOM_ELEMENT_MAP.set(elementTagname, ComponentConstructor);
 
-    /** @param {Partial<Props>} [props] */
-    function factory(props) {
+    /**
+     * @param {Partial<Props>} [props]
+     * @param {ComponentMeta} [meta]
+     */
+    function factory(props, meta) {
       const Constructor = CUSTOM_ELEMENT_MAP.get(
         factory.tagName.replace(/\\\./g, '.')
       );
       const element = /** @type {ComponentConstructor} */ (
         new Constructor(props)
       );
-      element.__bullet__setup(props);
+      element.__bullet__setup(props, meta);
 
       return replaceComponentPlaceholders(element);
     }
@@ -655,7 +701,6 @@ function setupInternal(setupOptions) {
   return {
     // @ts-ignore
     createElement,
-    getCurrentElement,
   };
 }
 
@@ -663,4 +708,5 @@ function setupInternal(setupOptions) {
  * @type {(setupOptions?: SetupOptions) => SetupResult}
  */
 export const setup = setupInternal;
+export { getCurrentElement } from './utils.js';
 export const { createElement } = setup();

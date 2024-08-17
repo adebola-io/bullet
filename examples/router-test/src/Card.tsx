@@ -1,6 +1,6 @@
-import { css, useRouter, type BulletElement } from '../../../library';
+import { css, useRouter } from '@adbl/bullet';
 import { createElement } from './setup';
-import { searchBarText } from './signals';
+import { searchBarText } from './cells';
 
 export interface CardProps {
   id: number;
@@ -11,10 +11,10 @@ export interface CardProps {
   tags: string[];
 }
 
-export default createElement({
-  render(props: CardProps) {
+export const Card = createElement({
+  tag: 'card',
+  render: (props: CardProps) => {
     const { Link } = useRouter();
-
     return (
       <li class="Card">
         <Link plain to={`/products/${props.id}`}>
@@ -39,17 +39,20 @@ export default createElement({
     );
   },
 
-  connected(this: BulletElement, props) {
-    const destroyEffect = searchBarText.createEffect((text) => {
-      const regex = new RegExp(text.trim().toLowerCase());
-      this.style.display =
-        regex.test(props.title.toLowerCase()) ||
-        props.tags.some((tag) => regex.test(tag.toLowerCase()))
-          ? 'block'
-          : 'none';
-    });
-
-    return destroyEffect;
+  connected: (props, element) => {
+    searchBarText.listen(
+      (text) => {
+        const regex = new RegExp(text.trim().toLowerCase());
+        element.style.display =
+          regex.test(props.title.toLowerCase()) ||
+          props.tags.some((tag) => regex.test(tag.toLowerCase()))
+            ? 'block'
+            : 'none';
+      },
+      {
+        signal: element.controller.signal,
+      }
+    );
   },
 
   styles: css`

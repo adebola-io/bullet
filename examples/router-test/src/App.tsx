@@ -1,6 +1,6 @@
-import { css, useRouter } from '../../../library';
+import { css, useRouter } from '@adbl/bullet';
 import { createElement } from './setup';
-import { searchBarText } from './signals';
+import { searchBarText } from './cells';
 
 function updateSearchBarText(e: Event) {
   const target = e.target as HTMLInputElement;

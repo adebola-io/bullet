@@ -1,3 +1,5 @@
+/// @adbl-bullet
+
 /**
  * @template T
  * @typedef RouteRecordWithChildren

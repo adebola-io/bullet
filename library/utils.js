@@ -1,3 +1,4 @@
+/// @adbl-bullet
 import { CUSTOM_ELEMENT_INSTANCE_CACHE } from './constants.js';
 
 /**
@@ -177,3 +178,16 @@ export function isNotObject(value) {
     !value.toString || !/function|object/.test(typeof value) || value === null
   );
 }
+
+/** @type {Array<any>} */
+export const RENDERING_TREE = [];
+
+/**
+ * Returns the last element in the rendering tree, if it is a `BulletElement`.
+ * @returns {import('./component.js').BulletElement<unknown> | undefined} The last element in the rendering tree, or `undefined` if it is not a `BulletElement`.
+ */
+export const getCurrentElement = () => {
+  return RENDERING_TREE[RENDERING_TREE.length - 1];
+};
+
+export class BulletComponent extends HTMLElement {}

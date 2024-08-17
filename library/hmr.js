@@ -1,3 +1,5 @@
+/// @adbl-bullet
+
 import { CUSTOM_ELEMENT_NODE_LIST } from './constants.js';
 
 /**

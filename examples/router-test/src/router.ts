@@ -1,7 +1,7 @@
-import { createWebRouter, type RouteRecords } from '../../../library/router';
+import { createWebRouter, type RouteRecords } from '@adbl/bullet';
 import Home from './Home';
 import App from './App';
-import { lazy } from '../../../library';
+import { lazy } from '@adbl/bullet';
 import { createElement } from './setup';
 
 const routes: RouteRecords = [

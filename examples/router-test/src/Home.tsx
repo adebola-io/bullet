@@ -1,5 +1,5 @@
-import { css } from '../../../library';
-import Card, { type CardProps } from './Card';
+import { css } from '@adbl/bullet';
+import { Card, type CardProps } from './Card';
 import { createElement } from './setup';
 
 export default createElement({
@@ -29,13 +29,13 @@ export default createElement({
     );
   },
 
-  // fallback(error) {
-  //   return (
-  //     <main>
-  //       <span class="ErrorScreen">Could not render Home page: {error}</span>
-  //     </main>
-  //   );
-  // },
+  fallback(error) {
+    return (
+      <main>
+        <span class="ErrorScreen">Could not render Home page: {error}</span>
+      </main>
+    );
+  },
 
   styles: css`
     main {

@@ -1,3 +1,4 @@
+/// @adbl-bullet
 // @ts-ignore
 /// <reference types="node" />
 
@@ -36,12 +37,15 @@ export const bullet = (options) => ({
   transform(code, id) {
     const alias = options?.alias ? resolve(options.alias) : '@adbl/bullet';
 
-    if (
+    const shouldWatchFile =
       id.endsWith('.jsx') ||
       id.endsWith('.tsx') ||
       id.endsWith('.js') ||
-      id.endsWith('.ts')
-    ) {
+      id.endsWith('.ts');
+
+    if (code.startsWith('/// @adbl-bullet')) return null;
+
+    if (shouldWatchFile && !id.startsWith(alias)) {
       return {
         code: `
 import { update as __BULLET_HMR__ } from '${alias}/library/hmr';

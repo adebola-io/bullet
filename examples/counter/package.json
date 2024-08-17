@@ -17,8 +17,6 @@
     "vite": "^5.2.0"
   },
   "dependencies": {
-    "@adbl/signals": "^0.0.3",
-    "jsx-dom": "^8.1.4",
-    "tsx-dom": "^3.0.1"
+    "@adbl/bullet": "file:../.."
   }
 }

@@ -22,7 +22,8 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
 
-    "jsx": "preserve"
+    "jsx": "preserve",
+    "types": ["@adbl/bullet/library/jsx-runtime"]
   },
   "include": ["src"]
 }

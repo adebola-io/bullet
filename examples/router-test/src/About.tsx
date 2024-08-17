@@ -1,4 +1,4 @@
-import { css } from '../../../library';
+import { css } from '@adbl/bullet';
 import { createElement } from './setup';
 
 export default createElement({

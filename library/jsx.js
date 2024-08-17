@@ -1,5 +1,9 @@
-import { BulletComponent, getCurrentElement } from './component.js';
-import { convertObjectToCssStylesheet } from './utils.js';
+/// @adbl-bullet
+import {
+  convertObjectToCssStylesheet,
+  BulletComponent,
+  getCurrentElement,
+} from './utils.js';
 
 const camelCasedAttributes = new Set([
   // SVG attributes
@@ -92,7 +96,7 @@ const camelCasedAttributes = new Set([
  * Creates a new DOM element with the specified tag name, props, and children.
  *
  * @template {object} Props
- * @template {string | ((props: Props & { children: any } | typeof DocumentFragment) => Node | Promise<Node>)} TagName
+ * @template {string | ((props: Props & { children: any } | typeof DocumentFragment, context: any) => Node | Promise<Node>)} TagName
  * @param {TagName} tagname - The HTML tag name for the element.
  * @param {Props} props - An object containing the element's properties.
  * @param {...*} children - The child elements of the element.
@@ -110,10 +114,13 @@ export function h(tagname, props, ...children) {
 
   if (typeof tagname === 'function') {
     // @ts-ignore
-    const component = tagname({
-      children,
-      ...props,
-    });
+    const component = tagname(
+      {
+        children,
+        ...props,
+      },
+      { createdByJsx: true }
+    );
 
     if (component instanceof Promise) {
       const placeholder = document.createComment('---');
@@ -145,26 +152,13 @@ export function h(tagname, props, ...children) {
       ? document.createElementNS('http://www.w3.org/1998/Math/MathML', tagname)
       : document.createElement(tagname);
 
-  element.__eventListenerList = new Map();
-  element.__attributeCells = [];
+  element.bullet__eventListenerList = new Map();
+  element.bullet__attributeCells = [];
+  element.bullet__createdByJsx = true;
 
   if (props !== null)
     for (const [key, value] of Object.entries(props)) {
-      if (
-        typeof value === 'object' &&
-        'runAndListen' in value &&
-        typeof value.runAndListen === 'function'
-      ) {
-        /** @param {any} value */
-        const callback = (value) => {
-          setJsxAttribute(element, key, value);
-        };
-        const signal = getCurrentElement()?.controller?.signal;
-        value.runAndListen(callback, { signal, weak: true });
-        element.__attributeCells.push([value, callback]);
-      } else {
-        setJsxAttribute(element, key, value);
-      }
+      setAttributeFromProps(element, key, value);
     }
 
   for (const child of children) {
@@ -195,17 +189,56 @@ export function h(tagname, props, ...children) {
 }
 
 /**
- * @typedef JsxElementProperties
- * @property {Map<string, () => void>} __eventListenerList
+ * @typedef HiddenElementProperties
+ * @property {Map<string, () => void>} bullet__eventListenerList
  * List of event listeners set as attributes on the element.
- * @property {Array<[object, (value: any) => void]>} __attributeCells
+ * @property {Array<[object, (value: any) => void]>} bullet__attributeCells
  * List of cell callbacks set as attributes on the element.
+ * @property {boolean} bullet__createdByJsx
+ * Whether or not the element was created using JSX syntax.
  */
 
 /**
- * @typedef {Element & JsxElementProperties} JsxElement
+ * @typedef {Element & HiddenElementProperties} JsxElement
  *
  */
+
+/**
+ * Sets an attribute on an element based on the provided props.
+ *
+ * @param {JsxElement} element - The DOM element to set the attribute on.
+ * @param {string} key - The name of the attribute to set.
+ * @param {any} value - The value to set for the attribute. Can be a primitive value or an object with a `runAndListen` method.
+ *
+ * @description
+ * If the value is an object with a `runAndListen` method, it sets up a reactive attribute.
+ * Otherwise, it directly sets the attribute on the element.
+ */
+export function setAttributeFromProps(element, key, value) {
+  if (
+    typeof value === 'object' &&
+    'runAndListen' in value &&
+    typeof value.runAndListen === 'function'
+  ) {
+    /** @param {any} value */
+    const callback = (value) => {
+      setAttribute(element, key, value);
+    };
+    let signal;
+    if (
+      'controller' in element &&
+      element.controller instanceof AbortController
+    ) {
+      signal = element.controller.signal;
+    } else {
+      signal = getCurrentElement()?.controller?.signal;
+    }
+    value.runAndListen(callback, { signal, weak: true });
+    element.bullet__attributeCells.push([value, callback]);
+  } else {
+    setAttribute(element, key, value);
+  }
+}
 
 /**
  * Sets an attribute on an element.
@@ -213,35 +246,47 @@ export function h(tagname, props, ...children) {
  * @param {string} key - The name of the attribute.
  * @param {any} value - The value of the attribute.
  */
-export function setJsxAttribute(element, key, value) {
+export function setAttribute(element, key, value) {
+  const createdByJsx = element.bullet__createdByJsx;
   // store element event listeners.
   if (
     key.startsWith('on') &&
     key.length > 2 &&
-    key[2].toLowerCase() !== key[2] &&
-    typeof value !== 'string'
+    (!createdByJsx || (createdByJsx && typeof value !== 'string'))
   ) {
+    if (createdByJsx && key[2].toLowerCase() === key[2]) {
+      return;
+    }
     const eventName = /** @type {keyof ElementEventMap} */ (
       key.slice(2).toLowerCase()
     );
     // remove stale listeners
     element.removeEventListener(eventName, value);
-    const oldValue = element.__eventListenerList.get(eventName);
+    const oldValue = element.bullet__eventListenerList.get(eventName);
     if (oldValue !== undefined && oldValue !== value) {
       element.removeEventListener(eventName, oldValue);
-      element.__eventListenerList.delete(eventName);
+      element.bullet__eventListenerList.delete(eventName);
     }
 
     if (typeof value === 'function') {
       element.addEventListener(eventName, value);
-      element.__eventListenerList.set(eventName, value);
+      element.bullet__eventListenerList.set(eventName, value);
       return;
     }
 
     return;
   }
 
-  if (key === 'children') {
+  if (!createdByJsx) {
+    if (isSomewhatFalsy(value)) {
+      element.removeAttribute(key);
+    } else {
+      element.setAttribute(key, value);
+    }
+    return;
+  }
+
+  if (key === 'children' && createdByJsx) {
     return;
   }
 
@@ -297,8 +342,11 @@ export function setJsxAttribute(element, key, value) {
     return `-${match.toLowerCase()}`;
   });
 
-  if (attributeName === 'className') {
-    element.className = value;
+  if (
+    (attributeName === 'className' || attributeName === 'class') &&
+    typeof value === 'string'
+  ) {
+    element.classList.add(...value.split(' '));
     return;
   }
 

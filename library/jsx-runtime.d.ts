@@ -3041,16 +3041,25 @@ declare namespace JSX {
     view: JsxSVGViewElement;
   }
 
-  export type IntrinsicElementsBase = JsxHtmlElementMap & JsxSvgElementMap;
-  export type IntrinsicElements = {
-    [key in keyof IntrinsicElementsBase]: {
-      [attribute in keyof IntrinsicElementsBase[key]]:
-        | IntrinsicElementsBase[key][attribute]
-        | {
-            value: IntrinsicElementsBase[key][attribute];
-          };
-    };
+  type Container<ElementAttributes extends object> = {
+    [attribute in keyof ElementAttributes]:
+      | ElementAttributes[attribute]
+      | {
+          value: ElementAttributes[attribute];
+        };
   };
 
-  export type Element = globalThis.Node | globalThis.Node[];
+  type IntrinsicElementsBase = JsxHtmlElementMap & JsxSvgElementMap;
+  type IntrinsicElementsInner = {
+    [key in keyof IntrinsicElementsBase]: Container<IntrinsicElementsBase[key]>;
+  };
+  export interface IntrinsicElements extends IntrinsicElementsInner {}
+  type JsxCustomElementAttributesInner = Container<{
+    [K in keyof JsxHtmlElement as `attr:${K}`]: JsxHtmlElement[K];
+  }>;
+  export interface JsxCustomElementAttributes
+    extends JsxCustomElementAttributesInner {}
+
+  // biome-ignore lint/suspicious/noExplicitAny: Elements could be nodes, strings, arrays, promises, etc.
+  export type Element = any;
 }

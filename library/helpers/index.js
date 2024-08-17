@@ -1,30 +1,4 @@
-/**
- * @typedef InlineSvgProps
- * @property {string} href address of the svg icon to inline.
- */
-
-/** @type {RequestInit} */
-const svgFetchOptions = {
-  cache: 'force-cache',
-};
-
-/**
- * Asynchronously fetches and inlines an SVG icon using its URL.
- * @param {InlineSvgProps} props
- * @returns {Promise<Element>} The SVG element created, or an empty template if the request fails.
- */
-export async function InlineSvg(props) {
-  try {
-    const response = await fetch(props.href, svgFetchOptions);
-    const svg = await response.text();
-    const range = document.createRange();
-    const element = range.createContextualFragment(svg).querySelector('svg');
-    return element ?? document.createElement('template');
-  } catch (error) {
-    console.error('Error fetching SVG:', error);
-    return document.createElement('template');
-  }
-}
+/// @adbl-bullet
 
 /**
  * @template  Key
@@ -168,5 +142,39 @@ export class ObservableMap extends EventTarget {
       /** @type {EventListener} */ (listener),
       options
     );
+  }
+}
+
+/**
+ * @typedef InlineSvgProps
+ * @property {string} href address of the svg icon to inline.
+ */
+
+/** @type {RequestInit} */
+const svgFetchOptions = {
+  cache: 'force-cache',
+};
+
+const svgMap = new Map();
+
+/**
+ * Asynchronously fetches and inlines an SVG icon using its URL.
+ * @param {InlineSvgProps} props
+ * @returns {Promise<Element>} The SVG element created, or an empty template if the request fails.
+ */
+export async function InlineSvg(props) {
+  try {
+    let svg = svgMap.get(props.href);
+    if (!svg) {
+      const response = await fetch(props.href, svgFetchOptions);
+      svg = await response.text();
+      svgMap.set(props.href, svg);
+    }
+    const range = document.createRange();
+    const element = range.createContextualFragment(svg).querySelector('svg');
+    return element ?? document.createElement('template');
+  } catch (error) {
+    console.error('Error fetching SVG:', error);
+    return document.createElement('template');
   }
 }

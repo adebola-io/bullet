@@ -1,3 +1,5 @@
+/// @adbl-bullet
+
 import { ObservableMap } from './helpers/index.js';
 
 /** @type {Map<string, any>} */

@@ -1,0 +1,6 @@
+{
+  "compilerOptions": {
+    "jsx": "preserve",
+    "types": ["@adbl/bullet/library/jsx-runtime"]
+  }
+}

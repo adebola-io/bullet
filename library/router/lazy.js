@@ -1,3 +1,5 @@
+/// @adbl-bullet
+
 /**
  * @typedef {() => (Promise<{
  *  default: import('../component.js').Component<{}>

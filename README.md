@@ -12,8 +12,10 @@ A tiny, experimental, and ill-advised library for Web Components.
   - [Installation](#installation)
   - [JSX Support](#jsx-support)
   - [Usage](#usage)
+    - [JSX Syntax](#jsx-syntax)
     - [Usage without JSX](#usage-without-jsx)
   - [Styling](#styling)
+  - [Attributes](#attributes)
   - [Anonymous components](#anonymous-components)
   - [Event Handling](#event-handling)
   - [Lifecycle Methods](#lifecycle-methods)
@@ -55,7 +57,7 @@ yarn add @adbl/bullet
 
 ## JSX Support
 
-If you wish to use the JSX syntax in a Vite project, create a `vite.config.js` file with the following:
+If you wish to use the JSX syntax in a Vite project, create a `vite.config.js` (or `vite.config.ts` if you're using TypeScript) file with the following:
 
 ```js
 import { defineConfig } from 'vite';
@@ -66,7 +68,7 @@ export default defineConfig({
 });
 ```
 
-In your `tsconfig.json` or `jsconfig.json` file, add the compiler option:
+In your `jsconfig.json` (or `tsconfig.json`) file, add the following under `compilerOptions`:
 
 ```json
   "jsx": "preserve",
@@ -79,21 +81,23 @@ You can define your own custom elements with the `createElement` function.
 Here's an example of a simple component:
 
 ```jsx
+// my-element.js
 import { createElement } from '@adbl/bullet';
 
 const MyElement = createElement({
-  tag: 'my-counter',
-  render: () => <div>Hello, World!</div>,
+  tag: 'my-element',
+  render: () => 'Hello, World!',
 });
 ```
 
 You can then use your custom element like any other HTML tag:
 
 ```html
+<!-- index.html -->
 <body>
-  <my-counter></my-counter>
+  <my-element></my-element>
   <script type="module">
-    import { Counter } from './counter.js';
+    import { MyElement } from './my-element.js';
   </script>
 </body>
 ```
@@ -101,22 +105,54 @@ You can then use your custom element like any other HTML tag:
 or you can instantiate the constructor in javascript:
 
 ```jsx
-document.body.append(<MyElement />);
+document.body.append(MyElement());
 ```
+
+### JSX Syntax
+
+JSX (JavaScript XML) is a syntax extension for JavaScript that allows you to write HTML-like code within your JavaScript files. It is most famously used with React to describe the structure and appearance of UI components.
+
+Bullet supports a similar syntax, and compiles to regular DOM nodes.
+
+```jsx
+import { createElement } from '@adbl/bullet';
+
+const Greeting = createElement({
+  tag: 'app-greeting',
+  render: (props) => (
+    <div>
+      <h1>Hello, {props.name}!</h1>
+      <p>Welcome to Bullet</p>
+    </div>
+  ),
+});
+
+// Usage
+document.body.append(<Greeting name="World" />);
+```
+
+JSX is transpiled to regular JavaScript function calls and objects before being executed in the browser.
 
 ### Usage without JSX
 
-Bullet's JSX uses the standard HTML syntax and compile to regular DOM nodes, but you can use Bullet without it.
+Since the JSX is syntactic sugar for regular JavaScript, you can use Bullet without it.
 
 ```js
 import { createElement } from '@adbl/bullet';
 
-const Box = createElement({
-  tag: 'app-box',
-  render: () => {
-    const boxElement = document.createElement('div');
-    boxElement.innerHTML = 'This is a box';
-    return boxElement;
+const Greeting = createElement({
+  tag: 'app-greeting',
+  render: (props) => {
+    const greetingElement = document.createElement('div');
+    const headingElement = document.createElement('h1');
+    const paragraphElement = document.createElement('p');
+
+    headingElement.innerHTML = `Hello, ${props.name}!`;
+    paragraphElement.innerHTML = 'Welcome to Bullet';
+
+    greetingElement.appendChild(headingElement);
+    greetingElement.appendChild(paragraphElement);
+    return greetingElement;
   },
 });
 ```
@@ -141,13 +177,13 @@ const Card = createElement({
 
 ## Styling
 
-Components can be styled using the `styles` property on the component object, and the `css` function, which can be used to generate CSS stylesheets. All styles are generated as constructed stylesheets and are automatically scoped only to the parent component.
+Components can be styled using the `styles` property on the component object, and the `css` function, which can be used to generate CSS stylesheets. All styles are generated as constructed stylesheets and are automatically scoped only to the given element.
 
 ```tsx
 import { createElement, css } from '@adbl/bullet';
 
-const Button = createElement({
-  tag: 'my-button',
+const AppButton = createElement({
+  tag: 'app-button',
   render: (props) => <button>{props.label}</button>,
 
   styles: css`
@@ -161,13 +197,13 @@ const Button = createElement({
 });
 ```
 
-By default, the button styles will only apply to buttons within the `Button` component. If you want to define styles that can apply to the whole document, you can use the `globalStyles` property instead:
+By default, the button styles will only apply to the button within the `AppButton` element. If you want to define styles that can apply to the whole document, you can use the `globalStyles` property instead:
 
 ```tsx
 import { createElement, css } from '@adbl/bullet';
 
-const Button = createElement({
-  tag: 'my-button',
+const AppButton = createElement({
+  tag: 'app-button',
   render: (props) => <button>{props.label}</button>,
 
   styles: css`
@@ -190,6 +226,30 @@ const Button = createElement({
 
 Whenever there is at least one instance of the component in the DOM, the document body will apply the given styles.
 
+## Attributes
+
+There are instances where you want to pass attributes to your custom elements. Bullet supports this with the `attr:` prefix.
+
+```tsx
+import { createElement } from '@adbl/bullet';
+
+const AppInput = createElement({
+  tag: 'app-input',
+  render: (props) => <input class={props.class} type="text" />,
+});
+
+const myInput = <AppInput attr:class="custom-app-input" class="inner-input" />;
+document.body.appendChild(myInput);
+```
+
+When the element is rendered, the `attr:` prefix will be stripped from the attribute name, and the attribute will be set on the element, while the rest of the attributes will be passed to the inner element:
+
+```html
+<app-input class="custom-app-input">
+  <input class="inner-input" />
+</app-input>
+```
+
 ---
 
 ## Anonymous components
@@ -206,7 +266,7 @@ document.body.append(<Heading text="Hello there" />);
 
 ## Event Handling
 
-In Bullet, you can pass event handlers to elements using the regular JSX syntax.
+In Bullet, you can pass event handlers to inner elements using the regular JSX syntax.
 
 ```tsx
 import { createElement } from '@adbl/bullet';
@@ -224,7 +284,24 @@ const handleClick = () => {
 <Button onClick={handleClick} label="Click me" />;
 ```
 
-In this example, the handleClick function is passed as the onButtonClick prop to the Button component. When the button is clicked, the handleClick function will be called, and "Button clicked!" will be logged to the console.
+In this example, the handleClick function is passed as the onClick prop to the Button component. When the button is clicked, the handleClick function will be called, and "Button clicked!" will be logged to the console.
+
+As discussed under [Attributes](#attributes), you can also pass events to your custom elements using the `attr:` prefix.
+
+```tsx
+import { createElement } from '@adbl/bullet';
+
+const Confetti = createElement({
+  tag: 'party-confetti',
+  render: () => '🎉',
+});
+
+document.body.append(
+  <Confetti attr:onClick={() => alert('Hooray! Confetti explosion!')} />
+);
+```
+
+In the above example, there is no inner element in `<party-confetti>` element; the click handler is set on the element itself.
 
 ## Lifecycle Methods
 
@@ -295,7 +372,7 @@ You can define components that load asynchronously just by adding async before y
 ```jsx
 import { createElement } from '@adbl/bullet';
 
-const Products = computed({
+const Products = createElement({
   tag: `products`,
 
   render: async () => {
@@ -339,7 +416,7 @@ const LoadingComponent = createElement({
 });
 ```
 
-The `fallback` method is used to define a fallback template that will be rendered if the render method throws an error,or its Promise is rejected.
+The `fallback` method is used to define a fallback template that will be rendered if the render method throws an error, or its Promise is rejected.
 
 ```tsx
 const ErrorComponent = createElement({
