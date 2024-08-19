@@ -1,6 +1,6 @@
 {
   "name": "@adbl/bullet",
-  "version": "0.0.19",
+  "version": "0.0.20",
   "description": "Basic library for creating web components",
   "private": false,
   "type": "module",
