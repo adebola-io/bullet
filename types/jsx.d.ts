@@ -15,7 +15,7 @@ export function h<Props extends object, TagName extends string | ((props: (Props
  * @typedef HiddenElementProperties
  * @property {Map<string, () => void>} bullet__eventListenerList
  * List of event listeners set as attributes on the element.
- * @property {Array<[object, (value: any) => void]>} bullet__attributeCells
+ * @property {Set<object | ((value: any) => void)>} bullet__attributeCells
  * List of cell callbacks set as attributes on the element.
  * @property {boolean} bullet__createdByJsx
  * Whether or not the element was created using JSX syntax.
@@ -45,10 +45,11 @@ export function setAttributeFromProps(element: JsxElement, key: string, value: a
 export function setAttribute(element: JsxElement, key: string, value: any): void;
 /**
  * Normalizes a child jsx element for use in the DOM.
- * @param {Node | Array<any> | string | number | boolean | undefined | null} child - The child element to normalize.
+ * @param {Node | Array<any> | string | number | boolean | object | undefined | null} child - The child element to normalize.
+ * @param {Node} [_parent] - The parent node of the child.
  * @returns {Node} The normalized child element.
  */
-export function normalizeJsxChild(child: Node | Array<any> | string | number | boolean | undefined | null): Node;
+export function normalizeJsxChild(child: Node | Array<any> | string | number | boolean | object | undefined | null, _parent?: Node | undefined): Node;
 export default h;
 export type HiddenElementProperties = {
     /**
@@ -58,7 +59,7 @@ export type HiddenElementProperties = {
     /**
      * List of cell callbacks set as attributes on the element.
      */
-    bullet__attributeCells: Array<[object, (value: any) => void]>;
+    bullet__attributeCells: Set<object | ((value: any) => void)>;
     /**
      * Whether or not the element was created using JSX syntax.
      */

@@ -22,6 +22,12 @@ export function createWebRouter(routerOptions: RouterOptions): Router;
  * router.navigate('/about');
  */
 export function useRouter(): Router;
+/**
+ * Wrapper function for defining route records.
+ *
+ * @param {RouteRecords} routes
+ */
+export function defineRoutes(routes: RouteRecords): RouteRecords;
 export * from "./lazy.js";
 export * from "./routeTree.js";
 export * from "./middleware.js";
@@ -38,10 +44,8 @@ export * from "./middleware.js";
  * @typedef RouteLinkProps
  * @property {string} to
  * The path to navigate to when the link is clicked.
- * @property {boolean} plain
+ * @property {boolean} [plain]
  * If `true`, the link will reset the default styles for the `<a>` element.
- * @property {string} [class]
- * The CSS class to apply to the link.
  */
 export class Router {
     /** @param {RouterOptions} routeOptions */
@@ -80,7 +84,13 @@ export class Router {
      * @param {string} path
      * @returns {Promise<boolean>} A promise that resolves to `true` if the route was loaded successfully, `false` otherwise.
      */
-    load: (path: string) => Promise<boolean>;
+    updateDOMWithMatchingPath: (path: string) => Promise<boolean>;
+    /**
+     * Loads the matching routes for a path.
+     * @param {string} path
+     * @param {boolean} navigate
+     */
+    loadPath: (path: string, navigate?: boolean) => void;
     /**
      * Defines a custom component that serves as the router outlet, rendering the component
      * associated with the current route.
@@ -123,11 +133,7 @@ export type RouteLinkProps = {
     /**
      * If `true`, the link will reset the default styles for the `<a>` element.
      */
-    plain: boolean;
-    /**
-     * The CSS class to apply to the link.
-     */
-    class?: string | undefined;
+    plain?: boolean | undefined;
 };
 import { LazyRoute } from './lazy.js';
 import { RouterMiddleware } from './middleware.js';

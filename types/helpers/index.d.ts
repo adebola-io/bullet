@@ -1,9 +1,9 @@
 /**
  * Asynchronously fetches and inlines an SVG icon using its URL.
- * @param {InlineSvgProps} props
+ * @param {SvgProps} props
  * @returns {Promise<Element>} The SVG element created, or an empty template if the request fails.
  */
-export function InlineSvg(props: InlineSvgProps): Promise<Element>;
+export function InlineSvg(props: SvgProps): Promise<Element>;
 /**
  * @template  Key
  * @template Value
@@ -111,3 +111,4 @@ export type InlineSvgProps = {
      */
     href: string;
 };
+export type SvgProps = InlineSvgProps & JSX.IntrinsicElements["svg"];

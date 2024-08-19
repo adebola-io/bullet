@@ -39,21 +39,19 @@ let ROUTER_INSTANCE = null;
  * @typedef RouteLinkProps
  * @property {string} to
  * The path to navigate to when the link is clicked.
- * @property {boolean} plain
+ * @property {boolean} [plain]
  * If `true`, the link will reset the default styles for the `<a>` element.
- * @property {string} [class]
- * The CSS class to apply to the link.
  */
 
 export class Router {
   /** @private @type {ReturnType<ReturnType<import('../component.js').ElementConstructor>>[]} */
-  outlets = [];
+  outlets;
 
   /** @private @type {HTMLElement[]} */
-  links = [];
+  links;
 
   /** @type {Map<string, string>} */
-  params = new Map();
+  params;
 
   /** @private RouteTree<ReturnType<import('../component.js').ElementConstructor>> */
   routeTree;
@@ -77,6 +75,9 @@ export class Router {
     this.maxRedirects = routeOptions.maxRedirects ?? 50;
     this.currentPath = null;
     this.redirectStackCount = 0;
+    this.outlets = [];
+    this.links = [];
+    this.params = new Map();
   }
 
   /**
@@ -89,11 +90,7 @@ export class Router {
     if (path === '#') {
       return;
     }
-    this.load(path).then((wasLoaded) => {
-      if (wasLoaded) {
-        history.pushState(null, '', path);
-      }
-    });
+    this.loadPath(path, true);
     return;
   };
 
@@ -111,10 +108,11 @@ export class Router {
    * @param {string} path
    * @returns {Promise<boolean>} A promise that resolves to `true` if the route was loaded successfully, `false` otherwise.
    */
-  load = async (path) => {
+  updateDOMWithMatchingPath = async (path) => {
     if (path === '#') {
       return false;
     }
+
     const matchResult = this.routeTree.match(path);
     matchResult.flattenTransientRoutes();
     this.params = matchResult.params;
@@ -259,14 +257,30 @@ export class Router {
       fullPath: lastMatchedRoute.fullPath,
     };
 
-    for (const link of this.links) {
-      link.toggleAttribute('active', link.dataset.href === path);
-    }
-
     if (this.redirectStackCount > 0) {
       this.redirectStackCount--;
     }
     return true;
+  };
+
+  /**
+   * Loads the matching routes for a path.
+   * @param {string} path
+   * @param {boolean} navigate
+   */
+  loadPath = (path, navigate = false) => {
+    this.updateDOMWithMatchingPath(path).then((wasLoaded) => {
+      for (const link of this.links) {
+        link.toggleAttribute(
+          'active',
+          Boolean(link.dataset.href?.startsWith(path))
+        );
+      }
+
+      if (navigate && wasLoaded) {
+        history.pushState(null, '', path);
+      }
+    });
   };
 
   /**
@@ -282,7 +296,6 @@ export class Router {
       tag: 'router-outlet',
       connected: function () {
         self.outlets.push(this);
-        self.load(window.location.pathname);
       },
       disconnected: function () {
         self.outlets.splice(self.outlets.indexOf(this), 1);
@@ -323,9 +336,6 @@ export class Router {
           this.toggleAttribute('plain', true);
         }
 
-        if (props.class) {
-          this.classList.add(...props.class.split(' '));
-        }
         return a;
       },
       disconnected: function () {
@@ -355,12 +365,24 @@ export function createWebRouter(routerOptions) {
 
   window.addEventListener('popstate', () => {
     if (Reflect.get(router, 'outlets').length > 0) {
-      router.load(window.location.pathname);
+      router.loadPath(window.location.pathname);
+    }
+  });
+
+  window.addEventListener('hashchange', () => {
+    if (Reflect.get(router, 'outlets').length > 0) {
+      router.loadPath(window.location.hash);
+    }
+  });
+
+  window.addEventListener('load', () => {
+    if (Reflect.get(router, 'outlets').length > 0) {
+      router.loadPath(window.location.pathname);
     }
   });
 
   if (Reflect.get(router, 'outlets').length > 0) {
-    router.load(window.location.pathname);
+    router.loadPath(window.location.pathname);
   }
 
   return router;
@@ -385,6 +407,15 @@ export function useRouter() {
     throw new Error('Router not initialized');
   }
   return ROUTER_INSTANCE;
+}
+
+/**
+ * Wrapper function for defining route records.
+ *
+ * @param {RouteRecords} routes
+ */
+export function defineRoutes(routes) {
+  return routes;
 }
 
 /**

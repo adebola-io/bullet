@@ -106,7 +106,7 @@ export function h(tagname, props, ...children) {
   if (Object.is(tagname, DocumentFragment)) {
     const tagname = document.createDocumentFragment();
     for (const child of children) {
-      tagname.appendChild(normalizeJsxChild(child));
+      tagname.appendChild(normalizeJsxChild(child, tagname));
     }
     //@ts-ignore
     return tagname;
@@ -127,7 +127,7 @@ export function h(tagname, props, ...children) {
       component.then((component) => {
         if (component instanceof BulletComponent) {
           for (const child of children) {
-            component.appendChild(normalizeJsxChild(child));
+            component.appendChild(normalizeJsxChild(child, component));
           }
         }
         placeholder.replaceWith(component);
@@ -137,7 +137,7 @@ export function h(tagname, props, ...children) {
 
     if (component instanceof BulletComponent) {
       for (const child of children) {
-        component.appendChild(normalizeJsxChild(child));
+        component.appendChild(normalizeJsxChild(child, component));
       }
     }
 
@@ -153,7 +153,7 @@ export function h(tagname, props, ...children) {
       : document.createElement(tagname);
 
   element.bullet__eventListenerList = new Map();
-  element.bullet__attributeCells = [];
+  element.bullet__attributeCells = new Set();
   element.bullet__createdByJsx = true;
 
   if (props !== null)
@@ -162,7 +162,7 @@ export function h(tagname, props, ...children) {
     }
 
   for (const child of children) {
-    const childNode = normalizeJsxChild(child);
+    const childNode = normalizeJsxChild(child, element);
     if (
       childNode instanceof HTMLElement &&
       customElements.get(childNode.tagName.toLowerCase())
@@ -192,7 +192,7 @@ export function h(tagname, props, ...children) {
  * @typedef HiddenElementProperties
  * @property {Map<string, () => void>} bullet__eventListenerList
  * List of event listeners set as attributes on the element.
- * @property {Array<[object, (value: any) => void]>} bullet__attributeCells
+ * @property {Set<object | ((value: any) => void)>} bullet__attributeCells
  * List of cell callbacks set as attributes on the element.
  * @property {boolean} bullet__createdByJsx
  * Whether or not the element was created using JSX syntax.
@@ -218,6 +218,7 @@ export function setAttributeFromProps(element, key, value) {
   if (
     typeof value === 'object' &&
     'runAndListen' in value &&
+    'wvalue' in value &&
     typeof value.runAndListen === 'function'
   ) {
     /** @param {any} value */
@@ -234,7 +235,8 @@ export function setAttributeFromProps(element, key, value) {
       signal = getCurrentElement()?.controller?.signal;
     }
     value.runAndListen(callback, { signal, weak: true });
-    element.bullet__attributeCells.push([value, callback]);
+    element.bullet__attributeCells.add(callback);
+    element.bullet__attributeCells.add(value);
   } else {
     setAttribute(element, key, value);
   }
@@ -342,11 +344,16 @@ export function setAttribute(element, key, value) {
     return `-${match.toLowerCase()}`;
   });
 
-  if (
-    (attributeName === 'className' || attributeName === 'class') &&
-    typeof value === 'string'
-  ) {
-    element.classList.add(...value.split(' '));
+  if (attributeName === 'className' || attributeName === 'class') {
+    if (typeof value === 'string') {
+      element.classList.add(...value.split(/\s|\n|\t/).filter(Boolean));
+    } else if (Array.isArray(value)) {
+      for (const subValue of value) {
+        if (typeof subValue === 'string') {
+          element.classList.add(...subValue.split(/\s|\n|\t/).filter(Boolean));
+        }
+      }
+    }
     return;
   }
 
@@ -369,10 +376,11 @@ function isSomewhatFalsy(value) {
 
 /**
  * Normalizes a child jsx element for use in the DOM.
- * @param {Node | Array<any> | string | number | boolean | undefined | null} child - The child element to normalize.
+ * @param {Node | Array<any> | string | number | boolean | object | undefined | null} child - The child element to normalize.
+ * @param {Node} [_parent] - The parent node of the child.
  * @returns {Node} The normalized child element.
  */
-export function normalizeJsxChild(child) {
+export function normalizeJsxChild(child, _parent) {
   if (child instanceof Node) {
     return child;
   }
@@ -381,7 +389,7 @@ export function normalizeJsxChild(child) {
     const fragment = document.createDocumentFragment();
 
     for (const element of child) {
-      fragment.appendChild(normalizeJsxChild(element));
+      fragment.appendChild(normalizeJsxChild(element, fragment));
     }
 
     return fragment;
@@ -389,6 +397,32 @@ export function normalizeJsxChild(child) {
 
   if (child === null || child === undefined) {
     return document.createTextNode('');
+  }
+
+  if (
+    typeof child === 'object' &&
+    'runAndListen' in child &&
+    'wvalue' in child &&
+    typeof child.runAndListen === 'function'
+  ) {
+    const textNode = document.createTextNode('');
+    /** @param {any} value */
+    const callback = (value) => {
+      textNode.textContent = value;
+    };
+    child.runAndListen(callback, { weak: true });
+
+    // Persists the references to the value and the callback so they don't get garbage collected.
+    if (!Reflect.has(textNode, 'bullet__attributeCells')) {
+      Reflect.set(textNode, 'bullet__attributeCells', new Set());
+    }
+    const cells = Reflect.get(textNode, 'bullet__attributeCells');
+
+    if (cells) {
+      cells.add(callback);
+      cells.add(child);
+    }
+    return textNode;
   }
 
   return document.createTextNode(child?.toString() ?? '');

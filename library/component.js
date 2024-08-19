@@ -413,8 +413,8 @@ function setupInternal(setupOptions) {
       /** @type {Map<string, () => void>} */
       bullet__eventListenerList = new Map();
 
-      /** @type {Array<[object, (value: any) => void]>} */
-      bullet__attributeCells = [];
+      /** @type {Set<object | ((value: any) => void)>} */
+      bullet__attributeCells = new Set();
 
       constructor() {
         super();
@@ -423,7 +423,9 @@ function setupInternal(setupOptions) {
         if (ComponentConstructor.formAssociated) {
           this.isFormAssociated = true;
         }
-        this.className = className ?? '';
+        if (className) {
+          this.className = className;
+        }
         if (ComponentConstructor.part) {
           this.setAttribute('part', ComponentConstructor.part);
         }

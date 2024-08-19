@@ -836,7 +836,7 @@ declare namespace JSX {
     /**
      * Assigns a space-separated list of CSS classes to the element.
      */
-    class?: string;
+    class?: string | string[];
 
     /**
      * Defines inline CSS styles for the element. Can be a string or an object.
@@ -3041,12 +3041,16 @@ declare namespace JSX {
     view: JsxSVGViewElement;
   }
 
+  type ValueOrCell<T> =
+    | T
+    | {
+        value: T;
+      };
+
   type Container<ElementAttributes extends object> = {
-    [attribute in keyof ElementAttributes]:
-      | ElementAttributes[attribute]
-      | {
-          value: ElementAttributes[attribute];
-        };
+    [attribute in keyof ElementAttributes]: ValueOrCell<
+      ElementAttributes[attribute]
+    >;
   };
 
   type IntrinsicElementsBase = JsxHtmlElementMap & JsxSvgElementMap;
