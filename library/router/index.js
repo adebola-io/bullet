@@ -269,6 +269,9 @@ export class Router {
    * @param {boolean} navigate
    */
   loadPath = (path, navigate = false) => {
+    if (this.currentPath?.fullPath === path) {
+      return;
+    }
     this.updateDOMWithMatchingPath(path).then((wasLoaded) => {
       for (const link of this.links) {
         link.toggleAttribute(
@@ -296,6 +299,10 @@ export class Router {
       tag: 'router-outlet',
       connected: function () {
         self.outlets.push(this);
+
+        if (self.currentPath === null && self.outlets.length === 1) {
+          self.loadPath(window.location.pathname);
+        }
       },
       disconnected: function () {
         self.outlets.splice(self.outlets.indexOf(this), 1);
