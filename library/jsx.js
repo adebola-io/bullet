@@ -303,7 +303,12 @@ export function setAttribute(element, key, value) {
     return;
   }
 
-  if (key.startsWith('form') || key.startsWith('popover')) {
+  if (
+    key.startsWith('form') ||
+    key.startsWith('popover') ||
+    key.startsWith('auto') ||
+    key === 'tabIndex'
+  ) {
     const attrKey = key.toLowerCase();
 
     if (isSomewhatFalsy(value)) {

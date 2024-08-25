@@ -42,7 +42,7 @@ import {
  * @template Props
  * @template [Data={}]
  * @typedef {{ tagName: string } &
- *  (keyof Props extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props>) => BulletElement<Data>)} Component
+ *  (keyof Props extends never ? ((props?: ComponentProps<{}>) => BulletElement<{}>) : (props: ComponentProps<Props>) => BulletElement<Data>)} Component
  */
 
 /**

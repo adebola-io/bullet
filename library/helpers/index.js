@@ -1,6 +1,6 @@
 /// @adbl-bullet
 
-import { setAttribute } from '../jsx.js';
+import { setAttributeFromProps } from '../jsx.js';
 
 /**
  * @template  Key
@@ -181,8 +181,10 @@ export async function InlineSvg(props) {
     const element = range.createContextualFragment(svg).querySelector('svg');
 
     if (element) {
+      Reflect.set(element, 'bullet__attributeCells', new Set());
+      Reflect.set(element, 'bullet__eventListenerList', new Map());
       for (const [attribute, value] of Object.entries(rest)) {
-        setAttribute(/** @type {any} */ (element), attribute, value);
+        setAttributeFromProps(/** @type {any} */ (element), attribute, value);
       }
     }
     return element ?? document.createElement('template');

@@ -17,7 +17,7 @@
  * @template Props
  * @template [Data={}]
  * @typedef {{ tagName: string } &
- *  (keyof Props extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props>) => BulletElement<Data>)} Component
+ *  (keyof Props extends never ? ((props?: ComponentProps<{}>) => BulletElement<{}>) : (props: ComponentProps<Props>) => BulletElement<Data>)} Component
  */
 /**
  * @template [ComponentData={}]
@@ -236,7 +236,7 @@ export type ComponentMeta = {
 };
 export type Component<Props_1, Data = {}> = {
     tagName: string;
-} & (keyof Props_1 extends never ? ((props?: {}) => BulletElement<{}>) : (props: ComponentProps<Props_1>) => BulletElement<Data>);
+} & (keyof Props_1 extends never ? ((props?: ComponentProps<{}>) => BulletElement<{}>) : (props: ComponentProps<Props_1>) => BulletElement<Data>);
 export type CustomElementProperties<ComponentData = {}> = {
     /**
      * The extra data associated with the custom element.

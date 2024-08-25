@@ -43,7 +43,9 @@ export const bullet = (options) => ({
       id.endsWith('.js') ||
       id.endsWith('.ts');
 
-    if (code.startsWith('/// @adbl-bullet')) return null;
+    // @ts-ignore
+    if (code.startsWith('/// @adbl-bullet') || !id.startsWith(process.cwd()))
+      return null;
 
     if (shouldWatchFile && !id.startsWith(alias)) {
       return {

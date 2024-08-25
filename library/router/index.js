@@ -337,6 +337,7 @@ export class Router {
           event.preventDefault();
           self.navigate(props.to);
         });
+        a.setAttribute('part', 'inner');
         a.append(document.createElement('slot'));
 
         if (props.plain) {
@@ -349,7 +350,13 @@ export class Router {
         self.links.splice(self.links.indexOf(this), 1);
       },
       styles: css`
+        :host {
+          display: inline-block;
+        }
         :host([plain]) a {
+          display: inline-block;
+          width: 100%;
+          height: 100%;
           text-decoration: none;
           color: inherit;
         }

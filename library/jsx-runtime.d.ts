@@ -877,6 +877,11 @@ declare namespace JSX {
     hidden?: Booleanish | '' | 'hidden' | 'until-found';
 
     /**
+     * Specifies the name of the slot that the element is assigned to.
+     */
+    slot?: string;
+
+    /**
      * Uniquely identifies the element within a document.
      */
     id?: string;
@@ -2890,6 +2895,8 @@ declare namespace JSX {
     rx?: number | string;
     /** Specifies the vertical corner radius of the rectangle */
     ry?: number | string;
+    /** Specifies the transformation to apply to the element. */
+    transform: string;
   }
 
   interface JsxSVGStopElement
