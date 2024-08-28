@@ -1,4 +1,5 @@
 jsconfig.json
+bun.lockb
 deno.json
 .gitignore
 .vscode
