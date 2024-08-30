@@ -5,3 +5,4 @@ deno.json
 .vscode
 examples
 .gitpod.yml
+scripts/create-bullet-app

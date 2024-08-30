@@ -1,7 +1,7 @@
 {
   "name": "@adbl/bullet",
-  "version": "0.0.21",
-  "description": "Basic library for creating web components",
+  "version": "0.0.22",
+  "description": "Library for creating web apps with JSX and web components",
   "private": false,
   "type": "module",
   "module": "./index.js",

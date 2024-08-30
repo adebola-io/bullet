@@ -10,11 +10,11 @@ A tiny, experimental, and ill-advised library for Web Components.
 
 - [bullet](#bullet)
   - [Installation](#installation)
-  - [JSX Support](#jsx-support)
   - [Usage](#usage)
     - [JSX Syntax](#jsx-syntax)
     - [Usage without JSX](#usage-without-jsx)
   - [Styling](#styling)
+  - [Importing External Stylesheets](#importing-external-stylesheets)
   - [Attributes](#attributes)
   - [Anonymous components](#anonymous-components)
   - [Event Handling](#event-handling)
@@ -39,41 +39,42 @@ A tiny, experimental, and ill-advised library for Web Components.
 <!-- /TOC -->
 <!-- /TOC -->
 <!-- /TOC -->
-<!-- /TOC -->
 
 ---
 
 ## Installation
 
-If you're feeling adventurous/reckless, you can install bullet with your favorite package manager:
+To create a new Bullet project, you can use the Bullet CLI tool. Make sure you have Node.js version 14.0.0 or higher installed on your system.
 
-```shell
-npm install @adbl/bullet
-# or
-yarn add @adbl/bullet
-```
+1. Run the following command to create a new Bullet project:
 
----
+   ```bash
+   npx create-bullet-app
+   ```
 
-## JSX Support
+2. Follow the prompts to configure your project.
 
-If you wish to use the JSX syntax in a Vite project, create a `vite.config.js` (or `vite.config.ts` if you're using TypeScript) file with the following:
+3. Once the project is created, navigate to the project directory:
 
-```js
-import { defineConfig } from 'vite';
-import { bullet } from '@adbl/bullet/library/plugin';
+   ```bash
+   cd your-project-name
+   ```
 
-export default defineConfig({
-  plugins: [bullet()],
-});
-```
+4. Install the project dependencies:
 
-In your `jsconfig.json` (or `tsconfig.json`) file, add the following under `compilerOptions`:
+   ```bash
+   npm install
+   ```
 
-```json
-  "jsx": "preserve",
-  "types": ["@adbl/bullet/library/jsx-runtime"]
-```
+5. Start the development server:
+
+   ```bash
+   npm run dev
+   ```
+
+6. Open your browser and visit `http://localhost:5173` to see your new Bullet app in action!
+
+Now you're ready to start building your app with Bullet. Happy coding! 🚀
 
 ## Usage
 
@@ -82,8 +83,6 @@ Here's an example of a simple component:
 
 ```jsx
 // my-element.js
-import { createElement } from '@adbl/bullet';
-
 const MyElement = createElement({
   tag: 'my-element',
   render: () => 'Hello, World!',
@@ -110,7 +109,7 @@ document.body.append(MyElement());
 
 ### JSX Syntax
 
-JSX (JavaScript XML) is a syntax extension for JavaScript that allows you to write HTML-like code within your JavaScript files. It is most famously used with React to describe the structure and appearance of UI components.
+JSX is a syntax extension for JavaScript that allows you to write HTML-like code within your JavaScript files. It is most famously used with React to describe the structure and appearance of UI components.
 
 Bullet supports a similar syntax, and compiles to regular DOM nodes.
 
@@ -225,6 +224,33 @@ const AppButton = createElement({
 ```
 
 Whenever there is at least one instance of the component in the DOM, the document body will apply the given styles.
+
+## Importing External Stylesheets
+
+Bullet also supports importing external CSS files directly into your components. This can be particularly useful for organizing your styles or when working with existing CSS files. To import an external stylesheet, you can use the `?inline` query parameter in your import statement.
+
+Here's an example of how to import and use an external CSS file in your Bullet component:
+
+```css
+/* my-component/styles.css */
+:host {
+  width: 100px;
+  height: 100px;
+  background-color: red;
+}
+```
+
+```tsx
+/* my-component/index.tsx */
+import { createElement, css } from '@adbl/bullet';
+import styles from './styles.css?inline';
+
+const MyComponent = createElement({
+  tag: 'my-component',
+  styles: css(styles),
+  render: () => 'Hello, World!',
+});
+```
 
 ## Attributes
 

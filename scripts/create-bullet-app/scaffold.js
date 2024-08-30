@@ -9,6 +9,8 @@ import ora from 'ora';
 import semver from 'semver';
 import { createPromptModule } from 'inquirer';
 import readline from 'node:readline';
+import process from 'node:process';
+import gradient from 'gradient-string';
 
 // Configuration
 const CONFIG = {
@@ -21,7 +23,8 @@ const CONFIG = {
     'source/components',
   ],
   dependencies: {
-    '@adbl/bullet': '^0.0.21',
+    '@adbl/bullet': '^0.0.22',
+    '@adbl/cells': '^0.0.2',
   },
   devDependencies: {
     vite: '^5.4.1',
@@ -32,6 +35,8 @@ const CONFIG = {
     sass: '^1.72.0',
   },
 };
+
+const args = process.argv.slice(2);
 
 /** @type {any} */
 const questions = [
@@ -45,6 +50,7 @@ const questions = [
       chalk.red(
         'Project name can only contain lowercase letters, numbers, and hyphens'
       ),
+    when: () => args.length === 0 || args.every((arg) => arg.startsWith('-')), // Only ask if not provided as an argument
   },
   {
     type: 'confirm',
@@ -56,7 +62,7 @@ const questions = [
     type: 'list',
     name: 'cssPreprocessor',
     message: chalk.magenta('Which CSS preprocessor would you like to use?'),
-    choices: ['CSS', 'SCSS'],
+    choices: ['SCSS', 'CSS'],
     default: 'SCSS',
   },
   {
@@ -86,25 +92,48 @@ async function main() {
   let projectDir;
   try {
     checkNodeVersion();
-    await displayWelcomeBanner();
+
+    // Check for -y flag
+    const skipInitialPrompt = process.argv.includes('-y');
+
+    if (!skipInitialPrompt) {
+      await displayWelcomeBanner();
+    }
+
+    // Get project name from command line argument or prompt
+    const projectName = args.find((arg) => !arg.startsWith('-'));
+
+    /** @type {Record<string, any>} */
+    const answers = {};
+    const questionsToAsk = questions;
+
+    if (projectName) {
+      // If project name is provided as an argument, skip the project name question
+      console.log(chalk.cyan(`Using project name: ${projectName}`));
+      answers.projectName = projectName;
+    }
 
     // Create a custom prompt module that suppresses output
     const prompt = createPromptModule({ output: process.stdout });
+    // Use the custom prompt for all questions
+    for (const [key, value] of Object.entries(await prompt(questionsToAsk))) {
+      answers[key] = value;
+    }
 
-    // Use the custom prompt instead of inquirer.prompt
-    const answers = await prompt(questions);
     projectDir = path.join(process.cwd(), answers.projectName);
 
     const spinner = ora({
       text: 'Creating project structure...',
-      spinner: 'dots12',
+      spinner: 'aesthetic',
       color: 'cyan',
     }).start();
 
     await createProjectStructure(projectDir, answers);
     await initializeGit(projectDir);
 
-    spinner.succeed(chalk.green('Project structure created successfully!'));
+    spinner.succeed(
+      chalk.green(`Project ${answers.projectName} created successfully!`)
+    );
 
     displayCompletionMessage(answers.projectName);
   } catch (error) {
@@ -117,7 +146,7 @@ async function main() {
     } else {
       console.error(chalk.red('An error occurred:'), error);
     }
-    await cleanup(projectDir);
+    await cleanupProject(projectDir);
   }
 }
 
@@ -138,7 +167,7 @@ async function createProjectStructure(projectDir, answers) {
   }
 
   if (answers.useRouter) {
-    await fs.mkdir(path.join(projectDir, 'source/views'), { recursive: true });
+    await fs.mkdir(path.join(projectDir, 'source/pages'), { recursive: true });
   }
 
   await Promise.all([
@@ -174,7 +203,7 @@ async function initializeGit(projectDir) {
   }
 }
 
-async function cleanup(projectDir) {
+async function cleanupProject(projectDir) {
   if (projectDir) {
     try {
       await fs.rm(projectDir, { recursive: true, force: true });
@@ -262,6 +291,7 @@ import animations from "./styles/animations.${styleExtension}?inline";
   }
 
   content += `
+
 export const { createElement } = setup({
   ${answers.namespace ? `namespace: "${answers.namespace}",` : ''}
   styles: css([
@@ -338,7 +368,7 @@ body {
 
 .animate-fade-up {
   opacity: 0;
-  animation: fadeIn 0.8s ease-out forwards, slideIn 0.8s ease-out forwards;
+  animation: fadeIn 0.5s ease-out forwards, slideIn 0.5s ease-out forwards;
 }
 
 .animate-underline {
@@ -354,7 +384,8 @@ body {
   height: 2px;
   width: 0;
   background-color: currentColor;
-  animation: underlineExpand 0.8s ease-out 0.5s forwards;
+  animation: underlineExpand 0.5s ease-out 0.3s forwards;
+  transform: translateY(6px);
 }
   `;
 
@@ -395,6 +426,10 @@ export default {
   }
 }
 
+/**
+ * @param {string} projectDir
+ * @param {{ language: string; useRouter: any; }} answers
+ */
 async function createMainFile(projectDir, answers) {
   const extension = answers.language === 'TypeScript' ? 'ts' : 'js';
   let content = `
@@ -430,11 +465,17 @@ async function createRouterFile(projectDir, answers) {
   const extension = answers.language === 'TypeScript' ? 'ts' : 'js';
   const content = `
 import { createWebRouter } from '@adbl/bullet';
-import { homeRoutes } from './views/home/routes';
+import { homeRoutes } from './pages/home/routes';
 
 const routes = [
-  ...homeRoutes,
-  // Add more route imports here
+  {
+    name: 'App',
+    path: '/',
+    redirect: '/home',
+    children: [
+      ...homeRoutes,
+    ],
+  },
 ];
 
 export default createWebRouter({ routes });
@@ -453,7 +494,7 @@ async function createViewStructure(projectDir, viewName, answers) {
   const extension = answers.language === 'TypeScript' ? 'tsx' : 'jsx';
   const styleExtension = answers.cssPreprocessor === 'SCSS' ? 'scss' : 'css';
 
-  const viewDir = path.join(projectDir, `source/views/${viewName}`);
+  const viewDir = path.join(projectDir, `source/pages/${viewName}`);
   await fs.mkdir(viewDir, { recursive: true });
 
   let indexContent = `
@@ -468,7 +509,8 @@ import styles from './styles.${styleExtension}?inline';
   }
 
   indexContent += `
-export const ${capitalizeFirstLetter(viewName)}View = createElement({
+   
+export default createElement({
   tag: '${viewName}-view',
   ${answers.useTailwind ? '' : 'styles: css(styles),'}
   render: () => (
@@ -494,6 +536,7 @@ export const ${capitalizeFirstLetter(viewName)}View = createElement({
           answers.useTailwind ? 'mb-8' : 'card'
         } animate-fade-up" style="animation-delay: 0.4s;">
           <button 
+            type="button"
             onClick={() => alert('Bullet is awesome!')}
             class="${
               answers.useTailwind
@@ -585,19 +628,22 @@ export const ${capitalizeFirstLetter(viewName)}View = createElement({
   }
 
   const routesContent = `
-import { defineRoutes } from '@adbl/bullet';
-import { ${capitalizeFirstLetter(viewName)}View } from './index';
+import { defineRoutes, lazy } from '@adbl/bullet';
 
-export const ${viewName}Routes = defineRoutes([
+export const homeRoutes = defineRoutes([
   {
-    name: '${viewName}', // Add a unique name for the route
-    path: '/${viewName === 'home' ? '' : viewName}',
-    component: ${capitalizeFirstLetter(viewName)}View,
+    name: 'Home View',
+    path: '/home',
+    component: lazy(() => import('./index')),
   },
 ]);
   `.trim();
 
-  await fs.writeFile(path.join(viewDir, `routes.${extension}`), routesContent);
+  const extensionBase = answers.language === 'TypeScript' ? 'ts' : 'js';
+  await fs.writeFile(
+    path.join(viewDir, `routes.${extensionBase}`),
+    routesContent
+  );
 }
 
 async function createPackageJson(projectDir, answers) {
@@ -652,6 +698,7 @@ import { createElement } from '@/setup';
   }
 
   content += `
+  
 export const App = createElement({
   tag: 'app-root',
   ${answers.useTailwind ? '' : 'styles,'}
@@ -676,6 +723,7 @@ export const App = createElement({
           answers.useTailwind ? 'mb-8' : 'card'
         } animate-fade-up" style="animation-delay: 0.4s;">
           <button 
+            type="button"
             onClick={() => alert('Bullet is awesome!')}
             class="${
               answers.useTailwind
@@ -816,18 +864,18 @@ async function displayWelcomeBanner() {
     );
     const padding = ' '.repeat(paddingSize);
 
-    console.log(chalk.cyan('┌' + '─'.repeat(bannerWidth) + '┐'));
-    console.log(chalk.cyan('│' + ' '.repeat(bannerWidth) + '│'));
+    console.log(chalk.cyan(`┌${'─'.repeat(bannerWidth)}┐`));
+    console.log(chalk.cyan(`│${' '.repeat(bannerWidth)}│`));
     console.log(
       chalk.cyan('│') +
         padding +
-        chalk.underline(content) +
+        gradient('orange', 'pink')(content) +
         padding +
         (bannerWidth % 2 !== content.length % 2 ? ' ' : '') +
         chalk.cyan('│')
     );
-    console.log(chalk.cyan('│' + ' '.repeat(bannerWidth) + '│'));
-    console.log(chalk.cyan('└' + '─'.repeat(bannerWidth) + '┘\n'));
+    console.log(chalk.cyan(`│${' '.repeat(bannerWidth)}│`));
+    console.log(chalk.cyan(`└${'─'.repeat(bannerWidth)}┘\n`));
 
     console.log(
       chalk.bold.blue('Welcome to the Bullet Project Scaffolding Tool ✨\n')
@@ -848,38 +896,52 @@ async function displayWelcomeBanner() {
         renderBanner(process.stdout.columns || 80);
       });
 
+      // Handle Ctrl+C
+      process.on('SIGINT', () => {
+        console.log(chalk.yellow('\nProcess terminated. Exiting...'));
+        process.exit(0);
+      });
+
       // Wait for user input to continue
       process.stdin.on('keypress', (str, key) => {
         if (key.name === 'return' || key.name === 'enter') {
-          if (process.stdin.isTTY) {
-            process.stdin.setRawMode(false);
-          }
-          process.stdin.removeAllListeners('keypress');
-          process.stdout.removeAllListeners('resize');
+          cleanup();
           resolve();
+        } else if (key.ctrl && key.name === 'c') {
+          console.log(chalk.yellow('\nProcess terminated. Exiting...'));
+          process.exit(0);
         }
       });
 
-      console.log(chalk.yellow('Press Enter to continue...'));
+      console.log(chalk.yellow('Press Enter to continue or Ctrl+C to exit...'));
     }
   );
 }
 
+function cleanup() {
+  if (process.stdin.isTTY) {
+    process.stdin.setRawMode(false);
+  }
+  process.stdin.removeAllListeners('keypress');
+  process.stdout.removeAllListeners('resize');
+  process.removeAllListeners('SIGINT');
+}
+
 function displayCompletionMessage(projectName) {
-  console.log(chalk.green('\n✨ Project scaffolded successfully! ✨'));
+  console.log(chalk.green('\n✨ Your project is ready! ✨'));
   console.log(chalk.yellow('\nNext steps:'));
-  console.log(chalk.cyan(`1. Navigate to your project folder:`));
+  console.log(chalk.cyan('1. Navigate to your project folder:'));
   console.log(chalk.white(`   cd ${projectName}`));
-  console.log(chalk.cyan(`2. Install project dependencies:`));
+  console.log(chalk.cyan('2. Install project dependencies:'));
   console.log(chalk.white('   npm install'));
-  console.log(chalk.cyan(`3. Start the development server:`));
+  console.log(chalk.cyan('3. Start the development server:'));
   console.log(chalk.white('   npm run dev'));
-  console.log(chalk.cyan(`4. Open your browser and visit:`));
+  console.log(chalk.cyan('4. Open your browser and visit:'));
   console.log(chalk.white('   http://localhost:5173'));
   console.log(
     chalk.cyan(`5. Begin editing your project files in the 'source' directory`)
   );
-  console.log(chalk.cyan(`6. To build for production, run:`));
+  console.log(chalk.cyan('6. To build for production, run:'));
   console.log(chalk.white('   npm run build'));
   console.log(chalk.blue('\nHappy coding with Bullet! 🚀'));
 }
