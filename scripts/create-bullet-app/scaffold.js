@@ -283,7 +283,6 @@ async function createSetupFile(projectDir, answers) {
   let content = `
 import { setup, css } from "@adbl/bullet";
 import sharedStyles from "./styles/shared.${styleExtension}?inline";
-import animations from "./styles/animations.${styleExtension}?inline";
 `;
 
   if (answers.useTailwind) {
@@ -296,8 +295,7 @@ export const { createElement } = setup({
   ${answers.namespace ? `namespace: "${answers.namespace}",` : ''}
   styles: css([
     ${answers.useTailwind ? 'tailwindStyles, ' : ''}
-    sharedStyles,
-    animations
+    sharedStyles
   ])
 });
 `;
@@ -315,8 +313,8 @@ async function createStyleFiles(projectDir, answers) {
   const baseContent = `
 :root {
   --primary-color: #646cff;
-  --background-color: #242424;
-  --text-color: rgba(255, 255, 255, 0.87);
+  --background-color: #ffffff;
+  --text-color: #000000;
   --font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
 
@@ -338,6 +336,11 @@ body {
   margin: 0 auto;
   padding: 2rem;
 }
+
+a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
   `.trim();
 
   await fs.writeFile(
@@ -347,51 +350,15 @@ body {
 
   await fs.writeFile(
     path.join(projectDir, `source/styles/shared.${extension}`),
-    '/* Shared styles */\n'
-  );
-
-  const animationsContent = `
-@keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-@keyframes slideIn {
-  from { transform: translateY(-20px); }
-  to { transform: translateY(0); }
-}
-
-@keyframes underlineExpand {
-  from { width: 0; }
-  to { width: 100%; }
-}
-
-.animate-fade-up {
-  opacity: 0;
-  animation: fadeIn 0.5s ease-out forwards, slideIn 0.5s ease-out forwards;
-}
-
-.animate-underline {
-  position: relative;
+    `/* Shared styles */
+.gradient-text {
+  background: linear-gradient(to bottom right, #000000 60%, #000033 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   display: inline-block;
-}
-
-.animate-underline::after {
-  content: '';
-  position: absolute;
-  left: 0;
-  bottom: -2px;
-  height: 2px;
-  width: 0;
-  background-color: currentColor;
-  animation: underlineExpand 0.5s ease-out 0.3s forwards;
-  transform: translateY(6px);
-}
-  `;
-
-  await fs.writeFile(
-    path.join(projectDir, `source/styles/animations.${extension}`),
-    animationsContent
+}    
+`
   );
 
   if (answers.useTailwind) {
@@ -491,80 +458,84 @@ export default createWebRouter({ routes });
 }
 
 async function createViewStructure(projectDir, viewName, answers) {
+  await createComponentStructure(projectDir, viewName, true, answers);
+}
+
+async function createAppComponent(projectDir, answers) {
+  if (answers.useRouter) return; // Only create App component if not using router
+  await createComponentStructure(projectDir, 'App', false, answers);
+}
+
+async function createComponentStructure(
+  projectDir,
+  componentName,
+  isView,
+  answers
+) {
   const extension = answers.language === 'TypeScript' ? 'tsx' : 'jsx';
   const styleExtension = answers.cssPreprocessor === 'SCSS' ? 'scss' : 'css';
 
-  const viewDir = path.join(projectDir, `source/pages/${viewName}`);
-  await fs.mkdir(viewDir, { recursive: true });
+  const componentDir = isView
+    ? path.join(projectDir, `source/pages/${componentName}`)
+    : path.join(projectDir, 'source');
+  await fs.mkdir(componentDir, { recursive: true });
 
-  let indexContent = `
+  let content = `
 import { createElement } from '@/setup';
 `;
 
   if (!answers.useTailwind) {
-    indexContent += `
+    content += `
 import { css } from "@adbl/bullet";
-import styles from './styles.${styleExtension}?inline';
+import styles from './${
+      isView ? 'styles' : componentName
+    }.${styleExtension}?inline';
 `;
   }
 
-  indexContent += `
+  content += `
    
-export default createElement({
-  tag: '${viewName}-view',
+export ${isView ? 'default' : `const ${componentName} =`} createElement({
+  tag: '${componentName.toLowerCase()}-${isView ? 'view' : 'root'}',
   ${answers.useTailwind ? '' : 'styles: css(styles),'}
   render: () => (
     <div class="${
       answers.useTailwind
         ? 'min-h-screen flex items-center justify-center'
-        : `${viewName}-view`
+        : `${componentName.toLowerCase()}-${isView ? 'view' : 'app'}`
     }">
-      <main class="${
-        answers.useTailwind ? 'max-w-7xl mx-auto p-8 text-center' : ''
-      }">
-        <h1 class="${
-          answers.useTailwind ? 'text-5xl font-bold mb-4' : ''
-        } animate-fade-up">
-          <span class="animate-underline">Welcome to Your Bullet App</span>
-        </h1>
-        <p class="${
-          answers.useTailwind ? 'mb-8' : ''
-        } animate-fade-up" style="animation-delay: 0.2s;">You're viewing the ${capitalizeFirstLetter(
-    viewName
-  )} page</p>
-        <div class="${
-          answers.useTailwind ? 'mb-8' : 'card'
-        } animate-fade-up" style="animation-delay: 0.4s;">
-          <button 
-            type="button"
-            onClick={() => alert('Bullet is awesome!')}
-            class="${
-              answers.useTailwind
-                ? 'bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors'
-                : ''
-            }"
-          >
-            Click me
-          </button>
-        </div>
-        <p class="${
-          answers.useTailwind ? 'text-gray-500' : 'read-the-docs'
-        } animate-fade-up" style="animation-delay: 0.6s;">
-          Check out the <a href="https://github.com/adebola-io/bullet" target="_blank" rel="noopener noreferrer" class="${
-            answers.useTailwind ? 'text-blue-500' : ''
-          } animate-underline">Bullet documentation</a> to learn more
+      <main ${
+        answers.useTailwind ? 'class="max-w-7xl mx-auto p-8 text-center"' : ''
+      }>
+        <h1 ${
+          answers.useTailwind ? 'class="text-5xl font-bold mb-4"' : ''
+        }><span class="gradient-text">bullet.</span></h1>
+        <p ${answers.useTailwind ? 'class="mb-8"' : ''}>${
+    isView
+      ? `You're viewing the ${capitalizeFirstLetter(componentName)} page`
+      : "You're all set to start building amazing things!"
+  }</p>
+        <p class="${answers.useTailwind ? 'text-gray-600' : 'read-the-docs'}">
+          Check out the <a href="https://github.com/adebola-io/bullet" target="_blank" rel="noopener noreferrer" ${
+            answers.useTailwind ? 'class="text-blue-600"' : ''
+          }>Bullet documentation</a> ${
+    isView ? 'to learn more' : 'to get started.'
+  }
         </p>
       </main>
     </div>
   ),
 });
-  `.trim();
+  `;
 
-  await fs.writeFile(path.join(viewDir, `index.${extension}`), indexContent);
+  await fs.writeFile(
+    path.join(componentDir, `${isView ? 'index' : componentName}.${extension}`),
+    content
+  );
 
   if (!answers.useTailwind) {
     const stylesContent = `
-.${viewName}-view {
+.${componentName.toLowerCase()}-${isView ? 'view' : 'app'} {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -583,35 +554,8 @@ export default createElement({
     margin-bottom: 1rem;
   }
 
-  .card {
-    padding: 2em;
-  }
-
-  button {
-    border-radius: 8px;
-    border: 1px solid transparent;
-    padding: 0.6em 1.2em;
-    font-size: 1em;
-    font-weight: 500;
-    font-family: inherit;
-    background-color: #1a1a1a;
-    color: #ffffff;
-    cursor: pointer;
-    transition: border-color 0.25s;
-  }
-
-  button:hover {
-    border-color: #646cff;
-  }
-
-  button:focus,
-  button:focus-visible {
-    outline: 4px auto -webkit-focus-ring-color;
-  }
-
   .read-the-docs {
     color: #888;
-    margin-top: 2rem;
   }
 
   a {
@@ -622,28 +566,33 @@ export default createElement({
 `;
 
     await fs.writeFile(
-      path.join(viewDir, `styles.${styleExtension}`),
+      path.join(
+        componentDir,
+        `${isView ? 'styles' : componentName}.${styleExtension}`
+      ),
       stylesContent
     );
   }
 
-  const routesContent = `
+  if (isView) {
+    const routesContent = `
 import { defineRoutes, lazy } from '@adbl/bullet';
 
-export const homeRoutes = defineRoutes([
+export const ${componentName}Routes = defineRoutes([
   {
-    name: 'Home View',
-    path: '/home',
+    name: '${capitalizeFirstLetter(componentName)} View',
+    path: '/${componentName}',
     component: lazy(() => import('./index')),
   },
 ]);
   `.trim();
 
-  const extensionBase = answers.language === 'TypeScript' ? 'ts' : 'js';
-  await fs.writeFile(
-    path.join(viewDir, `routes.${extensionBase}`),
-    routesContent
-  );
+    const extensionBase = answers.language === 'TypeScript' ? 'ts' : 'js';
+    await fs.writeFile(
+      path.join(componentDir, `routes.${extensionBase}`),
+      routesContent
+    );
+  }
 }
 
 async function createPackageJson(projectDir, answers) {
@@ -681,138 +630,6 @@ async function createPackageJson(projectDir, answers) {
     path.join(projectDir, 'package.json'),
     JSON.stringify(content, null, 2)
   );
-}
-
-async function createAppComponent(projectDir, answers) {
-  if (answers.useRouter) return; // Only create App component if not using router
-
-  const extension = answers.language === 'TypeScript' ? 'tsx' : 'jsx';
-  const styleExtension = answers.cssPreprocessor === 'SCSS' ? 'scss' : 'css';
-
-  let content = `
-import { createElement } from '@/setup';
-`;
-
-  if (!answers.useTailwind) {
-    content += `import styles from './App.${styleExtension}';\n`;
-  }
-
-  content += `
-  
-export const App = createElement({
-  tag: 'app-root',
-  ${answers.useTailwind ? '' : 'styles,'}
-  render: () => (
-    <div class="${
-      answers.useTailwind
-        ? 'min-h-screen flex items-center justify-center'
-        : 'app'
-    }">
-      <main class="${
-        answers.useTailwind ? 'max-w-7xl mx-auto p-8 text-center' : ''
-      }">
-        <h1 class="${
-          answers.useTailwind ? 'text-5xl font-bold mb-4' : ''
-        } animate-fade-up">
-          <span class="animate-underline">Welcome to Your Bullet App</span>
-        </h1>
-        <p class="${
-          answers.useTailwind ? 'mb-8' : ''
-        } animate-fade-up" style="animation-delay: 0.2s;">You're all set to start building amazing things!</p>
-        <div class="${
-          answers.useTailwind ? 'mb-8' : 'card'
-        } animate-fade-up" style="animation-delay: 0.4s;">
-          <button 
-            type="button"
-            onClick={() => alert('Bullet is awesome!')}
-            class="${
-              answers.useTailwind
-                ? 'bg-gray-800 text-white px-4 py-2 rounded-lg hover:bg-gray-700 transition-colors'
-                : ''
-            }"
-          >
-            Click me
-          </button>
-        </div>
-        <p class="${
-          answers.useTailwind ? 'text-gray-500' : 'read-the-docs'
-        } animate-fade-up" style="animation-delay: 0.6s;">
-          Check out the <a href="https://github.com/adebola-io/bullet" target="_blank" rel="noopener noreferrer" class="${
-            answers.useTailwind ? 'text-blue-500' : ''
-          } animate-underline">Bullet documentation</a> to get started
-        </p>
-      </main>
-    </div>
-  ),
-});
-  `.trim();
-
-  await fs.writeFile(path.join(projectDir, `source/App.${extension}`), content);
-
-  if (!answers.useTailwind) {
-    const stylesContent = `
-.app {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-main {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
-  margin-bottom: 1rem;
-}
-
-.card {
-  padding: 2em;
-}
-
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  color: #ffffff;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-
-button:hover {
-  border-color: #646cff;
-}
-
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
-}
-
-.read-the-docs {
-  color: #888;
-  margin-top: 2rem;
-}
-
-a {
-  color: #646cff;
-  text-decoration: inherit;
-}
-  `.trim();
-
-    await fs.writeFile(
-      path.join(projectDir, `source/App.${styleExtension}`),
-      stylesContent
-    );
-  }
 }
 
 async function createConfigFile(projectDir, answers) {
