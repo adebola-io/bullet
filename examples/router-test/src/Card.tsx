@@ -1,4 +1,4 @@
-import { css, useRouter } from '@adbl/bullet';
+import { css, useRouter, domMap } from '@adbl/bullet';
 import { createElement } from './setup';
 import { searchBarText } from './cells';
 
@@ -27,7 +27,7 @@ export const Card = createElement({
             <p class="Description">{props.description}</p>
             <p class="Price">{props.price}</p>
             <ul class="TagList">
-              {props.tags.map((tag, index) => (
+              {domMap(props.tags, (tag, index) => (
                 <li class="Tag" key={index + tag}>
                   {tag}
                 </li>

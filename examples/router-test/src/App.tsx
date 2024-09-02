@@ -28,7 +28,7 @@ export default createElement({
           <input type="search" onInput={updateSearchBarText} />
           <nav>
             {links.map(({ to, text }) => (
-              <Link plain class="NavLink" to={to} key={to}>
+              <Link plain attr:class="NavLink" to={to} key={to}>
                 {text}
               </Link>
             ))}

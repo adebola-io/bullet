@@ -1,4 +1,4 @@
-import { css } from '@adbl/bullet';
+import { css, domMap } from '@adbl/bullet';
 import { Card, type CardProps } from './Card';
 import { createElement } from './setup';
 
@@ -13,7 +13,7 @@ export default createElement({
     return (
       <main>
         <ul class="CardList">
-          {products.map((data: CardProps) => (
+          {domMap(products, (data: CardProps) => (
             <Card {...data} key={data.id} />
           ))}
         </ul>
