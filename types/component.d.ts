@@ -2,7 +2,7 @@
  * @typedef {Node | string} AimRenderNode
  */
 /**
- * @typedef {AimRenderNode | AimRenderNode[] | undefined} Template
+ * @typedef {AimRenderNode | AimRenderNode[] | undefined | void} Template
  */
 /**
  * @template Props
@@ -226,7 +226,7 @@ export type SetupResult = {
     createElement: ElementConstructor;
 };
 export type AimRenderNode = Node | string;
-export type Template = AimRenderNode | AimRenderNode[] | undefined;
+export type Template = AimRenderNode | AimRenderNode[] | undefined | void;
 export type ComponentProps<Props_1> = Props_1 & JSX.JsxNativeProps & JSX.JsxCustomElementAttributes;
 export type ComponentMeta = {
     /**

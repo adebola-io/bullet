@@ -24,7 +24,7 @@ import {
  */
 
 /**
- * @typedef {AimRenderNode | AimRenderNode[] | undefined} Template
+ * @typedef {AimRenderNode | AimRenderNode[] | undefined | void} Template
  */
 
 /**
@@ -397,6 +397,9 @@ function setupInternal(setupOptions) {
       //@ts-ignore
       bullet__disconnected = disconnected?.bind(this);
 
+      /** @type {string | number | boolean | undefined} */
+      bullet__key;
+
       /**
        * The data signal for the component instance.
        * @type {ComponentData}
@@ -478,11 +481,17 @@ function setupInternal(setupOptions) {
           if (key.startsWith('attr:')) {
             setAttributeFromProps(this, key.slice(5), value);
           }
+
+          if (key === 'key') {
+            this.bullet__key = value;
+          }
         }
 
         /** @type {Partial<Props>} */ // @ts-ignore
         const fullProps = Object.fromEntries(
-          Object.entries(allProps).filter(([key]) => !key.startsWith('attr:'))
+          Object.entries(allProps).filter(
+            ([key]) => !(key.startsWith('attr:') || key === 'key')
+          )
         );
 
         this.bullet__finalProps = fullProps;

@@ -1,19 +1,46 @@
 /// @adbl-bullet
 import { CUSTOM_ELEMENT_INSTANCE_CACHE } from './constants.js';
+import { Cell } from '@adbl/cells';
 
 /**
  * Converts an object of styles to a CSS stylesheet string.
  *
  * @param {Partial<CSSStyleDeclaration>} styles - An object where the keys are CSS property names and the values are CSS property values.
- * @param {boolean} useHost - Whether to include the `:host` selector in the stylesheet.
+ * @param {boolean} [useHost] - Whether to include the `:host` selector in the stylesheet.
+ * @param {any} [element] The target element, if any.
  * @returns {string} A CSS stylesheet string that can be applied as a style to an HTML element.
  */
-export function convertObjectToCssStylesheet(styles, useHost = false) {
+export function convertObjectToCssStylesheet(styles, useHost, element) {
   return `${useHost ? ':host{' : ''}${Object.entries(styles)
-    .map(
-      ([key, value]) =>
-        `${key.startsWith('--') ? key : toKebabCase(key)}: ${value}`
-    )
+    .map(([key, value]) => {
+      if (Cell.isCell(/** @type any */ (value)) && element) {
+        /** @param {any} innerValue */
+        const callback = (innerValue) => {
+          const stylePropertyKey = key.startsWith('--')
+            ? key
+            : toKebabCase(key);
+
+          if (innerValue) {
+            element.style.setProperty(stylePropertyKey, innerValue);
+          } else {
+            element.style.removeProperty(stylePropertyKey);
+          }
+        };
+
+        if (!Reflect.has(element, 'bullet__attributeCells')) {
+          Reflect.set(element, 'bullet__attributeCells', new Set());
+        }
+        Reflect.set(element, 'bullet__attributeCells', new Set());
+        element.bullet__attributeCells.add(callback);
+        element.bullet__attributeCells.add(value);
+
+        value.listen(callback, { weak: true });
+      }
+      if (!value) return '';
+      return `${
+        key.startsWith('--') ? key : toKebabCase(key)
+      }: ${value.valueOf()}`;
+    })
     .join('; ')}${useHost ? '}' : ''}`;
 }
 
@@ -31,30 +58,30 @@ export function toKebabCase(str) {
 
 /**
  * Generates an array of DOM nodes from a given input.
- * @param {import('./component.js').Template| TemplateStringsArray} children - The input to generate DOM nodes from.
+ * @param {import('./component.js').Template | TemplateStringsArray} children - The input to generate DOM nodes from.
  * @returns {Node[]}
  */
 export function generateChildNodes(children) {
   /** @type {Node[]} */
-  let nodes = [];
+  const nodes = [];
 
   if (typeof children === 'string') {
     const parser = new DOMParser();
-    nodes = Array.from(
+    return Array.from(
       parser.parseFromString(children, 'text/html').body.childNodes
     );
   }
 
   if (children instanceof DocumentFragment) {
-    nodes = Array.from(children.childNodes);
+    return Array.from(children.childNodes);
   }
 
   if (children instanceof Node) {
-    nodes = [children];
+    return [children];
   }
 
   if (Array.isArray(children)) {
-    nodes = children.flatMap((child) => generateChildNodes(child));
+    return children.flatMap((child) => generateChildNodes(child));
   }
 
   return nodes;
@@ -190,4 +217,7 @@ export const getCurrentElement = () => {
   return RENDERING_TREE[RENDERING_TREE.length - 1];
 };
 
-export class BulletComponent extends HTMLElement {}
+export class BulletComponent extends HTMLElement {
+  /** @type {() => import('./component.js').Template} */ //@ts-ignore
+  render;
+}

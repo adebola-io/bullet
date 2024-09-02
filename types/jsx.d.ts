@@ -19,6 +19,10 @@ export function h<Props extends object, TagName extends string | ((props: (Props
  * List of cell callbacks set as attributes on the element.
  * @property {boolean} bullet__createdByJsx
  * Whether or not the element was created using JSX syntax.
+ * @property {string | boolean | number | undefined} bullet__key
+ * Unique key for the element.
+ * @property {object} bullet__finalProps
+ * Props passed to the element.
  */
 /**
  * @typedef {Element & HiddenElementProperties} JsxElement
@@ -64,5 +68,13 @@ export type HiddenElementProperties = {
      * Whether or not the element was created using JSX syntax.
      */
     bullet__createdByJsx: boolean;
+    /**
+     * Unique key for the element.
+     */
+    bullet__key: string | boolean | number | undefined;
+    /**
+     * Props passed to the element.
+     */
+    bullet__finalProps: object;
 };
 export type JsxElement = Element & HiddenElementProperties;

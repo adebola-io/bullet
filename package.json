@@ -33,6 +33,7 @@
     "typescript": "^5.5.2"
   },
   "dependencies": {
+    "@adbl/cells": "^0.0.4",
     "csstype": "^3.1.3"
   }
 }

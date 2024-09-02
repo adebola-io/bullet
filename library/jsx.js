@@ -1,4 +1,5 @@
 /// @adbl-bullet
+import { Cell } from '@adbl/cells';
 import {
   convertObjectToCssStylesheet,
   BulletComponent,
@@ -196,6 +197,10 @@ export function h(tagname, props, ...children) {
  * List of cell callbacks set as attributes on the element.
  * @property {boolean} bullet__createdByJsx
  * Whether or not the element was created using JSX syntax.
+ * @property {string | boolean | number | undefined} bullet__key
+ * Unique key for the element.
+ * @property {object} bullet__finalProps
+ * Props passed to the element.
  */
 
 /**
@@ -215,15 +220,18 @@ export function h(tagname, props, ...children) {
  * Otherwise, it directly sets the attribute on the element.
  */
 export function setAttributeFromProps(element, key, value) {
-  if (
-    typeof value === 'object' &&
-    'runAndListen' in value &&
-    'wvalue' in value &&
-    typeof value.runAndListen === 'function'
-  ) {
+  if (Cell.isCell(value)) {
+    let firstRunComplete = false;
     /** @param {any} value */
     const callback = (value) => {
+      if (key === 'key' && firstRunComplete) {
+        if (element instanceof BulletComponent) {
+          // @ts-ignore
+          element.render(element.bullet__finalProps);
+        }
+      }
       setAttribute(element, key, value);
+      firstRunComplete = true;
     };
     let signal;
     if (
@@ -332,7 +340,15 @@ export function setAttribute(element, key, value) {
   }
 
   if (key === 'style' && typeof value === 'object' && value !== null) {
-    element.setAttribute('style', convertObjectToCssStylesheet(value, false));
+    element.setAttribute(
+      'style',
+      convertObjectToCssStylesheet(value, false, element)
+    );
+    return;
+  }
+
+  if (key === 'key') {
+    element.bullet__key = value;
     return;
   }
 
@@ -404,12 +420,8 @@ export function normalizeJsxChild(child, _parent) {
     return document.createTextNode('');
   }
 
-  if (
-    typeof child === 'object' &&
-    'runAndListen' in child &&
-    'wvalue' in child &&
-    typeof child.runAndListen === 'function'
-  ) {
+  // @ts-ignore
+  if (Cell.isCell(child)) {
     const textNode = document.createTextNode('');
     /** @param {any} value */
     const callback = (value) => {

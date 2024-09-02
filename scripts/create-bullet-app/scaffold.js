@@ -24,7 +24,7 @@ const CONFIG = {
   ],
   dependencies: {
     '@adbl/bullet': '^0.0.22',
-    '@adbl/cells': '^0.0.2',
+    '@adbl/cells': '^0.0.4',
   },
   devDependencies: {
     vite: '^5.4.1',

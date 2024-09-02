@@ -2,10 +2,11 @@
  * Converts an object of styles to a CSS stylesheet string.
  *
  * @param {Partial<CSSStyleDeclaration>} styles - An object where the keys are CSS property names and the values are CSS property values.
- * @param {boolean} useHost - Whether to include the `:host` selector in the stylesheet.
+ * @param {boolean} [useHost] - Whether to include the `:host` selector in the stylesheet.
+ * @param {any} [element] The target element, if any.
  * @returns {string} A CSS stylesheet string that can be applied as a style to an HTML element.
  */
-export function convertObjectToCssStylesheet(styles: Partial<CSSStyleDeclaration>, useHost?: boolean): string;
+export function convertObjectToCssStylesheet(styles: Partial<CSSStyleDeclaration>, useHost?: boolean | undefined, element?: any): string;
 /**
  * Converts a string to kebab-case.
  * @param {string} str - The input string to convert.
@@ -14,7 +15,7 @@ export function convertObjectToCssStylesheet(styles: Partial<CSSStyleDeclaration
 export function toKebabCase(str: string): string;
 /**
  * Generates an array of DOM nodes from a given input.
- * @param {import('./component.js').Template| TemplateStringsArray} children - The input to generate DOM nodes from.
+ * @param {import('./component.js').Template | TemplateStringsArray} children - The input to generate DOM nodes from.
  * @returns {Node[]}
  */
 export function generateChildNodes(children: import("./component.js").Template | TemplateStringsArray): Node[];
@@ -56,4 +57,5 @@ export function isNotObject(value: any): boolean;
 export const RENDERING_TREE: Array<any>;
 export function getCurrentElement(): import("./component.js").BulletElement<unknown> | undefined;
 export class BulletComponent extends HTMLElement {
+    /** @type {() => import('./component.js').Template} */ render: () => import("./component.js").Template;
 }

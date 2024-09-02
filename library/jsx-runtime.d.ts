@@ -15,6 +15,7 @@ declare namespace JSX {
     | undefined
     | string
     | CSSProperties
+    | Container<ValueOrCell<CSSProperties>>
     | Array<StyleValue>;
 
   type HTMLAttributeReferrerPolicy =
@@ -3048,11 +3049,7 @@ declare namespace JSX {
     view: JsxSVGViewElement;
   }
 
-  type ValueOrCell<T> =
-    | T
-    | {
-        value: T;
-      };
+  type ValueOrCell<T> = T | import('@adbl/cells').Cell<T>;
 
   type Container<ElementAttributes extends object> = {
     [attribute in keyof ElementAttributes]: ValueOrCell<
