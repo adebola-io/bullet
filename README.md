@@ -103,14 +103,12 @@ const Counter = createElement({
   render: () => {
     const count = Cell.source(0);
 
-    const increment = () => {
-      count.value++;
-    };
-
     return (
       <div>
         <output>{count}</output>
-        <button onClick={increment}>Increment</button>
+        <button onClick={()=>count.value++}>
+          Increment
+        </button>
       </div>
     );
   },
