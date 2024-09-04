@@ -96,7 +96,7 @@ const camelCasedAttributes = new Set([
 /**
  * Creates a new DOM element with the specified tag name, props, and children.
  *
- * @template {object} Props
+ * @template {Record<PropertyKey, any>} Props
  * @template {string | ((props: Props & { children: any } | typeof DocumentFragment, context: any) => Node | Promise<Node>)} TagName
  * @param {TagName} tagname - The HTML tag name for the element.
  * @param {Props} props - An object containing the element's properties.
@@ -145,13 +145,15 @@ export function h(tagname, props, ...children) {
     return component;
   }
 
+  const defaultNamespace = props?.xmlns ?? 'http://www.w3.org/1999/xhtml';
+
   /** @type {JsxElement} */ //@ts-ignore
   const element =
     tagname === 'svg'
       ? document.createElementNS('http://www.w3.org/2000/svg', tagname)
       : tagname === 'math'
       ? document.createElementNS('http://www.w3.org/1998/Math/MathML', tagname)
-      : document.createElement(tagname);
+      : document.createElementNS(defaultNamespace, tagname);
 
   element.bullet__eventListenerList = new Map();
   element.bullet__attributeCells = new Set();

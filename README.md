@@ -1,16 +1,20 @@
 # bullet
 
-A tiny, experimental, and ill-advised library for Web Components.
+A lightweight, efficient, and flexible library for Web Components.
 
-[![downloads (@adb/bullet)](https://img.shields.io/npm/dm/@adbl/bullet?label=downloads)](https://www.npmjs.com/package/@adbl/bullet)
+[![downloads (@adbl/bullet)](https://img.shields.io/npm/dm/@adbl/bullet?label=downloads)](https://www.npmjs.com/package/@adbl/bullet)
 
-> Exploratory and experimental. If you use it, you're on your own. If you want to use web components in a production setting, use Lit.
+Bullet is a robust and performant solution for creating reusable, encapsulated HTML elements. It offers a streamlined API for developing complex web applications with ease and efficiency.
 
 <!-- TOC -->
 
 - [bullet](#bullet)
+  - [Key Features](#key-features)
   - [Installation](#installation)
   - [Usage](#usage)
+    - [Quick Start](#quick-start)
+    - [Custom Elements](#custom-elements)
+    - [The `createElement` Function](#the-createelement-function)
     - [JSX Syntax](#jsx-syntax)
     - [Usage without JSX](#usage-without-jsx)
   - [Styling](#styling)
@@ -18,6 +22,8 @@ A tiny, experimental, and ill-advised library for Web Components.
   - [Attributes](#attributes)
   - [Anonymous components](#anonymous-components)
   - [Event Handling](#event-handling)
+  - [Rendering Lists](#rendering-lists)
+    - [Conditional Rendering](#conditional-rendering)
   - [Lifecycle Methods](#lifecycle-methods)
     - [`connected`](#connected)
     - [`disconnected`](#disconnected)
@@ -37,75 +43,120 @@ A tiny, experimental, and ill-advised library for Web Components.
 
 <!-- /TOC -->
 <!-- /TOC -->
-<!-- /TOC -->
-<!-- /TOC -->
 
----
+## Key Features
+
+- **Lightweight**: Minimal overhead for optimal performance
+- **Web Components**: First-class support for custom elements
+- **JSX Support**: Familiar syntax for React developers
+- **Reactive**: Built-in reactivity with `@adbl/cells`
+- **Async Components**: Easy handling of asynchronous rendering
+- **Routing**: Built-in routing system for single-page applications
+- **Scoped Styling**: Encapsulated CSS using Shadow DOM
+- **No Build Step Required**: Can be used directly in the browser
 
 ## Installation
 
-To create a new Bullet project, you can use the Bullet CLI tool. Make sure you have Node.js version 14.0.0 or higher installed on your system.
+To create a new Bullet project, run the following command:
 
-1. Run the following command to create a new Bullet project:
+```bash
+npx create-bullet-app
+```
 
-   ```bash
-   npx create-bullet-app
-   ```
+- Configure project when prompted.
 
-2. Follow the prompts to configure your project.
+- Navigate to project directory:
 
-3. Once the project is created, navigate to the project directory:
+  ```bash
+  cd your-project-name
+  ```
 
-   ```bash
-   cd your-project-name
-   ```
+- Install dependencies:
 
-4. Install the project dependencies:
+  ```bash
+  npm install
+  ```
 
-   ```bash
-   npm install
-   ```
+- Start development server:
 
-5. Start the development server:
+  ```bash
+  npm run dev
+  ```
 
-   ```bash
-   npm run dev
-   ```
+- Open `http://localhost:5173` in your browser.
 
-6. Open your browser and visit `http://localhost:5173` to see your new Bullet app in action!
-
-Now you're ready to start building your app with Bullet. Happy coding! 🚀
+You're now ready to build with Bullet! 🚀
 
 ## Usage
 
-You can define your own custom elements with the `createElement` function.
-Here's an example of a simple component:
+### Quick Start
+
+Here's a simple example to get you started with Bullet:
 
 ```jsx
-// my-element.js
-const MyElement = createElement({
-  tag: 'my-element',
-  render: () => 'Hello, World!',
+import { createElement } from '@adbl/bullet';
+import { Cell } from '@adbl/cells';
+
+// Create a simple counter component
+const Counter = createElement({
+  tag: 'my-counter',
+  render: () => {
+    const count = Cell.source(0);
+
+    const increment = () => {
+      count.value++;
+    };
+
+    return (
+      <div>
+        <output>{count}</output>
+        <button onClick={increment}>Increment</button>
+      </div>
+    );
+  },
 });
+
+// Use the component
+document.body.append(<Counter />);
 ```
 
-You can then use your custom element like any other HTML tag:
+This example creates a simple counter component with Bullet and adds it to the page. The following sections will dive deeper into Bullet's features and usage.
+
+### Custom Elements
+
+Custom elements in Bullet allow you to define new HTML tags with associated behavior. They encapsulate functionality and can be reused throughout your application.
+
+### The `createElement` Function
+
+The `createElement` function is the core of Bullet's component creation system. It takes an object as an argument, which defines the properties and behavior of your custom element.
+
+The key properties of the `createElement` object are:
+
+1. `tag`: A string that defines the name of a custom element.
+2. `render`: A function that returns the content of a custom element.
+
+Here's an example to illustrate these concepts:
+
+```jsx
+import { createElement } from '@adbl/bullet';
+
+const Greeting = createElement({
+  tag: 'app-greeting',
+  render: () => {
+    return <h1>Hello, World!</h1>;
+  },
+});
+// Use it like this:
+document.body.append(<Greeting />);
+```
+
+This creates a custom `<app-greeting>` element that displays "Hello, World!". The element can also be instantiated in HTML:
 
 ```html
-<!-- index.html -->
-<body>
-  <my-element></my-element>
-  <script type="module">
-    import { MyElement } from './my-element.js';
-  </script>
-</body>
+<app-greeting></app-greeting>
 ```
 
-or you can instantiate the constructor in javascript:
-
-```jsx
-document.body.append(MyElement());
-```
+---
 
 ### JSX Syntax
 
@@ -118,12 +169,14 @@ import { createElement } from '@adbl/bullet';
 
 const Greeting = createElement({
   tag: 'app-greeting',
-  render: (props) => (
-    <div>
-      <h1>Hello, {props.name}!</h1>
-      <p>Welcome to Bullet</p>
-    </div>
-  ),
+  render: (props) => {
+    return (
+      <div>
+        <h1>Hello, {props.name}!</h1>
+        <p>Welcome to Bullet</p>
+      </div>
+    );
+  },
 });
 
 // Usage
@@ -163,27 +216,33 @@ import { component, html } from '@adbl/bullet';
 
 const Card = createElement({
   tag: 'product-card',
-  render: (props) => html`
-    <div class="card">
-      <h1>${props.name}</h1>
-      <img src=${props.imgSrc} alt=${props.imgAlt} />
-    </div>
-  `,
+  render: (props) => {
+    return html`
+      <div class="card">
+        <h1>${props.name}</h1>
+        <img src=${props.imgSrc} alt=${props.imgAlt} />
+      </div>
+    `;
+  },
 });
 ```
+
+It is mostly recommended to use Bullet with JSX, as it provides a lot more features and functionality.
 
 ---
 
 ## Styling
 
-Components can be styled using the `styles` property on the component object, and the `css` function, which can be used to generate CSS stylesheets. All styles are generated as constructed stylesheets and are automatically scoped only to the given element.
+Components can be styled using the `styles` property on the component object, and the `css` function, which can be used to generate CSS stylesheets from JavaScript strings.
 
 ```tsx
 import { createElement, css } from '@adbl/bullet';
 
 const AppButton = createElement({
   tag: 'app-button',
-  render: (props) => <button>{props.label}</button>,
+  render: (props) => {
+    return <button>{props.label}</button>;
+  },
 
   styles: css`
     button {
@@ -196,14 +255,30 @@ const AppButton = createElement({
 });
 ```
 
-By default, the button styles will only apply to the button within the `AppButton` element. If you want to define styles that can apply to the whole document, you can use the `globalStyles` property instead:
+By default, the stylesheets are scoped using the shadow DOM. This means in the example above, the styles for `button` will affect any `<button>` element _within_ the `AppButton` component, and will be unreachable from outside it. This provides native encapsulation and isolates styles, preventing side effects on other components.
+
+When the html is rendered:
+
+```html
+<app-button>
+  <!-- # In the shadow DOM: -->
+  <!-- This button will have a red background, rounded corners, and padding. -->
+  <button>Click me</button>
+</app-button>
+<!-- But this button will not. -->
+<button>Click me too</button>
+```
+
+There may be a need to instead apply styles to the whole document, and this can be achieved by using the `globalStyles` property instead:
 
 ```tsx
 import { createElement, css } from '@adbl/bullet';
 
 const AppButton = createElement({
   tag: 'app-button',
-  render: (props) => <button>{props.label}</button>,
+  render: (props) => {
+    return <button>{props.label}</button>;
+  },
 
   styles: css`
     button {
@@ -225,15 +300,19 @@ const AppButton = createElement({
 
 Whenever there is at least one instance of the component in the DOM, the document body will apply the given styles.
 
+NOTE: This still wont affect the styles of other custom elements, only styles of elements in the root DOM. The best use case for this is to apply styles to the body or html element when a custom element is present in the DOM.
+
 ## Importing External Stylesheets
 
-Bullet also supports importing external CSS files directly into your components. This can be particularly useful for organizing your styles or when working with existing CSS files. To import an external stylesheet, you can use the `?inline` query parameter in your import statement.
+Bullet also supports importing external CSS files directly into your components. This can be particularly useful for organizing your styles or when working with existing CSS files. To import an external stylesheet when using Vite, you can use the `?inline` query parameter in your import statement.
 
 Here's an example of how to import and use an external CSS file in your Bullet component:
 
 ```css
 /* my-component/styles.css */
+
 :host {
+  /* Styles for the custom element itself. */
   width: 100px;
   height: 100px;
   background-color: red;
@@ -242,15 +321,20 @@ Here's an example of how to import and use an external CSS file in your Bullet c
 
 ```tsx
 /* my-component/index.tsx */
+
 import { createElement, css } from '@adbl/bullet';
 import styles from './styles.css?inline';
 
 const MyComponent = createElement({
   tag: 'my-component',
   styles: css(styles),
-  render: () => 'Hello, World!',
+  render: () => {
+    return 'Hello, World!';
+  },
 });
 ```
+
+This way you can separate your styles from your components and keep them organized.
 
 ## Attributes
 
@@ -261,14 +345,16 @@ import { createElement } from '@adbl/bullet';
 
 const AppInput = createElement({
   tag: 'app-input',
-  render: (props) => <input class={props.class} type="text" />,
+  render: (props) => {
+    return <input class={props.class} type="text" />;
+  },
 });
 
 const myInput = <AppInput attr:class="custom-app-input" class="inner-input" />;
 document.body.appendChild(myInput);
 ```
 
-When the element is rendered, the `attr:` prefix will be stripped from the attribute name, and the attribute will be set on the element, while the rest of the attributes will be passed to the inner element:
+When the element is rendered, the `attr:` prefix will be stripped from the attribute name, and the attribute will be set on the element, while the rest of the attributes will be passed as props.
 
 ```html
 <app-input class="custom-app-input">
@@ -283,7 +369,9 @@ When the element is rendered, the `attr:` prefix will be stripped from the attri
 You can also declare custom elements without tag names, meaning the tag names will be auto-generated:
 
 ```jsx
-const Heading = createElement((props) => <h1>{props.text}</h1>);
+const Heading = createElement((props) => {
+  return <h1>{props.text}</h1>)
+};
 
 document.body.append(<Heading text="Hello there" />);
 ```
@@ -299,7 +387,9 @@ import { createElement } from '@adbl/bullet';
 
 const Button = createElement({
   tag: 'my-button',
-  render: (props) => <button onClick={props.onClick}>{props.label}</button>,
+  render: (props) => {
+    return <button onClick={props.onClick}>{props.label}</button>;
+  },
 });
 
 const handleClick = () => {
@@ -312,14 +402,16 @@ const handleClick = () => {
 
 In this example, the handleClick function is passed as the onClick prop to the Button component. When the button is clicked, the handleClick function will be called, and "Button clicked!" will be logged to the console.
 
-As discussed under [Attributes](#attributes), you can also pass events to your custom elements using the `attr:` prefix.
+As discussed in the [Attributes](#attributes) section, you can also pass events to your custom elements using the `attr:` prefix.
 
 ```tsx
 import { createElement } from '@adbl/bullet';
 
 const Confetti = createElement({
   tag: 'party-confetti',
-  render: () => '🎉',
+  render: () => {
+    return '🎉';
+  },
 });
 
 document.body.append(
@@ -328,6 +420,249 @@ document.body.append(
 ```
 
 In the above example, there is no inner element in `<party-confetti>` element; the click handler is set on the element itself.
+
+---
+
+## Rendering Lists
+
+There are a number of ways to render lists in bullet. A list can be rendered by mapping over an array of data, similar to how it would be done in a React component.
+
+```tsx
+import { createElement } from '@adbl/bullet';
+
+const taskItems = ['Learn Bullet', 'Build a web app', 'Deploy to production'];
+
+const TodoList = createElement({
+  tag: 'todo-list',
+  render: () => {
+    return (
+      <ul>
+        {taskItems.map((todo) => {
+          return <li>{todo}</li>;
+        })}
+      </ul>
+    );
+  },
+});
+```
+
+You can also use the `For` function exported from the bullet library. A major advantage is that it allows you to map over other iterable objects, such as Maps and Sets.
+
+```tsx
+import { createElement, For } from '@adbl/bullet';
+
+const TodoList = createElement({
+  tag: 'todo-list',
+  render: () => {
+    return (
+      <ul>
+        {For(taskItems, (item) => {
+          return <li>{item}</li>;
+        })}
+      </ul>
+    );
+  },
+});
+```
+
+Bullet has first class support for the `@adbl/cells` library, which allows you to create reactive values and use them in Javascript.
+
+You can create a reactive array cell, and whenever the array updates, the list of DOM
+elements it generates will be updated automatically.
+
+```tsx
+import { createElement, For } from '@adbl/bullet';
+import { Cell } from '@adbl/cells';
+
+const listItems = Cell.source([
+  'Master the art of bullet-dodging',
+  'Create a time machine',
+  'Invent a new flavor of ice cream',
+]);
+
+const TodoList = createElement({
+  tag: 'todo-list',
+  render: () => {
+    return (
+      <ul>
+        {For(listItems, (item) => {
+          return <li>{item}</li>;
+        })}
+      </ul>
+    );
+  },
+});
+document.body.appendChild(<TodoList />);
+
+// Later, when the listItems cell updates, the DOM will be updated automatically.
+listItems.value.push('Befriend a unicorn');
+```
+
+> The `For` function is aggressive when it comes to caching nodes for performance optimization.
+> This means that the callback function provided to `For` **should** be pure and not rely on external state or produce side effects, because the callback function might not be called when you expect it to be.
+>
+> Here's an example to illustrate why this is important:
+>
+> ```tsx
+> import { createElement, For } from '@adbl/bullet';
+> import { Cell } from '@adbl/cells';
+>
+> let renderCount = 0;
+> const items = Cell.source([
+>   { id: 1, name: 'Alice' },
+>   { id: 2, name: 'Bob' },
+>   { id: 3, name: 'Charlie' },
+> ]);
+>
+> const List = createElement({
+>   tag: 'user-list',
+>   render: () => {
+>     return (
+>       <ul>
+>         {For(items, (item) => {
+>           renderCount++; // This is problematic!
+>           return (
+>             <li>
+>               {item.name} (Renders: {renderCount})
+>             </li>
+>           );
+>         })}
+>       </ul>
+>     );
+>   },
+> });
+>
+> document.body.append(<List />);
+> // Initial output:
+> // - Alice (Renders: 1)
+> // - Bob (Renders: 2)
+> // - Charlie (Renders: 3)
+>
+> // Later:
+> items.value.splice(1, 0, { id: 4, name: 'David' });
+> // Actual output:
+> // - Alice (Renders: 1)
+> // - David (Renders: 4)
+> // - Bob (Renders: 2)
+> // - Charlie (Renders: 3)
+> ```
+>
+> In this example, when we splice a new item into the middle of the array, the `For` function reuses the existing nodes for Alice, Bob, and Charlie. It only calls the callback function for the new item, David. This leads to an unexpected render count for David.
+>
+> To avoid this issue, use the reactive index provided by `For`:
+>
+> ```tsx
+> const List = createElement({
+>   tag: 'user-list',
+>   render: () => {
+>     return (
+>       <ul>
+>         {For(items, (item, index) => {
+>           return (
+>             <li>
+>               {item.name} (Index: {index})
+>             </li>
+>           );
+>         })}
+>       </ul>
+>     );
+>   },
+> });
+> ```
+>
+> This approach ensures correct behavior regardless of how the array is modified, as the index is always up-to-date.
+
+---
+
+### Conditional Rendering
+
+The `If` function provides conditional rendering based on the truthiness of a value.
+
+```tsx
+import { createElement, If } from '@adbl/bullet';
+
+const isLoggedIn = false;
+const username = 'John';
+
+const ConditionalGreeting = createElement({
+  tag: 'conditional-greeting',
+  render: () => {
+    return (
+      <div>
+        {If(isLoggedIn, () => {
+          return <h1>Welcome back, {username}!</h1>;
+        })}
+      </div>
+    );
+  },
+});
+```
+
+The `If` function also accepts a third argument, which is a callback function that is called when the condition is falsy.
+
+```tsx
+import { createElement, If } from '@adbl/bullet';
+
+const isLoggedIn = false;
+const username = 'John';
+
+const ConditionalGreeting = createElement({
+  tag: 'conditional-greeting',
+  render: () => (
+    <div>
+      {If(
+        isLoggedIn,
+        () => {
+          return <h1>Welcome back, {username}!</h1>;
+        },
+        () => {
+          return <h1>Please log in</h1>;
+        }
+      )}
+    </div>
+  ),
+});
+```
+
+It can also be used with the `@adbl/cells` library. The `If` function will automatically update the DOM when the cell value changes.
+
+```tsx
+import { createElement, If } from '@adbl/bullet';
+import { Cell } from '@adbl/cells';
+
+const isLoggedIn = Cell.source(false);
+const username = Cell.source('');
+
+const LoginStatus = createElement({
+  tag: 'login-status',
+  render: () => (
+    <div>
+      {If(
+        isLoggedIn,
+        () => (
+          <div>
+            <h1>Welcome back, {username}!</h1>
+            <button onClick={() => (isLoggedIn.value = false)}>Logout</button>
+          </div>
+        ),
+        () => (
+          <div>
+            <h1>Please log in</h1>
+            <input
+              type="text"
+              placeholder="Enter username"
+              onInput={(e) => (username.value = e.target.value)}
+            />
+            <button onClick={() => (isLoggedIn.value = true)}>Login</button>
+          </div>
+        )
+      )}
+    </div>
+  ),
+});
+// Usage
+document.body.append(<LoginStatus />);
+```
 
 ## Lifecycle Methods
 
@@ -408,9 +743,9 @@ const Products = createElement({
 
     return (
       <ul>
-        {data.map((item) => (
-          <li key={item.id}>{item.name}</li>
-        ))}
+        {data.map((item) => {
+          return <li key={item.id}>{item.name}</li>;
+        })}
       </ul>
     );
   },
@@ -420,7 +755,7 @@ const Products = createElement({
 You can then use `Products` anywhere just like a regular component:
 
 ```tsx
-document.body.append(<products></products>);
+document.body.append(<Products />);
 ```
 
 The component will be loaded on-demand when it is rendered.
@@ -438,7 +773,9 @@ const LoadingComponent = createElement({
     await new Promise((resolve) => setTimeout(resolve, 2000));
     return <div>Content loaded!</div>;
   },
-  initial: () => <div>Loading...</div>,
+  initial: () => {
+    return <div>Loading...</div>;
+  },
 });
 ```
 
@@ -450,7 +787,9 @@ const ErrorComponent = createElement({
   render: async () => {
     throw new Error('Oops, something went wrong!');
   },
-  fallback: (error) => <div>Error: {error.message}</div>,
+  fallback: (error) => {
+    return <div>Error: {error.message}</div>;
+  },
 });
 ```
 
@@ -476,17 +815,23 @@ import {
 // Define simple components
 const Home = createElement({
   tag: 'home-page',
-  render: () => <h1>Welcome to the Home Page</h1>,
+  render: () => {
+    return <h1>Welcome to the Home Page</h1>;
+  },
 });
 
 const About = createElement({
   tag: 'about-page',
-  render: () => <h1>About Us</h1>,
+  render: () => {
+    return <h1>About Us</h1>;
+  },
 });
 
 const NotFound = createElement({
   tag: 'not-found',
-  render: () => <h1>404 - Page Not Found</h1>,
+  render: () => {
+    return <h1>404 - Page Not Found</h1>;
+  },
 });
 
 // Define routes
@@ -678,8 +1023,8 @@ This routing system provides a robust foundation for creating single-page applic
 
 ## Why bullet?
 
-Wow that's a great question.
+Great question.
 
 ## License
 
-MIT, because why not?
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

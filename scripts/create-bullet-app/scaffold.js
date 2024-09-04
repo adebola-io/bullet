@@ -23,8 +23,7 @@ const CONFIG = {
     'source/components',
   ],
   dependencies: {
-    '@adbl/bullet': '^0.0.22',
-    '@adbl/cells': '^0.0.4',
+    '@adbl/bullet': '^0.0.25',
   },
   devDependencies: {
     vite: '^5.4.1',
@@ -61,7 +60,7 @@ const questions = [
   {
     type: 'list',
     name: 'cssPreprocessor',
-    message: chalk.magenta('Which CSS preprocessor would you like to use?'),
+    message: chalk.magenta('Which styling language would you like to use?'),
     choices: ['SCSS', 'CSS'],
     default: 'SCSS',
   },
@@ -79,10 +78,18 @@ const questions = [
     default: true,
   },
   {
+    type: 'confirm',
+    name: 'useCells',
+    message: chalk.italic.green(
+      'Add @adbl/cells for fine-grained reactivity? ✨'
+    ),
+    default: true,
+  },
+  {
     type: 'input',
     name: 'namespace',
     message: chalk.magenta(
-      'Specify an app namespace (leave empty for default):'
+      'Specify a namespace for your custom elements (leave empty for default):'
     ),
     default: '',
   },
@@ -294,8 +301,7 @@ import sharedStyles from "./styles/shared.${styleExtension}?inline";
 export const { createElement } = setup({
   ${answers.namespace ? `namespace: "${answers.namespace}",` : ''}
   styles: css([
-    ${answers.useTailwind ? 'tailwindStyles, ' : ''}
-    sharedStyles
+    ${answers.useTailwind ? 'tailwindStyles,\n    ' : ''}sharedStyles
   ])
 });
 `;
@@ -502,7 +508,7 @@ export ${isView ? 'default' : `const ${componentName} =`} createElement({
     <div class="${
       answers.useTailwind
         ? 'min-h-screen flex items-center justify-center'
-        : `${componentName.toLowerCase()}-${isView ? 'view' : 'app'}`
+        : `${componentName.toLowerCase()}-${isView ? 'view' : ''}`
     }">
       <main ${
         answers.useTailwind ? 'class="max-w-7xl mx-auto p-8 text-center"' : ''
@@ -535,7 +541,7 @@ export ${isView ? 'default' : `const ${componentName} =`} createElement({
 
   if (!answers.useTailwind) {
     const stylesContent = `
-.${componentName.toLowerCase()}-${isView ? 'view' : 'app'} {
+.${componentName.toLowerCase()}-${isView ? 'view' : ''} {
   min-height: 100vh;
   display: flex;
   align-items: center;
@@ -606,11 +612,17 @@ async function createPackageJson(projectDir, answers) {
       build: 'vite build',
       preview: 'vite preview',
     },
-    dependencies: CONFIG.dependencies,
+    dependencies: {
+      ...CONFIG.dependencies,
+    },
     devDependencies: {
       vite: CONFIG.devDependencies.vite,
     },
   };
+
+  if (answers.useCells) {
+    content.dependencies['@adbl/cells'] = 'latest';
+  }
 
   if (answers.language === 'TypeScript') {
     content.devDependencies.typescript = CONFIG.devDependencies.typescript;

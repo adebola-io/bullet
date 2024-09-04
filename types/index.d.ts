@@ -4,10 +4,9 @@
 /**
  * Creates a mapping of an iterator to DOM nodes.
  *
- * @template {Iterable<any> & Array<any>} U
- * @template {U extends Iterable<infer V> ? V : never} V
+ * @template {Iterable<any>} U
  * @param {Cell<U> | U} list
- * @param {(item: V, index: Cell<number>, iter: U) => Template} fn
+ * @param {(item: U extends Iterable<infer V> ? V : never, index: Cell<number>, iter: U) => Template} fn
  * @returns {Template}
  *
  * @example
@@ -26,7 +25,7 @@
  * ul.append(...listItems);
  * document.body.appendChild(ul);
  */
-export function For<U extends Iterable<any> & Array<any>, V extends U extends Iterable<infer V_1> ? V_1 : never>(list: Cell<U> | U, fn: (item: V, index: Cell<number>, iter: U) => Template): Template;
+export function For<U extends Iterable<any>>(list: Cell<U> | U, fn: (item: U extends Iterable<infer V> ? V : never, index: Cell<number>, iter: U) => Template): Template;
 /**
  * Conditionally renders nodes based on the truthiness of a value.
  *

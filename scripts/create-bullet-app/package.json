@@ -1,6 +1,6 @@
 {
   "name": "create-bullet-app",
-  "version": "0.0.5",
+  "version": "0.0.7",
   "main": "index.js",
   "type": "module",
   "scripts": {

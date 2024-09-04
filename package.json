@@ -1,6 +1,6 @@
 {
   "name": "@adbl/bullet",
-  "version": "0.0.22",
+  "version": "0.0.25",
   "description": "Library for creating web apps with JSX and web components",
   "private": false,
   "type": "module",
@@ -33,7 +33,7 @@
     "typescript": "^5.5.2"
   },
   "dependencies": {
-    "@adbl/cells": "^0.0.4",
+    "@adbl/cells": "latest",
     "csstype": "^3.1.3"
   }
 }

@@ -13,22 +13,21 @@ import { Cell, SourceCell } from '@adbl/cells';
  */
 
 /**
- * Creates a mapping of an iterator to DOM nodes.
+ * Creates a dynamic mapping of an iterable to DOM nodes, efficiently updating when the iterable changes.
  *
- * @template {Iterable<any> & Array<any>} U
- * @template {U extends Iterable<infer V> ? V : never} V
- * @param {Cell<U> | U} list
- * @param {(item: V, index: Cell<number>, iter: U) => Template} fn
- * @returns {Template}
+ * @template {Iterable<any>} U
+ * @param {Cell<U> | U} list - The iterable or Cell containing an iterable to map over
+ * @param {(item: U extends Iterable<infer V> ? V : never, index: Cell<number>, iter: U) => Template} fn - Function to create a Template for each item
+ * @returns {Template} - A Template representing the mapped items
  *
  * @example
- * // Create a list of names
+ * // Create a reactive list of names
  * const names = Cell.source(['Alice', 'Bob', 'Charlie']);
  *
- * // Use rFor to create a list of <li> elements
- * const listItems = For(names, (name) => {
+ * // Use For to create a dynamic list of <li> elements
+ * const listItems = For(names, (name, index) => {
  *   const li = document.createElement('li');
- *   li.textContent = name;
+ *   li.textContent = `${index.value + 1}. ${name}`;
  *   return li;
  * });
  *
@@ -36,6 +35,10 @@ import { Cell, SourceCell } from '@adbl/cells';
  * const ul = document.createElement('ul');
  * ul.append(...listItems);
  * document.body.appendChild(ul);
+ *
+ * // Later, update the names
+ * names.value = [...names.value, 'David'];
+ * // The list will automatically update to include the new name
  */
 export function For(list, fn) {
   /**
@@ -108,47 +111,70 @@ export function For(list, fn) {
 
       nodeStore = newNodeStore;
 
-      /**
-       * @type {ChildNode}
-       */
+      /** @type {ChildNode} */
       let currentNode = rangeStart;
-      for (
-        let i = 0;
-        i < newSnapShot.length ||
-        (currentNode.nextSibling && currentNode.nextSibling !== rangeEnd);
-        i += 1
+      let oldIndex = 0;
+      let newIndex = 0;
+
+      while (
+        newIndex < newSnapShot.length ||
+        (currentNode.nextSibling && currentNode.nextSibling !== rangeEnd)
       ) {
-        let adjacentOldSnapShotNode = currentNode?.nextSibling;
-        // append new nodes.
-        if (!adjacentOldSnapShotNode || adjacentOldSnapShotNode === rangeEnd) {
-          if (i >= newSnapShot.length) {
-            break; // no more new nodes to append.
-          }
+        const newNode = /** @type {ChildNode} */ (newSnapShot[newIndex]);
+        let oldNode = currentNode.nextSibling;
 
-          currentNode.after(...newSnapShot.slice(i));
+        if (!oldNode || oldNode === rangeEnd) {
+          // Append remaining new nodes
+          currentNode.after(...newSnapShot.slice(newIndex));
           break;
         }
 
-        // replace old nodes.
-        if (i >= newSnapShot.length) {
-          while (
-            adjacentOldSnapShotNode &&
-            adjacentOldSnapShotNode !== rangeEnd
-          ) {
-            adjacentOldSnapShotNode.remove();
-            adjacentOldSnapShotNode = currentNode?.nextSibling;
+        if (newIndex >= newSnapShot.length) {
+          // Remove remaining old nodes
+          while (oldNode && oldNode !== rangeEnd) {
+            /** @type {ChildNode | null} */
+            const nextOldNode = oldNode.nextSibling;
+            oldNode.remove();
+            oldNode = nextOldNode;
           }
           break;
         }
 
-        const newSnapShotNode = /** @type {ChildNode} */ (newSnapShot[i]);
-        if (adjacentOldSnapShotNode === newSnapShotNode) {
-          currentNode = adjacentOldSnapShotNode;
-          continue;
-        }
+        if (oldNode === newNode) {
+          // Node hasn't changed, move to next
+          currentNode = oldNode;
+          newIndex++;
+          oldIndex++;
+        } else {
+          // Check if the new node exists later in the old list
+          let futureOldNode = oldNode.nextSibling;
+          let foundMatch = false;
+          while (futureOldNode && futureOldNode !== rangeEnd) {
+            if (futureOldNode === newNode) {
+              // Remove skipped old nodes
+              while (oldNode && oldNode !== futureOldNode) {
+                const nextOldNode = /** @type {ChildNode} */ (
+                  oldNode.nextSibling
+                );
+                oldNode?.remove();
+                oldNode = nextOldNode;
+              }
+              currentNode = futureOldNode;
+              newIndex++;
+              oldIndex = newIndex;
+              foundMatch = true;
+              break;
+            }
+            futureOldNode = futureOldNode.nextSibling;
+          }
 
-        adjacentOldSnapShotNode.replaceWith(newSnapShotNode);
-        currentNode = newSnapShotNode;
+          if (!foundMatch) {
+            // Insert new node
+            oldNode.before(newNode);
+            currentNode = newNode;
+            newIndex++;
+          }
+        }
       }
 
       snapshot = newSnapShot;
