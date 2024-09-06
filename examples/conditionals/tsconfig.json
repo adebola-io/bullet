@@ -3,11 +3,7 @@
     "target": "ESNext",
     "useDefineForClassFields": true,
     "module": "ESNext",
-    "lib": [
-      "ESNext",
-      "DOM",
-      "DOM.Iterable"
-    ],
+    "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "moduleResolution": "bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
@@ -18,18 +14,12 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true,
     "jsx": "preserve",
-    "types": [
-      "@adbl/bullet/library/jsx-runtime"
-    ],
+    "types": ["@adbl/bullet/library/jsx-runtime"],
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./source/*"
-      ]
+      "@/*": ["./source/*"]
     },
     "skipLibCheck": true
   },
-  "include": [
-    "source"
-  ]
+  "include": ["source"]
 }

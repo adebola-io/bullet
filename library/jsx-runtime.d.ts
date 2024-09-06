@@ -837,7 +837,7 @@ declare namespace JSX {
     /**
      * Assigns a space-separated list of CSS classes to the element.
      */
-    class?: string | string[];
+    class?: string | (string | import('@adbl/cells').Cell<string>)[];
 
     /**
      * Defines inline CSS styles for the element. Can be a string or an object.
@@ -1044,8 +1044,9 @@ declare namespace JSX {
     popover?: Booleanish | 'auto' | 'manual';
   }
 
-  type JsxGlobalEventHandlers = {
+  type JsxGlobalEventHandlers<E> = {
     [K in keyof JsxGlobalEventHandlersEventMap]?: (
+      this: E,
       event: JsxGlobalEventHandlersEventMap[K]
     ) => void;
   };
@@ -1061,14 +1062,14 @@ declare namespace JSX {
 
   type DatasetAttributes = Record<`data-${string}`, string>;
 
-  interface JsxHtmlElement
+  interface JsxHtmlElement<E = HTMLElement>
     extends JSXGlobalAttributes,
       JsxAriaAttributes,
-      JsxGlobalEventHandlers,
+      JsxGlobalEventHandlers<E>,
       DatasetAttributes,
       JsxNativeProps {}
 
-  interface JsxHtmlAnchorElement extends JsxHtmlElement {
+  interface JsxHtmlAnchorElement extends JsxHtmlElement<HTMLAnchorElement> {
     /**
      * Specifies the filename of the linked content when downloaded.
      */
@@ -1115,7 +1116,7 @@ declare namespace JSX {
     referrerpolicy?: HTMLAttributeReferrerPolicy;
   }
 
-  interface JsxAreaElement extends JsxHtmlElement {
+  interface JsxAreaElement extends JsxHtmlElement<HTMLAreaElement> {
     /**
      * Alternative text for the link.
      */
@@ -1166,7 +1167,7 @@ declare namespace JSX {
      */
     target?: string;
   }
-  interface JsxAudioElement extends JsxHtmlElement {
+  interface JsxAudioElement extends JsxHtmlElement<HTMLAudioElement> {
     /**
      * Specifies that the audio will automatically start playing as soon as it can do so without stopping.
      */
@@ -1198,7 +1199,7 @@ declare namespace JSX {
     preload?: 'auto' | 'metadata' | 'none';
   }
 
-  interface JsxBaseElement extends JsxHtmlElement {
+  interface JsxBaseElement extends JsxHtmlElement<HTMLBaseElement> {
     /**
      * Specifies the base URL for all relative URLs in the page.
      */
@@ -1210,7 +1211,7 @@ declare namespace JSX {
     target?: string;
   }
 
-  interface JsxBodyElement extends JsxHtmlElement {
+  interface JsxBodyElement extends JsxHtmlElement<HTMLBodyElement> {
     /**
      * Fires when the page's content has finished loading.
      */
@@ -1222,7 +1223,7 @@ declare namespace JSX {
     onBeforeUnload?: (event: BeforeUnloadEvent) => void;
   }
 
-  interface JsxHtmlButtonElement extends JsxHtmlElement {
+  interface JsxHtmlButtonElement extends JsxHtmlElement<HTMLButtonElement> {
     /**
      * Automatically focuses the button when the page loads.
      */
@@ -1289,7 +1290,7 @@ declare namespace JSX {
     popoverTargetAction?: 'hide' | 'show' | 'toggle';
   }
 
-  interface JsxCanvasElement extends JsxHtmlElement {
+  interface JsxCanvasElement extends JsxHtmlElement<HTMLCanvasElement> {
     /**
      * Specifies the height of the canvas.
      */
@@ -1301,7 +1302,8 @@ declare namespace JSX {
     width?: number | string;
   }
 
-  interface JsxTableCaptionElement extends JsxHtmlElement {
+  interface JsxTableCaptionElement
+    extends JsxHtmlElement<HTMLTableCaptionElement> {
     /**
      * Specifies the alignment of the caption.
      * @deprecated This attribute is not supported in HTML5.
@@ -1309,36 +1311,36 @@ declare namespace JSX {
     align?: 'top' | 'bottom' | 'left' | 'right';
   }
 
-  interface JsxDataElement extends JsxHtmlElement {
+  interface JsxDataElement extends JsxHtmlElement<HTMLDataElement> {
     /**
      * Specifies the machine-readable translation of the content.
      */
     value?: string;
   }
 
-  interface JsxDataListElement extends JsxHtmlElement {
+  interface JsxDataListElement extends JsxHtmlElement<HTMLDataListElement> {
     // DataList element typically doesn't have any specific attributes
   }
 
-  interface JsxDetailsElement extends JsxHtmlElement {
+  interface JsxDetailsElement extends JsxHtmlElement<HTMLDetailsElement> {
     /**
      * Specifies whether the details should be visible (open) to the user.
      */
     open?: Booleanish;
   }
 
-  interface JsxDialogElement extends JsxHtmlElement {
+  interface JsxDialogElement extends JsxHtmlElement<HTMLDialogElement> {
     /**
      * Indicates that the dialog is active and can be interacted with.
      */
     open?: Booleanish;
   }
 
-  interface JsxDListElement extends JsxHtmlElement {
+  interface JsxDListElement extends JsxHtmlElement<HTMLDListElement> {
     // DList element typically doesn't have any specific attributes
   }
 
-  interface JsxEmbedElement extends JsxHtmlElement {
+  interface JsxEmbedElement extends JsxHtmlElement<HTMLEmbedElement> {
     /**
      * Specifies the height of the embedded content.
      */
@@ -1360,7 +1362,7 @@ declare namespace JSX {
     width?: number | string;
   }
 
-  interface JsxFieldSetElement extends JsxHtmlElement {
+  interface JsxFieldSetElement extends JsxHtmlElement<HTMLFieldSetElement> {
     /**
      * Specifies that the fieldset should be disabled.
      */
@@ -1377,7 +1379,7 @@ declare namespace JSX {
     name?: string;
   }
 
-  interface JsxFormElement extends JsxHtmlElement {
+  interface JsxFormElement extends JsxHtmlElement<HTMLFormElement> {
     /**
      * Specifies the character encodings that are to be used for the form submission.
      */
@@ -1419,15 +1421,15 @@ declare namespace JSX {
     target?: string;
   }
 
-  interface JsxHeadElement extends JsxHtmlElement {
+  interface JsxHeadElement extends JsxHtmlElement<HTMLHeadElement> {
     // Head element typically doesn't have any specific attributes
   }
 
-  interface JsxHRElement extends JsxHtmlElement {
+  interface JsxHRElement extends JsxHtmlElement<HTMLHRElement> {
     // HR element typically doesn't have any specific attributes in modern HTML
   }
 
-  interface JsxIFrameElement extends JsxHtmlElement {
+  interface JsxIFrameElement extends JsxHtmlElement<HTMLIFrameElement> {
     /**
      * Specifies a feature policy for the `<iframe>`.
      */
@@ -1469,7 +1471,7 @@ declare namespace JSX {
     width?: number | string;
   }
 
-  interface JsxImageElement extends JsxHtmlElement {
+  interface JsxImageElement extends JsxHtmlElement<HTMLImageElement> {
     /**
      * Specifies an alternate text for the image.
      */
@@ -1511,7 +1513,7 @@ declare namespace JSX {
     loading?: 'eager' | 'lazy';
   }
 
-  interface JsxInputElement extends JsxHtmlElement {
+  interface JsxInputElement extends JsxHtmlElement<HTMLInputElement> {
     /**
      * Specifies that the input should automatically get focus when the page loads.
      */
@@ -1643,7 +1645,7 @@ declare namespace JSX {
     popoverTargetAction?: 'hide' | 'show' | 'toggle';
   }
 
-  interface JsxLabelElement extends JsxHtmlElement {
+  interface JsxLabelElement extends JsxHtmlElement<HTMLLabelElement> {
     /**
      * Specifies which form element a label is bound to.
      */
@@ -1655,18 +1657,18 @@ declare namespace JSX {
     form?: string;
   }
 
-  interface JsxLegendElement extends JsxHtmlElement {
+  interface JsxLegendElement extends JsxHtmlElement<HTMLLegendElement> {
     // Legend element typically doesn't have any specific attributes
   }
 
-  interface JsxLIElement extends JsxHtmlElement {
+  interface JsxLIElement extends JsxHtmlElement<HTMLLIElement> {
     /**
      * Specifies the value of a list item. Only for ordered lists.
      */
     value?: number;
   }
 
-  interface JsxLinkElement extends JsxHtmlElement {
+  interface JsxLinkElement extends JsxHtmlElement<HTMLLinkElement> {
     /**
      * Specifies how the element handles cross-origin requests.
      */
@@ -1708,21 +1710,21 @@ declare namespace JSX {
     type?: string;
   }
 
-  interface JsxMapElement extends JsxHtmlElement {
+  interface JsxMapElement extends JsxHtmlElement<HTMLMapElement> {
     /**
      * Specifies the name of the map element.
      */
     name?: string;
   }
 
-  interface JsxMenuElement extends JsxHtmlElement {
+  interface JsxMenuElement extends JsxHtmlElement<HTMLMenuElement> {
     /**
      * Specifies the type of menu to display.
      */
     type?: 'context' | 'toolbar';
   }
 
-  interface JsxMetaElement extends JsxHtmlElement {
+  interface JsxMetaElement extends JsxHtmlElement<HTMLMetaElement> {
     /**
      * Specifies the character encoding for the HTML document.
      */
@@ -1744,7 +1746,7 @@ declare namespace JSX {
     name?: string;
   }
 
-  interface JsxMeterElement extends JsxHtmlElement {
+  interface JsxMeterElement extends JsxHtmlElement<HTMLMeterElement> {
     /**
      * Specifies the form that the meter element belongs to.
      */
@@ -1781,7 +1783,7 @@ declare namespace JSX {
     value?: number | string;
   }
 
-  interface JsxObjectElement extends JsxHtmlElement {
+  interface JsxObjectElement extends JsxHtmlElement<HTMLObjectElement> {
     /**
      * Specifies the URL of the resource to be used by the object.
      */
@@ -1818,7 +1820,7 @@ declare namespace JSX {
     width?: number | string;
   }
 
-  interface JsxOListElement extends JsxHtmlElement {
+  interface JsxOListElement extends JsxHtmlElement<HTMLOListElement> {
     /**
      * Specifies that the list order should be reversed (9,8,7...).
      */
@@ -1835,7 +1837,7 @@ declare namespace JSX {
     type?: '1' | 'a' | 'A' | 'i' | 'I';
   }
 
-  interface JsxOptGroupElement extends JsxHtmlElement {
+  interface JsxOptGroupElement extends JsxHtmlElement<HTMLOptGroupElement> {
     /**
      * Specifies that an option-group should be disabled.
      */
@@ -1847,7 +1849,7 @@ declare namespace JSX {
     label?: string;
   }
 
-  interface JsxOptionElement extends JsxHtmlElement {
+  interface JsxOptionElement extends JsxHtmlElement<HTMLOptionElement> {
     /**
      * Specifies that an option should be disabled.
      */
@@ -1869,15 +1871,15 @@ declare namespace JSX {
     value?: string | ReadonlyArray<string> | number;
   }
 
-  interface JsxPictureElement extends JsxHtmlElement {
+  interface JsxPictureElement extends JsxHtmlElement<HTMLPictureElement> {
     // Picture element typically doesn't have any specific attributes
   }
 
-  interface JsxPreElement extends JsxHtmlElement {
+  interface JsxPreElement extends JsxHtmlElement<HTMLPreElement> {
     // Pre element typically doesn't have any specific attributes in modern HTML
   }
 
-  interface JsxProgressElement extends JsxHtmlElement {
+  interface JsxProgressElement extends JsxHtmlElement<HTMLProgressElement> {
     /**
      * Specifies how much of the task has been completed.
      */
@@ -1889,14 +1891,14 @@ declare namespace JSX {
     max?: number | string;
   }
 
-  interface JsxQuoteElement extends JsxHtmlElement {
+  interface JsxQuoteElement extends JsxHtmlElement<HTMLQuoteElement> {
     /**
      * Specifies the source URL of the quote.
      */
     cite?: string;
   }
 
-  interface JsxScriptElement extends JsxHtmlElement {
+  interface JsxScriptElement extends JsxHtmlElement<HTMLScriptElement> {
     /**
      * Specifies that the script is executed asynchronously.
      */
@@ -1923,7 +1925,7 @@ declare namespace JSX {
     type?: string;
   }
 
-  interface JsxSelectElement extends JsxHtmlElement {
+  interface JsxSelectElement extends JsxHtmlElement<HTMLSelectElement> {
     /**
      * Specifies that the select element should automatically get focus when the page loads.
      */
@@ -1960,14 +1962,14 @@ declare namespace JSX {
     size?: number;
   }
 
-  interface JsxSlotElement extends JsxHtmlElement {
+  interface JsxSlotElement extends JsxHtmlElement<HTMLSlotElement> {
     /**
      * Specifies the name of the slot.
      */
     name?: string;
   }
 
-  interface JsxSourceElement extends JsxHtmlElement {
+  interface JsxSourceElement extends JsxHtmlElement<HTMLSourceElement> {
     /**
      * Specifies the URL of the media file.
      */
@@ -1994,11 +1996,11 @@ declare namespace JSX {
     sizes?: string;
   }
 
-  interface JsxSpanElement extends JsxHtmlElement {
+  interface JsxSpanElement extends JsxHtmlElement<HTMLSpanElement> {
     // Span element typically doesn't have any specific attributes
   }
 
-  interface JsxStyleElement extends JsxHtmlElement {
+  interface JsxStyleElement extends JsxHtmlElement<HTMLStyleElement> {
     /**
      * Specifies that the styles only apply to the parent element and its child elements.
      */
@@ -2015,15 +2017,16 @@ declare namespace JSX {
     type?: string;
   }
 
-  interface JsxTableElement extends JsxHtmlElement {
+  interface JsxTableElement extends JsxHtmlElement<HTMLTableElement> {
     // Table element typically doesn't have any specific attributes in modern HTML
   }
 
-  interface JsxTableSectionElement extends JsxHtmlElement {
+  interface JsxTableSectionElement
+    extends JsxHtmlElement<HTMLTableSectionElement> {
     // TableSection element (thead, tbody, tfoot) typically doesn't have any specific attributes
   }
 
-  interface JsxTableCellElement extends JsxHtmlElement {
+  interface JsxTableCellElement extends JsxHtmlElement<HTMLTableCellElement> {
     /**
      * Specifies the number of columns a cell should span.
      */
@@ -2040,11 +2043,11 @@ declare namespace JSX {
     headers?: string;
   }
 
-  interface JsxTemplateElement extends JsxHtmlElement {
+  interface JsxTemplateElement extends JsxHtmlElement<HTMLTemplateElement> {
     // Template element typically doesn't have any specific attributes
   }
 
-  interface JsxTextAreaElement extends JsxHtmlElement {
+  interface JsxTextAreaElement extends JsxHtmlElement<HTMLTextAreaElement> {
     /**
      * Specifies that the textarea should automatically get focus when the page loads.
      */
@@ -2106,22 +2109,22 @@ declare namespace JSX {
     wrap?: string;
   }
 
-  interface JsxTimeElement extends JsxHtmlElement {
+  interface JsxTimeElement extends JsxHtmlElement<HTMLTimeElement> {
     /**
      * Specifies the date and time.
      */
     dateTime?: string;
   }
 
-  interface JsxTitleElement extends JsxHtmlElement {
+  interface JsxTitleElement extends JsxHtmlElement<HTMLTitleElement> {
     // Title element typically doesn't have any specific attributes
   }
 
-  interface JsxTableRowElement extends JsxHtmlElement {
+  interface JsxTableRowElement extends JsxHtmlElement<HTMLTableRowElement> {
     // TableRow element typically doesn't have any specific attributes in modern HTML
   }
 
-  interface JsxTrackElement extends JsxHtmlElement {
+  interface JsxTrackElement extends JsxHtmlElement<HTMLTrackElement> {
     /**
      * Specifies that the track is to be enabled if the user's preferences do not indicate that another track would be more appropriate.
      */
@@ -2148,11 +2151,11 @@ declare namespace JSX {
     srcLang?: string;
   }
 
-  interface JsxUListElement extends JsxHtmlElement {
+  interface JsxUListElement extends JsxHtmlElement<HTMLUListElement> {
     // UList element typically doesn't have any specific attributes
   }
 
-  interface JsxVideoElement extends JsxHtmlElement {
+  interface JsxVideoElement extends JsxHtmlElement<HTMLVideoElement> {
     /**
      * Specifies that the video will start playing as soon as it is ready.
      */
@@ -2199,49 +2202,50 @@ declare namespace JSX {
     width?: number | string;
   }
 
-  interface JsxHtmlDivElement extends JsxHtmlElement {}
-  interface JsxHtmlHeadingElement extends JsxHtmlElement {}
-  interface JsxHtmlOutputElement extends JsxHtmlElement {}
-  interface JsxHtmlParagraphElement extends JsxHtmlElement {}
+  interface JsxHtmlDivElement extends JsxHtmlElement<HTMLDivElement> {}
+  interface JsxHtmlHeadingElement extends JsxHtmlElement<HTMLHeadingElement> {}
+  interface JsxHtmlOutputElement extends JsxHtmlElement<HTMLOutputElement> {}
+  interface JsxHtmlParagraphElement
+    extends JsxHtmlElement<HTMLParagraphElement> {}
 
   interface JsxHtmlElementMap {
     a: JsxHtmlAnchorElement;
-    abbr: JsxHtmlElement;
-    address: JsxHtmlElement;
+    abbr: JsxHtmlElement<HTMLElement>;
+    address: JsxHtmlElement<HTMLElement>;
     area: JsxAreaElement;
-    article: JsxHtmlElement;
-    aside: JsxHtmlElement;
+    article: JsxHtmlElement<HTMLElement>;
+    aside: JsxHtmlElement<HTMLElement>;
     audio: JsxAudioElement;
-    b: JsxHtmlElement;
+    b: JsxHtmlElement<HTMLElement>;
     base: JsxBaseElement;
-    bdi: JsxHtmlElement;
-    bdo: JsxHtmlElement;
+    bdi: JsxHtmlElement<HTMLElement>;
+    bdo: JsxHtmlElement<HTMLElement>;
     blockquote: JsxQuoteElement;
     body: JsxBodyElement;
-    br: JsxHtmlElement;
+    br: JsxHtmlElement<HTMLElement>;
     button: JsxHtmlButtonElement;
     canvas: JsxCanvasElement;
     caption: JsxTableCaptionElement;
-    cite: JsxHtmlElement;
-    code: JsxHtmlElement;
-    col: JsxHtmlElement;
-    colgroup: JsxHtmlElement;
+    cite: JsxHtmlElement<HTMLElement>;
+    code: JsxHtmlElement<HTMLElement>;
+    col: JsxHtmlElement<HTMLTableColElement>;
+    colgroup: JsxHtmlElement<HTMLTableColElement>;
     data: JsxDataElement;
     datalist: JsxDataListElement;
-    dd: JsxHtmlElement;
-    del: JsxHtmlElement;
+    dd: JsxHtmlElement<HTMLElement>;
+    del: JsxHtmlElement<HTMLElement>;
     details: JsxDetailsElement;
-    dfn: JsxHtmlElement;
+    dfn: JsxHtmlElement<HTMLElement>;
     dialog: JsxDialogElement;
     div: JsxHtmlDivElement;
     dl: JsxDListElement;
-    dt: JsxHtmlElement;
-    em: JsxHtmlElement;
+    dt: JsxHtmlElement<HTMLElement>;
+    em: JsxHtmlElement<HTMLElement>;
     embed: JsxEmbedElement;
     fieldset: JsxFieldSetElement;
-    figcaption: JsxHtmlElement;
-    figure: JsxHtmlElement;
-    footer: JsxHtmlElement;
+    figcaption: JsxHtmlElement<HTMLElement>;
+    figure: JsxHtmlElement<HTMLElement>;
+    footer: JsxHtmlElement<HTMLElement>;
     form: JsxFormElement;
     h1: JsxHtmlHeadingElement;
     h2: JsxHtmlHeadingElement;
@@ -2250,28 +2254,28 @@ declare namespace JSX {
     h5: JsxHtmlHeadingElement;
     h6: JsxHtmlHeadingElement;
     head: JsxHeadElement;
-    header: JsxHtmlElement;
-    hgroup: JsxHtmlElement;
+    header: JsxHtmlElement<HTMLElement>;
+    hgroup: JsxHtmlElement<HTMLElement>;
     hr: JsxHRElement;
-    html: JsxHtmlElement;
-    i: JsxHtmlElement;
+    html: JsxHtmlElement<HTMLHtmlElement>;
+    i: JsxHtmlElement<HTMLElement>;
     iframe: JsxIFrameElement;
     img: JsxImageElement;
     input: JsxInputElement;
-    ins: JsxHtmlElement;
-    kbd: JsxHtmlElement;
+    ins: JsxHtmlElement<HTMLElement>;
+    kbd: JsxHtmlElement<HTMLElement>;
     label: JsxLabelElement;
     legend: JsxLegendElement;
     li: JsxLIElement;
     link: JsxLinkElement;
-    main: JsxHtmlElement;
+    main: JsxHtmlElement<HTMLElement>;
     map: JsxMapElement;
-    mark: JsxHtmlElement;
+    mark: JsxHtmlElement<HTMLElement>;
     menu: JsxMenuElement;
     meta: JsxMetaElement;
     meter: JsxMeterElement;
-    nav: JsxHtmlElement;
-    noscript: JsxHtmlElement;
+    nav: JsxHtmlElement<HTMLElement>;
+    noscript: JsxHtmlElement<HTMLElement>;
     object: JsxObjectElement;
     ol: JsxOListElement;
     optgroup: JsxOptGroupElement;
@@ -2282,23 +2286,23 @@ declare namespace JSX {
     pre: JsxPreElement;
     progress: JsxProgressElement;
     q: JsxQuoteElement;
-    rp: JsxHtmlElement;
-    rt: JsxHtmlElement;
-    ruby: JsxHtmlElement;
-    s: JsxHtmlElement;
-    samp: JsxHtmlElement;
+    rp: JsxHtmlElement<HTMLElement>;
+    rt: JsxHtmlElement<HTMLElement>;
+    ruby: JsxHtmlElement<HTMLElement>;
+    s: JsxHtmlElement<HTMLElement>;
+    samp: JsxHtmlElement<HTMLElement>;
     script: JsxScriptElement;
-    section: JsxHtmlElement;
+    section: JsxHtmlElement<HTMLElement>;
     select: JsxSelectElement;
     slot: JsxSlotElement;
-    small: JsxHtmlElement;
+    small: JsxHtmlElement<HTMLElement>;
     source: JsxSourceElement;
     span: JsxSpanElement;
-    strong: JsxHtmlElement;
+    strong: JsxHtmlElement<HTMLElement>;
     style: JsxStyleElement;
-    sub: JsxHtmlElement;
-    summary: JsxHtmlElement;
-    sup: JsxHtmlElement;
+    sub: JsxHtmlElement<HTMLElement>;
+    summary: JsxHtmlElement<HTMLElement>;
+    sup: JsxHtmlElement<HTMLElement>;
     table: JsxTableElement;
     tbody: JsxTableSectionElement;
     td: JsxTableCellElement;
@@ -2311,44 +2315,44 @@ declare namespace JSX {
     title: JsxTitleElement;
     tr: JsxTableRowElement;
     track: JsxTrackElement;
-    u: JsxHtmlElement;
+    u: JsxHtmlElement<HTMLElement>;
     ul: JsxUListElement;
-    var: JsxHtmlElement;
+    var: JsxHtmlElement<HTMLElement>;
     video: JsxVideoElement;
-    wbr: JsxHtmlElement;
+    wbr: JsxHtmlElement<HTMLElement>;
 
     // Deprecated elements (still included for completeness)
-    acronym: JsxHtmlElement;
-    applet: JsxHtmlElement;
-    basefont: JsxHtmlElement;
-    bgsound: JsxHtmlElement;
-    big: JsxHtmlElement;
-    blink: JsxHtmlElement;
-    center: JsxHtmlElement;
-    command: JsxHtmlElement;
-    content: JsxHtmlElement;
-    dir: JsxHtmlElement;
-    element: JsxHtmlElement;
-    font: JsxHtmlElement;
-    frame: JsxHtmlElement;
-    frameset: JsxHtmlElement;
-    image: JsxHtmlElement;
-    isindex: JsxHtmlElement;
-    keygen: JsxHtmlElement;
-    listing: JsxHtmlElement;
-    marquee: JsxHtmlElement;
-    menuitem: JsxHtmlElement;
-    multicol: JsxHtmlElement;
-    nextid: JsxHtmlElement;
-    nobr: JsxHtmlElement;
-    noembed: JsxHtmlElement;
-    noframes: JsxHtmlElement;
-    plaintext: JsxHtmlElement;
-    shadow: JsxHtmlElement;
-    spacer: JsxHtmlElement;
-    strike: JsxHtmlElement;
-    tt: JsxHtmlElement;
-    xmp: JsxHtmlElement;
+    acronym: JsxHtmlElement<HTMLElement>;
+    applet: JsxHtmlElement<HTMLElement>;
+    basefont: JsxHtmlElement<HTMLElement>;
+    bgsound: JsxHtmlElement<HTMLElement>;
+    big: JsxHtmlElement<HTMLElement>;
+    blink: JsxHtmlElement<HTMLElement>;
+    center: JsxHtmlElement<HTMLElement>;
+    command: JsxHtmlElement<HTMLElement>;
+    content: JsxHtmlElement<HTMLElement>;
+    dir: JsxHtmlElement<HTMLElement>;
+    element: JsxHtmlElement<HTMLElement>;
+    font: JsxHtmlElement<HTMLElement>;
+    frame: JsxHtmlElement<HTMLElement>;
+    frameset: JsxHtmlElement<HTMLElement>;
+    image: JsxHtmlElement<HTMLElement>;
+    isindex: JsxHtmlElement<HTMLElement>;
+    keygen: JsxHtmlElement<HTMLElement>;
+    listing: JsxHtmlElement<HTMLElement>;
+    marquee: JsxHtmlElement<HTMLElement>;
+    menuitem: JsxHtmlElement<HTMLElement>;
+    multicol: JsxHtmlElement<HTMLElement>;
+    nextid: JsxHtmlElement<HTMLElement>;
+    nobr: JsxHtmlElement<HTMLElement>;
+    noembed: JsxHtmlElement<HTMLElement>;
+    noframes: JsxHtmlElement<HTMLElement>;
+    plaintext: JsxHtmlElement<HTMLElement>;
+    shadow: JsxHtmlElement<HTMLElement>;
+    spacer: JsxHtmlElement<HTMLElement>;
+    strike: JsxHtmlElement<HTMLElement>;
+    tt: JsxHtmlElement<HTMLElement>;
+    xmp: JsxHtmlElement<HTMLElement>;
   }
 
   /** Interface for common SVG presentation attributes */
@@ -2399,14 +2403,16 @@ declare namespace JSX {
   }
 
   /** Interface for SVG core attributes */
-  interface SVGCoreAttributes
+  interface SVGCoreAttributes<E = SVGElement>
     extends JSXGlobalAttributes,
       JsxAriaAttributes,
-      JsxGlobalEventHandlers,
+      JsxGlobalEventHandlers<E>,
       DatasetAttributes,
       JsxNativeProps {}
 
-  interface JsxSVGElement extends SVGCoreAttributes, SVGPresentationAttributes {
+  interface JsxSVGElement
+    extends SVGCoreAttributes<SVGSVGElement>,
+      SVGPresentationAttributes {
     /** Specifies the width of the SVG viewport */
     width?: number | string;
     /** Specifies the height of the SVG viewport */
@@ -2418,7 +2424,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGAElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGAElement>,
       SVGPresentationAttributes {
     /** Specifies the URL to link to */
     href?: string;
@@ -2426,7 +2432,7 @@ declare namespace JSX {
     target?: string;
   }
 
-  interface JsxSVGAnimateElement extends SVGCoreAttributes {
+  interface JsxSVGAnimateElement extends SVGCoreAttributes<SVGAnimateElement> {
     /** Specifies the name of the attribute to animate */
     attributeName?: string;
     /** Specifies the starting value of the animation */
@@ -2439,7 +2445,8 @@ declare namespace JSX {
     repeatCount?: number | 'indefinite';
   }
 
-  interface JsxSVGAnimateMotionElement extends SVGCoreAttributes {
+  interface JsxSVGAnimateMotionElement
+    extends SVGCoreAttributes<SVGAnimateMotionElement> {
     /** Specifies the path the animation will follow */
     path?: string;
     /** Specifies the duration of the animation */
@@ -2448,7 +2455,8 @@ declare namespace JSX {
     repeatCount?: number | 'indefinite';
   }
 
-  interface JsxSVGAnimateTransformElement extends SVGCoreAttributes {
+  interface JsxSVGAnimateTransformElement
+    extends SVGCoreAttributes<SVGAnimateTransformElement> {
     /** Specifies the type of transformation */
     type?: 'translate' | 'scale' | 'rotate' | 'skewX' | 'skewY';
     /** Specifies the starting value of the animation */
@@ -2462,7 +2470,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGCircleElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGCircleElement>,
       SVGPresentationAttributes {
     /** Specifies the x-coordinate of the center of the circle */
     cx?: number | string;
@@ -2472,17 +2480,18 @@ declare namespace JSX {
     r?: number | string;
   }
 
-  interface JsxSVGClipPathElement extends SVGCoreAttributes {
+  interface JsxSVGClipPathElement
+    extends SVGCoreAttributes<SVGClipPathElement> {
     /** Specifies the coordinate system for the contents of the <clipPath> element */
     clipPathUnits?: 'userSpaceOnUse' | 'objectBoundingBox';
   }
 
-  interface JsxSVGDefsElement extends SVGCoreAttributes {}
+  interface JsxSVGDefsElement extends SVGCoreAttributes<SVGDefsElement> {}
 
-  interface JsxSVGDescElement extends SVGCoreAttributes {}
+  interface JsxSVGDescElement extends SVGCoreAttributes<SVGDescElement> {}
 
   interface JsxSVGEllipseElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGEllipseElement>,
       SVGPresentationAttributes {
     /** Specifies the x-coordinate of the center of the ellipse */
     cx?: number | string;
@@ -2494,7 +2503,7 @@ declare namespace JSX {
     ry?: number | string;
   }
 
-  interface JsxSVGFEBlendElement extends SVGCoreAttributes {
+  interface JsxSVGFEBlendElement extends SVGCoreAttributes<SVGFEBlendElement> {
     /** Specifies the first input for the given filter primitive */
     in?: string;
     /** Specifies the second input for the given filter primitive */
@@ -2503,7 +2512,8 @@ declare namespace JSX {
     mode?: 'normal' | 'multiply' | 'screen' | 'darken' | 'lighten';
   }
 
-  interface JsxSVGFEColorMatrixElement extends SVGCoreAttributes {
+  interface JsxSVGFEColorMatrixElement
+    extends SVGCoreAttributes<SVGFEColorMatrixElement> {
     /** Specifies the input for the given filter primitive */
     in?: string;
     /** Specifies the type of color matrix operation */
@@ -2512,12 +2522,14 @@ declare namespace JSX {
     values?: string;
   }
 
-  interface JsxSVGFEComponentTransferElement extends SVGCoreAttributes {
+  interface JsxSVGFEComponentTransferElement
+    extends SVGCoreAttributes<SVGFEComponentTransferElement> {
     /** Specifies the input for the given filter primitive */
     in?: string;
   }
 
-  interface JsxSVGFECompositeElement extends SVGCoreAttributes {
+  interface JsxSVGFECompositeElement
+    extends SVGCoreAttributes<SVGFECompositeElement> {
     /** Specifies the first input for the given filter primitive */
     in?: string;
     /** Specifies the second input for the given filter primitive */
@@ -2534,7 +2546,8 @@ declare namespace JSX {
     k4?: number;
   }
 
-  interface JsxSVGFEConvolveMatrixElement extends SVGCoreAttributes {
+  interface JsxSVGFEConvolveMatrixElement
+    extends SVGCoreAttributes<SVGFEConvolveMatrixElement> {
     /** Specifies the input for the given filter primitive */
     in?: string;
     /** Specifies the values for the convolution matrix */
@@ -2543,7 +2556,8 @@ declare namespace JSX {
     order?: number | string;
   }
 
-  interface JsxSVGFEDiffuseLightingElement extends SVGCoreAttributes {
+  interface JsxSVGFEDiffuseLightingElement
+    extends SVGCoreAttributes<SVGFEDiffuseLightingElement> {
     /** Specifies the input for the given filter primitive */
     in?: string;
     /** Specifies the surface scale factor */
@@ -2552,7 +2566,8 @@ declare namespace JSX {
     diffuseConstant?: number;
   }
 
-  interface JsxSVGFEDisplacementMapElement extends SVGCoreAttributes {
+  interface JsxSVGFEDisplacementMapElement
+    extends SVGCoreAttributes<SVGFEDisplacementMapElement> {
     /** Specifies the first input for the given filter primitive */
     in?: string;
     /** Specifies the second input for the given filter primitive */
@@ -2565,14 +2580,16 @@ declare namespace JSX {
     yChannelSelector?: 'R' | 'G' | 'B' | 'A';
   }
 
-  interface JsxSVGFEDistantLightElement extends SVGCoreAttributes {
+  interface JsxSVGFEDistantLightElement
+    extends SVGCoreAttributes<SVGFEDistantLightElement> {
     /** Specifies the azimuth of the light source */
     azimuth?: number;
     /** Specifies the elevation of the light source */
     elevation?: number;
   }
 
-  interface JsxSVGFEDropShadowElement extends SVGCoreAttributes {
+  interface JsxSVGFEDropShadowElement
+    extends SVGCoreAttributes<SVGFEDropShadowElement> {
     /** Specifies the input for the given filter primitive */
     in?: string;
     /** Specifies the standard deviation for the blur operation */
@@ -2584,7 +2601,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGFEFloodElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGFEFloodElement>,
       SVGPresentationAttributes {
     /** Specifies the flood color */
     floodColor?: string;
@@ -2592,27 +2609,28 @@ declare namespace JSX {
     floodOpacity?: number | string;
   }
 
-  interface JsxSVGFEFuncAElement extends SVGCoreAttributes {
+  interface JsxSVGFEFuncAElement extends SVGCoreAttributes<SVGFEFuncAElement> {
     /** Specifies the type of component transfer function */
     type?: 'identity' | 'table' | 'discrete' | 'linear' | 'gamma';
   }
 
-  interface JsxSVGFEFuncBElement extends SVGCoreAttributes {
+  interface JsxSVGFEFuncBElement extends SVGCoreAttributes<SVGFEFuncBElement> {
     /** Specifies the type of component transfer function */
     type?: 'identity' | 'table' | 'discrete' | 'linear' | 'gamma';
   }
 
-  interface JsxSVGFEFuncGElement extends SVGCoreAttributes {
+  interface JsxSVGFEFuncGElement extends SVGCoreAttributes<SVGFEFuncGElement> {
     /** Specifies the type of component transfer function */
     type?: 'identity' | 'table' | 'discrete' | 'linear' | 'gamma';
   }
 
-  interface JsxSVGFEFuncRElement extends SVGCoreAttributes {
+  interface JsxSVGFEFuncRElement extends SVGCoreAttributes<SVGFEFuncRElement> {
     /** Specifies the type of component transfer function */
     type?: 'identity' | 'table' | 'discrete' | 'linear' | 'gamma';
   }
 
-  interface JsxSVGFEGaussianBlurElement extends SVGCoreAttributes {
+  interface JsxSVGFEGaussianBlurElement
+    extends SVGCoreAttributes<SVGFEGaussianBlurElement> {
     /** Specifies the input for the given filter primitive */
     in?: string;
     /** Specifies the standard deviation for the blur operation */
@@ -2620,7 +2638,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGFEImageElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGFEImageElement>,
       SVGPresentationAttributes {
     /** Specifies the URL of the image file */
     href?: string;
@@ -2628,14 +2646,16 @@ declare namespace JSX {
     preserveAspectRatio?: string;
   }
 
-  interface JsxSVGFEMergeElement extends SVGCoreAttributes {}
+  interface JsxSVGFEMergeElement extends SVGCoreAttributes<SVGFEMergeElement> {}
 
-  interface JsxSVGFEMergeNodeElement extends SVGCoreAttributes {
+  interface JsxSVGFEMergeNodeElement
+    extends SVGCoreAttributes<SVGFEMergeNodeElement> {
     /** Specifies the input for the given filter primitive */
     in?: string;
   }
 
-  interface JsxSVGFEMorphologyElement extends SVGCoreAttributes {
+  interface JsxSVGFEMorphologyElement
+    extends SVGCoreAttributes<SVGFEMorphologyElement> {
     /** Specifies the input for the given filter primitive */
     in?: string;
     /** Specifies the morphology operation to perform */
@@ -2644,7 +2664,8 @@ declare namespace JSX {
     radius?: number | string;
   }
 
-  interface JsxSVGFEOffsetElement extends SVGCoreAttributes {
+  interface JsxSVGFEOffsetElement
+    extends SVGCoreAttributes<SVGFEOffsetElement> {
     /** Specifies the input for the given filter primitive */
     in?: string;
     /** Specifies the amount to offset the input graphic along the x-axis */
@@ -2653,7 +2674,8 @@ declare namespace JSX {
     dy?: number | string;
   }
 
-  interface JsxSVGFEPointLightElement extends SVGCoreAttributes {
+  interface JsxSVGFEPointLightElement
+    extends SVGCoreAttributes<SVGFEPointLightElement> {
     /** Specifies the x location of the light source */
     x?: number;
     /** Specifies the y location of the light source */
@@ -2662,7 +2684,8 @@ declare namespace JSX {
     z?: number;
   }
 
-  interface JsxSVGFESpecularLightingElement extends SVGCoreAttributes {
+  interface JsxSVGFESpecularLightingElement
+    extends SVGCoreAttributes<SVGFESpecularLightingElement> {
     /** Specifies the input for the given filter primitive */
     in?: string;
     /** Specifies the surface scale factor */
@@ -2673,7 +2696,8 @@ declare namespace JSX {
     specularExponent?: number;
   }
 
-  interface JsxSVGFESpotLightElement extends SVGCoreAttributes {
+  interface JsxSVGFESpotLightElement
+    extends SVGCoreAttributes<SVGFESpotLightElement> {
     /** Specifies the x location of the light source */
     x?: number;
     /** Specifies the y location of the light source */
@@ -2692,12 +2716,13 @@ declare namespace JSX {
     limitingConeAngle?: number;
   }
 
-  interface JsxSVGFETileElement extends SVGCoreAttributes {
+  interface JsxSVGFETileElement extends SVGCoreAttributes<SVGFETileElement> {
     /** Specifies the input for the given filter primitive */
     in?: string;
   }
 
-  interface JsxSVGFETurbulenceElement extends SVGCoreAttributes {
+  interface JsxSVGFETurbulenceElement
+    extends SVGCoreAttributes<SVGFETurbulenceElement> {
     /** Specifies the base frequency for the noise function */
     baseFrequency?: number | string;
     /** Specifies the number of octaves for the noise function */
@@ -2710,7 +2735,7 @@ declare namespace JSX {
     type?: 'fractalNoise' | 'turbulence';
   }
 
-  interface JsxSVGFilterElement extends SVGCoreAttributes {
+  interface JsxSVGFilterElement extends SVGCoreAttributes<SVGFilterElement> {
     /** Specifies the coordinate system for the filter */
     filterUnits?: 'userSpaceOnUse' | 'objectBoundingBox';
     /** Specifies the coordinate system for the filter primitives */
@@ -2726,7 +2751,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGForeignObjectElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGForeignObjectElement>,
       SVGPresentationAttributes {
     /** Specifies the x coordinate of the foreign object */
     x?: number | string;
@@ -2739,11 +2764,11 @@ declare namespace JSX {
   }
 
   interface JsxSVGGElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGGElement>,
       SVGPresentationAttributes {}
 
   interface JsxSVGImageElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGImageElement>,
       SVGPresentationAttributes {
     /** Specifies the x coordinate of the image */
     x?: number | string;
@@ -2760,7 +2785,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGLineElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGLineElement>,
       SVGPresentationAttributes {
     /** Specifies the x coordinate of the start of the line */
     x1?: number | string;
@@ -2772,7 +2797,8 @@ declare namespace JSX {
     y2?: number | string;
   }
 
-  interface JsxSVGLinearGradientElement extends SVGCoreAttributes {
+  interface JsxSVGLinearGradientElement
+    extends SVGCoreAttributes<SVGLinearGradientElement> {
     /** Specifies the x coordinate of the start point of the gradient vector */
     x1?: number | string;
     /** Specifies the y coordinate of the start point of the gradient vector */
@@ -2786,7 +2812,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGMarkerElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGMarkerElement>,
       SVGPresentationAttributes {
     /** Specifies the width of the marker */
     markerWidth?: number | string;
@@ -2802,7 +2828,7 @@ declare namespace JSX {
     refY?: number | string;
   }
 
-  interface JsxSVGMaskElement extends SVGCoreAttributes {
+  interface JsxSVGMaskElement extends SVGCoreAttributes<SVGMaskElement> {
     /** Specifies the x coordinate of the mask */
     x?: number | string;
     /** Specifies the y coordinate of the mask */
@@ -2817,15 +2843,16 @@ declare namespace JSX {
     maskContentUnits?: 'userSpaceOnUse' | 'objectBoundingBox';
   }
 
-  interface JsxSVGMetadataElement extends SVGCoreAttributes {}
+  interface JsxSVGMetadataElement
+    extends SVGCoreAttributes<SVGMetadataElement> {}
 
-  interface JsxSVGMPathElement extends SVGCoreAttributes {
+  interface JsxSVGMPathElement extends SVGCoreAttributes<SVGMPathElement> {
     /** Specifies a path to follow */
     href?: string;
   }
 
   interface JsxSVGPathElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGPathElement>,
       SVGPresentationAttributes {
     /** Specifies the path to be drawn */
     d?: string;
@@ -2834,7 +2861,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGPatternElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGPatternElement>,
       SVGPresentationAttributes {
     /** Specifies the x coordinate of the pattern tile */
     x?: number | string;
@@ -2851,20 +2878,21 @@ declare namespace JSX {
   }
 
   interface JsxSVGPolygonElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGPolygonElement>,
       SVGPresentationAttributes {
     /** Specifies the points that make up the polygon */
     points?: string;
   }
 
   interface JsxSVGPolylineElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGPolylineElement>,
       SVGPresentationAttributes {
     /** Specifies the points that make up the polyline */
     points?: string;
   }
 
-  interface JsxSVGRadialGradientElement extends SVGCoreAttributes {
+  interface JsxSVGRadialGradientElement
+    extends SVGCoreAttributes<SVGRadialGradientElement> {
     /** Specifies the x coordinate of the end circle of the radial gradient */
     cx?: number | string;
     /** Specifies the y coordinate of the end circle of the radial gradient */
@@ -2882,7 +2910,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGRectElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGRectElement>,
       SVGPresentationAttributes {
     /** Specifies the x coordinate of the rectangle */
     x?: number | string;
@@ -2901,7 +2929,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGStopElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGStopElement>,
       SVGPresentationAttributes {
     /** Specifies where the gradient stop is placed */
     offset?: number | string;
@@ -2912,11 +2940,11 @@ declare namespace JSX {
   }
 
   interface JsxSVGSwitchElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGSwitchElement>,
       SVGPresentationAttributes {}
 
   interface JsxSVGSymbolElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGSymbolElement>,
       SVGPresentationAttributes {
     /** Specifies the x coordinate of the symbol */
     x?: number | string;
@@ -2933,7 +2961,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGTextElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGTextElement>,
       SVGPresentationAttributes {
     /** Specifies the x coordinate of the starting point of the text */
     x?: number | string;
@@ -2952,7 +2980,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGTextPathElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGTextPathElement>,
       SVGPresentationAttributes {
     /** Specifies the path the text should follow */
     href?: string;
@@ -2965,7 +2993,7 @@ declare namespace JSX {
   }
 
   interface JsxSVGTSpanElement
-    extends SVGCoreAttributes,
+    extends SVGCoreAttributes<SVGTSpanElement>,
       SVGPresentationAttributes {
     /** Specifies the x coordinate of the starting point of the text */
     x?: number | string;
@@ -2983,9 +3011,9 @@ declare namespace JSX {
     lengthAdjust?: 'spacing' | 'spacingAndGlyphs';
   }
 
-  interface JsxSVGUseElement extends SVGCoreAttributes {}
+  interface JsxSVGUseElement extends SVGCoreAttributes<SVGUseElement> {}
 
-  interface JsxSVGViewElement extends SVGCoreAttributes {}
+  interface JsxSVGViewElement extends SVGCoreAttributes<SVGViewElement> {}
 
   interface JsxSvgElementMap {
     svg: JsxSVGElement;

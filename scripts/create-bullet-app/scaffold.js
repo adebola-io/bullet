@@ -23,7 +23,7 @@ const CONFIG = {
     'source/components',
   ],
   dependencies: {
-    '@adbl/bullet': '^0.0.25',
+    '@adbl/bullet': 'latest',
   },
   devDependencies: {
     vite: '^5.4.1',

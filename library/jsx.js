@@ -367,15 +367,11 @@ export function setAttribute(element, key, value) {
     return `-${match.toLowerCase()}`;
   });
 
-  if (attributeName === 'className' || attributeName === 'class') {
+  if (attributeName === 'class-name' || attributeName === 'class') {
     if (typeof value === 'string') {
-      element.classList.add(...value.split(/\s|\n|\t/).filter(Boolean));
+      element.className = value;
     } else if (Array.isArray(value)) {
-      for (const subValue of value) {
-        if (typeof subValue === 'string') {
-          element.classList.add(...subValue.split(/\s|\n|\t/).filter(Boolean));
-        }
-      }
+      element.className = value.join(' ');
     }
     return;
   }

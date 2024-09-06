@@ -1,0 +1,404 @@
+.container {
+  max-width: 1000px;
+  margin: 0 auto;
+}
+
+h1,
+h2,
+h3 {
+  font-family: Georgia, 'Times New Roman', Times, serif;
+}
+
+h1 {
+  text-align: center;
+  border-bottom: 2px solid #333;
+  padding-bottom: 15px;
+  margin-bottom: 30px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 20px;
+
+  @media (max-width: 1024px) {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.column {
+  min-width: 0;
+}
+
+form {
+  margin-bottom: 20px;
+}
+
+.form-input,
+.form-textarea,
+.form-button {
+  display: block;
+  width: 100%;
+  margin-bottom: 15px;
+  padding: 10px;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+.form-textarea {
+  height: 120px;
+}
+
+.button-group {
+  display: flex;
+  gap: 10px;
+}
+
+.button-group-button {
+  flex: 1;
+  background-color: #4a4a4a;
+  color: #fff;
+  border: none;
+  padding: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #333;
+  }
+}
+
+.form-button {
+  background-color: #4a4a4a;
+  color: #fff;
+  border: none;
+  padding: 12px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+
+  &:hover {
+    background-color: #333;
+  }
+}
+
+.task-list {
+  position: relative;
+  list-style-type: none;
+  padding: 0;
+  width: 100%;
+  transition: height 0.3s ease;
+}
+
+.task-item {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid #ddd;
+  padding: 15px;
+  width: calc(100% - 32px);
+  background-color: #fff;
+  height: auto;
+  min-height: 100px;
+  transition-duration: 300ms;
+  transition-property: transform;
+}
+
+.task-title {
+  display: flex;
+  font-size: 1rem;
+  margin: 0;
+}
+
+.task-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.task-description {
+  margin: 0;
+  font-size: 0.9em;
+  color: #666;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  text-overflow: ellipsis;
+  line-height: 1.4em;
+  max-height: 4.2em;
+}
+
+.cancel-button {
+  align-self: center;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+
+  svg {
+    fill: #4a4a4a;
+    transition: fill 0.3s ease, background-color 0.3s ease;
+  }
+
+  &:hover {
+    background-color: #333;
+
+    svg {
+      fill: #fff;
+    }
+  }
+}
+
+.task-status {
+  display: flex;
+  gap: 5px;
+  margin-bottom: 10px;
+
+  button {
+    padding: 5px 10px;
+    font-size: 0.8em;
+    border: 1px solid #ccc;
+    background-color: #f0f0f0;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+
+    &.active {
+      background-color: #4a4a4a;
+      color: #fff;
+
+      &:hover {
+        background-color: #333;
+      }
+    }
+
+    &:hover {
+      background-color: #e0e0e0;
+    }
+  }
+}
+
+@media (max-width: 768px) {
+  .top-row {
+    form {
+      flex-direction: column;
+    }
+
+    .button-group {
+      flex-direction: column;
+    }
+  }
+}
+
+.top-row {
+  margin-bottom: 30px;
+
+  h1 {
+    margin-bottom: 20px;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .form-input {
+    flex: 1;
+    margin-bottom: 0;
+  }
+
+  .button-group {
+    display: flex;
+    gap: 10px;
+  }
+}
+
+.task-actions {
+  position: relative;
+}
+
+.more-options-button {
+  background: none;
+  border: none;
+  font-size: 1.5em;
+  cursor: pointer;
+  padding: 0 5px;
+  transition: color 0.2s ease;
+
+  &:hover {
+    color: #4a4a4a;
+  }
+}
+
+.popup-menu {
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  display: none;
+  min-width: 150px;
+
+  &.visible {
+    display: block;
+  }
+
+  button {
+    display: block;
+    width: 100%;
+    padding: 10px 15px;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: #f0f0f0;
+    }
+
+    &:disabled {
+      color: #999;
+      cursor: not-allowed;
+    }
+
+    &.delete-button {
+      color: #ff4136;
+      border-top: 1px solid #eee;
+
+      &:hover {
+        background-color: #ffdddd;
+      }
+    }
+  }
+
+  .arrow {
+    float: right;
+  }
+}
+
+.submenu {
+  background-color: white;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  display: none;
+
+  min-width: 150px;
+
+  &.visible {
+    display: block;
+  }
+
+  button {
+    display: block;
+    width: 100%;
+    padding: 10px 15px;
+    text-align: left;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: background-color 0.2s ease;
+
+    &:hover {
+      background-color: #f0f0f0;
+    }
+
+    &:disabled {
+      color: #999;
+      cursor: not-allowed;
+    }
+  }
+}
+
+.move-to-button {
+  position: relative;
+
+  &:hover + .submenu,
+  & + .submenu:hover {
+    display: block;
+  }
+}
+
+.add-task-button {
+  background-color: #4a4a4a;
+  color: #fff;
+  border: none;
+  padding: 12px 20px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+  font-size: 1rem;
+  margin-bottom: 20px;
+
+  &:hover {
+    background-color: #333;
+  }
+}
+
+.dialog {
+  padding: 30px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  width: 80%;
+  max-width: 500px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+
+  &::backdrop {
+    background-color: rgba(0, 0, 0, 0.6);
+  }
+
+  h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+  }
+
+  form {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+  }
+
+  .button-group {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+  }
+}
+
+.close-dialog-button {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 5px;
+
+  svg {
+    width: 20px;
+    height: 20px;
+    fill: #4a4a4a;
+  }
+
+  &:hover svg {
+    fill: #333;
+  }
+}
+
+.status-select {
+  padding: 10px;
+  font-family: inherit;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 1rem;
+}

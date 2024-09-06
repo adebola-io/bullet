@@ -1,202 +1,335 @@
-import { createElement, css, For, If } from '@adbl/bullet';
-import { Cell } from '@adbl/cells';
+import { createElement, css, For } from '@adbl/bullet';
+import { SourceCell, Cell } from '@adbl/cells';
 
-interface Article {
+import styles from './App.css?inline';
+
+interface Task {
+  id: number;
   title: string;
-  content: string;
+  description: string;
+  status: SourceCell<'todo' | 'inProgress' | 'done'>;
 }
 
-const isLoggedIn = Cell.source(false);
-const username = Cell.source('');
-const listToRender = Cell.source<Article[]>([
+interface TaskItemProps {
+  item: Task;
+  index: Cell<number>;
+}
+
+const initialTasks = [
   {
-    title: 'Getting Started with Bullet',
-    content:
-      'Bullet is a lightweight and efficient UI library for building web applications. It offers reactive programming and a component-based architecture.',
+    title: 'Buy groceries',
+    description: 'Get milk, eggs, and bread',
+    status: 'todo',
   },
   {
-    title: 'Reactive Programming in Bullet',
-    content:
-      'Bullet uses a reactive programming model, allowing you to create dynamic UIs that automatically update when data changes. This makes it easy to build interactive applications.',
+    title: 'Finish project report',
+    description: 'Complete the quarterly report',
+    status: 'inProgress',
   },
   {
-    title: 'Component-Based Architecture',
-    content:
-      'In Bullet, you can create reusable components to structure your application. This modular approach helps in maintaining and scaling your codebase effectively.',
+    title: 'Call dentist for appointment',
+    description: 'Schedule a checkup',
+    status: 'done',
   },
   {
-    title: 'State Management in Bullet',
-    content:
-      'Bullet provides a simple and intuitive way to manage state using Cells. Cells are reactive containers that automatically update your UI when their values change.',
+    title: 'Go for a 30-minute run',
+    description: 'Run in the park',
+    status: 'todo',
   },
   {
-    title: 'Performance Optimization in Bullet',
-    content:
-      'Bullet is designed for high performance. It uses a virtual DOM and efficient rendering techniques to ensure your application runs smoothly, even with complex UIs.',
+    title: 'Read a chapter of current book',
+    description: 'Continue "The Great Gatsby"',
+    status: 'inProgress',
   },
   {
-    title: 'Styling in Bullet',
-    content:
-      'Bullet supports various styling approaches, including CSS-in-JS. This allows you to write scoped styles directly in your component files, improving modularity and maintainability.',
+    title: 'Water the plants',
+    description: "Don't forget the orchids",
+    status: 'done',
   },
-]);
+  {
+    title: 'Prepare presentation',
+    description: 'Create slides for the team meeting',
+    status: 'todo',
+  },
+  {
+    title: 'Clean the garage',
+    description: 'Organize tools and dispose of old items',
+    status: 'todo',
+  },
+  {
+    title: 'Update resume',
+    description: 'Add recent projects and skills',
+    status: 'inProgress',
+  },
+  {
+    title: 'Pay bills',
+    description: 'Electricity, water, and internet',
+    status: 'done',
+  },
+  {
+    title: 'Plan weekend trip',
+    description: 'Research destinations and book accommodations',
+    status: 'todo',
+  },
+  {
+    title: 'Learn a new recipe',
+    description: 'Try cooking a vegetarian dish',
+    status: 'inProgress',
+  },
+  {
+    title: 'Organize digital photos',
+    description: 'Sort and label photos from last vacation',
+    status: 'todo',
+  },
+  {
+    title: 'Attend yoga class',
+    description: 'Join the 7 PM session at the local studio',
+    status: 'done',
+  },
+  {
+    title: 'Fix leaky faucet',
+    description: 'Replace washer in bathroom sink',
+    status: 'todo',
+  },
+  {
+    title: 'Write blog post',
+    description: 'Draft article on time management tips',
+    status: 'inProgress',
+  },
+  {
+    title: 'Renew library books',
+    description: 'Check due dates and renew online',
+    status: 'done',
+  },
+  {
+    title: 'Schedule car maintenance',
+    description: 'Book appointment for oil change and tire rotation',
+    status: 'todo',
+  },
+  {
+    title: 'Start learning Spanish',
+    description: 'Complete first lesson on language learning app',
+    status: 'inProgress',
+  },
+  {
+    title: 'Donate old clothes',
+    description: 'Sort through wardrobe and prepare donation bag',
+    status: 'todo',
+  },
+  {
+    title: 'Backup computer files',
+    description: 'Transfer important documents to external hard drive',
+    status: 'inProgress',
+  },
+  {
+    title: 'Attend networking event',
+    description: 'RSVP and prepare business cards',
+    status: 'todo',
+  },
+  {
+    title: 'Plan birthday party',
+    description: 'Create guest list and choose theme',
+    status: 'inProgress',
+  },
+  {
+    title: 'Get haircut',
+    description: 'Book appointment at the salon',
+    status: 'done',
+  },
+  {
+    title: 'Research investment options',
+    description: 'Compare mutual funds and ETFs',
+    status: 'todo',
+  },
+  {
+    title: 'Practice meditation',
+    description: 'Follow 15-minute guided meditation',
+    status: 'inProgress',
+  },
+];
 
-const changeLoggedInStatus = () => {
-  isLoggedIn.value = !isLoggedIn.value;
-};
-
-const logIn = (event: Event) => {
-  event.preventDefault();
-  if (!username.value) return;
-  isLoggedIn.value = true;
-};
-
-const setUsername = (event: Event) => {
-  const target = event.target as HTMLInputElement;
-  username.value = target.value;
-};
-
-const LoggedInView = () => {
-  return (
-    <div>
-      <h3>Welcome back, {username}!</h3>
-      <button type="button" onClick={changeLoggedInStatus}>
-        Logout
-      </button>
-    </div>
-  );
-};
-
-const LoggedOutView = () => {
-  return (
-    <form onSubmit={logIn}>
-      <h3>Please log in</h3>
-      <input type="text" placeholder="Enter username" onInput={setUsername} />
-      <button type="submit">Login</button>
-    </form>
-  );
-};
-
-const addArticle = (event: Event) => {
-  event.preventDefault();
-  const form = event.target as HTMLFormElement;
-  const input = form['article-title'] as HTMLInputElement;
-  const textarea = form['article-content'] as HTMLTextAreaElement;
-  const submitButton = form.querySelector(
-    'button[type="submit"]:focus'
-  ) as HTMLButtonElement;
-  const position = submitButton?.dataset.position as
-    | 'top'
-    | 'middle'
-    | 'end'
-    | undefined;
-
-  if (!input.value || !textarea.value || !position) return;
-
-  const newArticle = {
-    title: input.value,
-    content: textarea.value,
-  };
-
-  switch (position) {
-    case 'top':
-      listToRender.value = [newArticle, ...listToRender.value];
-      break;
-    case 'middle':
-      {
-        const middleIndex = Math.floor(listToRender.value.length / 2);
-        const newList = [...listToRender.value];
-        newList.splice(middleIndex, 0, newArticle);
-        listToRender.value = newList;
-      }
-      break;
-    case 'end':
-      listToRender.value = [...listToRender.value, newArticle];
-      break;
-  }
-
-  input.value = '';
-  textarea.value = '';
-};
-
-const Article = ({ item, index }: { item: Article; index: Cell<number> }) => (
-  <li>
-    <div class="article-header">
-      <h3>{item.title}</h3>
-      <button
-        type="button"
-        class="cancel-button"
-        onClick={() => {
-          listToRender.value.splice(index.value, 1);
-        }}
-      >
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          viewBox="0 0 24 24"
-          width="24"
-          height="24"
-          aria-labelledby="deleteIconTitle"
-        >
-          <title id="deleteIconTitle" xmlns="http://www.w3.org/2000/svg">
-            Delete article
-          </title>
-          <path
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            d="M0 0h24v24H0z"
-          />
-          <path
-            xmlns="http://www.w3.org/2000/svg"
-            d="M12 10.586l4.95-4.95 1.414 1.414-4.95 4.95 4.95 4.95-1.414 1.414-4.95-4.95-4.95 4.95-1.414-1.414 4.95-4.95-4.95-4.95L7.05 5.636z"
-          />
-        </svg>
-      </button>
-    </div>
-    <p>{item.content}</p>
-  </li>
+const listToRender: SourceCell<Task[]> = Cell.source(
+  initialTasks.map(function (task, index) {
+    return {
+      id: index + 1,
+      title: task.title,
+      description: task.description,
+      status: Cell.source(task.status as 'todo' | 'inProgress' | 'done'),
+    };
+  })
 );
 
+const todoTasks = Cell.derived(function () {
+  return listToRender.value.filter(function (task) {
+    return task.status.value === 'todo';
+  });
+});
+const inProgressTasks = Cell.derived(function () {
+  return listToRender.value.filter(function (task) {
+    return task.status.value === 'inProgress';
+  });
+});
+const doneTasks = Cell.derived(function () {
+  return listToRender.value.filter(function (task) {
+    return task.status.value === 'done';
+  });
+});
+
+const todoTasksListHeight = Cell.derived(function () {
+  const todoTasksCount = todoTasks.value.length;
+  const baseHeight = todoTasksCount * 130; // Increased base height per item
+  const itemPaddingOffsets = todoTasksCount * 15;
+  const listBottomPadding = 20;
+  return `${baseHeight + itemPaddingOffsets + listBottomPadding}px`;
+});
+
+const inProgressTasksListHeight = Cell.derived(function () {
+  const inProgressTasksCount = inProgressTasks.value.length;
+  const baseHeight = inProgressTasksCount * 130; // Increased base height per item
+  const itemPaddingOffsets = inProgressTasksCount * 15;
+  const listBottomPadding = 20;
+  return `${baseHeight + itemPaddingOffsets + listBottomPadding}px`;
+});
+
+const doneTasksListHeight = Cell.derived(function () {
+  const doneTasksCount = doneTasks.value.length;
+  const baseHeight = doneTasksCount * 130; // Increased base height per item
+  const itemPaddingOffsets = doneTasksCount * 15;
+  const listBottomPadding = 20;
+  return `${baseHeight + itemPaddingOffsets + listBottomPadding}px`;
+});
+
 export const App = createElement({
-  tag: 'login-status',
-  render: () => {
+  tag: 'task-list',
+  render(_, __, element) {
+    function openDialog() {
+      const dialogElement = element.select('dialog');
+      dialogElement?.showModal();
+      document.documentElement.style.overflow = 'hidden';
+    }
+
+    function closeDialog() {
+      const dialogElement = element.select('dialog');
+      dialogElement?.close();
+      document.documentElement.style.removeProperty('overflow');
+    }
+
+    function addTask(this: HTMLFormElement, event: SubmitEvent): void {
+      event.preventDefault();
+      const titleInput: HTMLInputElement = this['task-title'];
+      const descriptionInput: HTMLInputElement = this['task-description'];
+      const statusSelect: HTMLSelectElement = this['task-status'];
+      const submitButton = this.querySelector<HTMLButtonElement>(
+        'button[type="submit"]:focus'
+      );
+      const position = submitButton?.dataset.position;
+
+      if (!titleInput.value || !position) return;
+
+      const newTask = {
+        id: listToRender.value.length + 1,
+        title: titleInput.value,
+        description: descriptionInput.value,
+        status: Cell.source(
+          statusSelect.value as 'todo' | 'inProgress' | 'done'
+        ),
+      };
+
+      switch (position) {
+        case 'top':
+          listToRender.value.unshift(newTask);
+          break;
+        case 'end':
+          listToRender.value.push(newTask);
+          break;
+      }
+
+      titleInput.value = '';
+      descriptionInput.value = '';
+      statusSelect.value = 'todo';
+      closeDialog();
+    }
+
     return (
       <div class="container">
-        <h1>Reactivity in Bullet</h1>
+        <div class="top-row">
+          <h1>Task List</h1>
+          <button class="add-task-button" onClick={openDialog}>
+            Add New Task
+          </button>
+        </div>
         <div class="grid">
           <div class="column">
-            <h2>Conditional Rendering</h2>
-            {If(isLoggedIn, LoggedInView, LoggedOutView)}
-
-            <h2>Create an Article</h2>
-            <form onSubmit={addArticle}>
-              <input
-                placeholder="Enter title"
-                type="text"
-                name="article-title"
-              />
-              <textarea placeholder="Enter content" name="article-content" />
-              <div class="button-group">
-                <button type="submit" data-position="top">
-                  Add to Top
-                </button>
-                <button type="submit" data-position="middle">
-                  Add to Middle
-                </button>
-                <button type="submit" data-position="end">
-                  Add to End
-                </button>
-              </div>
-            </form>
+            <h2>Todo</h2>
+            <ul class="task-list" style={{ height: todoTasksListHeight }}>
+              {For(todoTasks, function (item, index) {
+                return <TaskItem item={item} index={index} />;
+              })}
+            </ul>
           </div>
           <div class="column">
-            <h2>Articles</h2>
-            <ul>
-              {For(listToRender, (item, index) => {
-                return <Article item={item} index={index} />;
+            <h2>In Progress</h2>
+            <ul class="task-list" style={{ height: inProgressTasksListHeight }}>
+              {For(inProgressTasks, function (item, index) {
+                return <TaskItem item={item} index={index} />;
+              })}
+            </ul>
+          </div>
+          <div class="column">
+            <h2>Completed</h2>
+            <ul class="task-list" style={{ height: doneTasksListHeight }}>
+              {For(doneTasks, function (item, index) {
+                return <TaskItem item={item} index={index} />;
               })}
             </ul>
           </div>
         </div>
+        <dialog class="dialog" popover="auto">
+          <h2>Add New Task</h2>
+          <button class="close-dialog-button" onClick={closeDialog}>
+            <svg viewBox="0 0 24 24">
+              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
+            </svg>
+          </button>
+          <form onSubmit={addTask}>
+            <input
+              class="form-input"
+              placeholder="Enter title"
+              type="text"
+              name="task-title"
+              required
+            />
+            <input
+              class="form-input"
+              placeholder="Enter description"
+              type="text"
+              name="task-description"
+            />
+            <select class="status-select" name="task-status">
+              <option value="todo" selected>
+                Todo
+              </option>
+              <option value="inProgress">In Progress</option>
+              <option value="done">Done</option>
+            </select>
+            <div class="button-group">
+              <button
+                class="button-group-button"
+                type="submit"
+                data-position="top"
+              >
+                Add to Top
+              </button>
+              <button
+                class="button-group-button"
+                type="submit"
+                data-position="end"
+              >
+                Add to Bottom
+              </button>
+            </div>
+          </form>
+        </dialog>
       </div>
     );
   },
@@ -218,130 +351,154 @@ export const App = createElement({
     }
   `,
 
-  styles: css`
-    .container {
-      max-width: 1000px;
-      margin: 0 auto;
-    }
-
-    h1,
-    h2,
-    h3 {
-      font-family: Georgia, 'Times New Roman', Times, serif;
-    }
-
-    h1 {
-      text-align: center;
-      border-bottom: 2px solid #333;
-      padding-bottom: 15px;
-      margin-bottom: 30px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 40px;
-
-      @media (max-width: 768px) {
-        grid-template-columns: 1fr;
-      }
-    }
-
-    .column {
-      min-width: 0;
-    }
-
-    form {
-      margin-bottom: 20px;
-
-      input,
-      textarea,
-      button {
-        display: block;
-        width: 100%;
-        margin-bottom: 15px;
-        padding: 10px;
-        font-family: inherit;
-        border: 1px solid #ccc;
-        box-sizing: border-box;
-      }
-
-      textarea {
-        height: 120px;
-      }
-
-      .button-group {
-        display: flex;
-        gap: 10px;
-
-        button {
-          flex: 1;
-          background-color: #4a4a4a;
-          color: #fff;
-          border: none;
-          padding: 12px;
-          cursor: pointer;
-          transition: background-color 0.3s ease;
-
-          &:hover {
-            background-color: #333;
-          }
-        }
-      }
-
-      button {
-        background-color: #4a4a4a;
-        color: #fff;
-        border: none;
-        padding: 12px;
-        cursor: pointer;
-        transition: background-color 0.3s ease;
-
-        &:hover {
-          background-color: #333;
-        }
-      }
-    }
-
-    ul {
-      list-style-type: none;
-      padding: 0;
-
-      li {
-        border: 1px solid #ddd;
-        padding: 15px;
-        margin-bottom: 15px;
-        background-color: #fff;
-        position: relative;
-      }
-    }
-
-    .article-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-    }
-
-    .cancel-button {
-      background: none;
-      border: none;
-      cursor: pointer;
-      padding: 0;
-      width: 24px;
-      height: 24px;
-
-      svg {
-        fill: #4a4a4a;
-        transition: fill 0.3s ease, background-color 0.3s ease;
-      }
-
-      &:hover {
-        background-color: #333;
-
-        svg {
-          fill: #fff;
-        }
-      }
-    }
-  `,
+  styles: css(styles),
 });
+
+/**
+ * Renders a single task item in the task list.
+ *
+ * @param props - The properties for the TaskItem component
+ * @param props.item - The task object containing id, title, description, and status
+ * @param props.index - The index of the task in its respective list (todo, inProgress, or done)
+ * @returns An HTMLLIElement representing the task item
+ */
+function TaskItem(props: TaskItemProps): HTMLLIElement {
+  const { item, index } = props;
+  const popupVisible = Cell.source(false);
+  const moveSubmenuVisible = Cell.source(false);
+
+  const transform = Cell.derived(function () {
+    if (index.value === 0) return 'none';
+
+    const percent = index.value * 100;
+    const shift = index.value * 15;
+    return `translateY(calc(${percent}% + ${shift}px))`;
+  });
+
+  const textDecoration = Cell.derived(function () {
+    if (item.status.value === 'done') {
+      return 'line-through';
+    }
+  });
+
+  function updateStatus(newStatus: 'todo' | 'inProgress' | 'done'): void {
+    item.status.value = newStatus;
+    popupVisible.value = false;
+    moveSubmenuVisible.value = false;
+  }
+
+  function deleteTask(): void {
+    listToRender.value = listToRender.value.filter(function (task) {
+      return task.id !== item.id;
+    });
+  }
+
+  popupVisible.listen(function (isVisible) {
+    if (isVisible) {
+      addEventListener('click', closePopupOnOutsideClick, { once: true });
+    }
+  });
+
+  function togglePopup(event: MouseEvent) {
+    if (!popupVisible.value) {
+      event.stopPropagation();
+    }
+    popupVisible.value = !popupVisible.value;
+  }
+
+  function closePopupOnOutsideClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (!popupVisible.value || !target.closest('.popup-menu')) {
+      popupVisible.value = false;
+      moveSubmenuVisible.value = false;
+    }
+  }
+
+  function toggleMoveSubmenu(event: MouseEvent): void {
+    event.stopPropagation();
+    moveSubmenuVisible.value = !moveSubmenuVisible.value;
+  }
+
+  const popupMenuClass = Cell.derived(function () {
+    return popupVisible.value ? 'popup-menu visible' : 'popup-menu';
+  });
+
+  const moveSubmenuClass = Cell.derived(function () {
+    return moveSubmenuVisible.value ? 'submenu visible' : 'submenu';
+  });
+
+  const todoButtonDisabled = Cell.derived(function () {
+    return item.status.value === 'todo';
+  });
+  const inProgressButtonDisabled = Cell.derived(function () {
+    return item.status.value === 'inProgress';
+  });
+  const doneButtonDisabled = Cell.derived(function () {
+    return item.status.value === 'done';
+  });
+
+  return (
+    <li class="task-item" style={{ transform }} data-index={index}>
+      <div class="task-header">
+        <h3 class="task-title" style={{ textDecoration }}>
+          {item.title}
+        </h3>
+        <div class="task-actions">
+          <button
+            type="button"
+            class="more-options-button"
+            onClick={togglePopup}
+          >
+            ⋮
+          </button>
+          <div class={popupMenuClass}>
+            <button
+              class="move-to-button"
+              onClick={toggleMoveSubmenu}
+              onMouseEnter={function () {
+                moveSubmenuVisible.value = true;
+              }}
+            >
+              Move to <span class="arrow">▸</span>
+            </button>
+            <button onClick={deleteTask} class="delete-button">
+              Delete Task
+            </button>
+          </div>
+          <div
+            class={moveSubmenuClass}
+            onMouseLeave={function () {
+              moveSubmenuVisible.value = false;
+            }}
+          >
+            <button
+              onClick={function () {
+                updateStatus('todo');
+              }}
+              disabled={todoButtonDisabled}
+            >
+              Todo
+            </button>
+            <button
+              onClick={function () {
+                updateStatus('inProgress');
+              }}
+              disabled={inProgressButtonDisabled}
+            >
+              In Progress
+            </button>
+            <button
+              onClick={function () {
+                updateStatus('done');
+              }}
+              disabled={doneButtonDisabled}
+            >
+              Completed
+            </button>
+          </div>
+        </div>
+      </div>
+      <p class="task-description">{item.description}</p>
+    </li>
+  );
+}
