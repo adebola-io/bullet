@@ -281,8 +281,10 @@ export function setAttribute(element, key, value) {
     }
 
     if (typeof value === 'function') {
-      element.addEventListener(eventName, value);
-      element.bullet__eventListenerList.set(eventName, value);
+      setTimeout(() => {
+        element.addEventListener(eventName, value);
+        element.bullet__eventListenerList.set(eventName, value);
+      }, 0);
       return;
     }
 
@@ -369,9 +371,9 @@ export function setAttribute(element, key, value) {
 
   if (attributeName === 'class-name' || attributeName === 'class') {
     if (typeof value === 'string') {
-      element.className = value;
+      element.setAttribute('class', value);
     } else if (Array.isArray(value)) {
-      element.className = value.join(' ');
+      element.setAttribute('class', value.join(' '));
     }
     return;
   }
