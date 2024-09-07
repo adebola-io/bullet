@@ -1,19 +1,11 @@
-import { createElement, css, For } from '@adbl/bullet';
-import { SourceCell, Cell } from '@adbl/cells';
+import { css, For, If } from '@adbl/bullet';
+import { createElement } from '@/setup';
+import { Cell } from '@adbl/cells';
+import type { Task, TaskStatus } from '@/types';
 
-import styles from './App.css?inline';
-
-interface Task {
-  id: number;
-  title: string;
-  description: string;
-  status: SourceCell<'todo' | 'inProgress' | 'done'>;
-}
-
-interface TaskItemProps {
-  item: Task;
-  index: Cell<number>;
-}
+import { Popup } from '@/components/Popup';
+import { TaskList } from '@/components/TaskList';
+import { TaskDialog } from '@/components/TaskDialog';
 
 const initialTasks = [
   {
@@ -148,188 +140,203 @@ const initialTasks = [
   },
 ];
 
-const listToRender: SourceCell<Task[]> = Cell.source(
-  initialTasks.map(function (task, index) {
+const list = Cell.source<Task[]>(
+  initialTasks.map((task, index) => {
     return {
       id: index + 1,
       title: task.title,
       description: task.description,
-      status: Cell.source(task.status as 'todo' | 'inProgress' | 'done'),
+      status: Cell.source(task.status as TaskStatus),
     };
   })
 );
 
-const todoTasks = Cell.derived(function () {
-  return listToRender.value.filter(function (task) {
-    return task.status.value === 'todo';
-  });
-});
-const inProgressTasks = Cell.derived(function () {
-  return listToRender.value.filter(function (task) {
-    return task.status.value === 'inProgress';
-  });
-});
-const doneTasks = Cell.derived(function () {
-  return listToRender.value.filter(function (task) {
-    return task.status.value === 'done';
-  });
+interface Column {
+  name: string;
+  tasks: Cell<Task[]>;
+}
+
+const columns: Record<TaskStatus, Column> = {
+  todo: {
+    name: 'Todo',
+    tasks: Cell.derived(() => {
+      return list.value.filter((task) => {
+        return task.status.value === 'todo';
+      });
+    }),
+  },
+  inProgress: {
+    name: 'In Progress',
+    tasks: Cell.derived(() => {
+      return list.value.filter((task) => {
+        return task.status.value === 'inProgress';
+      });
+    }),
+  },
+  done: {
+    name: 'Completed',
+    tasks: Cell.derived(() => {
+      return list.value.filter((task) => {
+        return task.status.value === 'done';
+      });
+    }),
+  },
+};
+
+const listBottomPadding = 20;
+
+const todoTasksListHeight = Cell.derived(() => {
+  return `${columns.todo.tasks.value.length * 145 + listBottomPadding}px`;
 });
 
-const todoTasksListHeight = Cell.derived(function () {
-  const todoTasksCount = todoTasks.value.length;
-  const baseHeight = todoTasksCount * 130; // Increased base height per item
-  const itemPaddingOffsets = todoTasksCount * 15;
-  const listBottomPadding = 20;
-  return `${baseHeight + itemPaddingOffsets + listBottomPadding}px`;
+const inProgressTasksListHeight = Cell.derived(() => {
+  return `${columns.inProgress.tasks.value.length * 145 + listBottomPadding}px`;
 });
 
-const inProgressTasksListHeight = Cell.derived(function () {
-  const inProgressTasksCount = inProgressTasks.value.length;
-  const baseHeight = inProgressTasksCount * 130; // Increased base height per item
-  const itemPaddingOffsets = inProgressTasksCount * 15;
-  const listBottomPadding = 20;
-  return `${baseHeight + itemPaddingOffsets + listBottomPadding}px`;
-});
-
-const doneTasksListHeight = Cell.derived(function () {
-  const doneTasksCount = doneTasks.value.length;
-  const baseHeight = doneTasksCount * 130; // Increased base height per item
-  const itemPaddingOffsets = doneTasksCount * 15;
-  const listBottomPadding = 20;
-  return `${baseHeight + itemPaddingOffsets + listBottomPadding}px`;
+const doneTasksListHeight = Cell.derived(() => {
+  return `${columns.done.tasks.value.length * 145 + listBottomPadding}px`;
 });
 
 export const App = createElement({
-  tag: 'task-list',
-  render(_, __, element) {
-    function openDialog() {
-      const dialogElement = element.select('dialog');
-      dialogElement?.showModal();
-      document.documentElement.style.overflow = 'hidden';
-    }
+  tag: 'task-app',
 
-    function closeDialog() {
-      const dialogElement = element.select('dialog');
-      dialogElement?.close();
-      document.documentElement.style.removeProperty('overflow');
-    }
+  render: () => {
+    const taskDialogIsOpen = Cell.source(false);
+    const initialTask = Cell.source<Task | null>(null);
+    const selectedTask = Cell.source<Task | null>(null);
+    const popupAnchor = Cell.source<HTMLElement | null>(null);
+    const optionsSubMenuIsOpen = Cell.source(false);
 
-    function addTask(this: HTMLFormElement, event: SubmitEvent): void {
-      event.preventDefault();
-      const titleInput: HTMLInputElement = this['task-title'];
-      const descriptionInput: HTMLInputElement = this['task-description'];
-      const statusSelect: HTMLSelectElement = this['task-status'];
-      const submitButton = this.querySelector<HTMLButtonElement>(
-        'button[type="submit"]:focus'
+    const openDialog = () => {
+      taskDialogIsOpen.value = true;
+    };
+
+    const closeDialog = () => {
+      taskDialogIsOpen.value = false;
+      initialTask.value = null;
+    };
+
+    const selectTask = (task: Task, button: HTMLElement) => {
+      popupAnchor.value = button;
+      selectedTask.value = task;
+    };
+
+    const removeSelection = () => {
+      selectedTask.value = null;
+      popupAnchor.value = null;
+      optionsSubMenuIsOpen.value = false;
+    };
+
+    const deleteSelectedTask = () => {
+      list.value = list.value.filter(
+        (task) => task.id !== selectedTask.value?.id
       );
-      const position = submitButton?.dataset.position;
+      selectedTask.value = null;
+      popupAnchor.value = null;
+    };
 
-      if (!titleInput.value || !position) return;
+    const openSubMenu = () => {
+      optionsSubMenuIsOpen.value = true;
+    };
 
-      const newTask = {
-        id: listToRender.value.length + 1,
-        title: titleInput.value,
-        description: descriptionInput.value,
-        status: Cell.source(
-          statusSelect.value as 'todo' | 'inProgress' | 'done'
-        ),
-      };
+    const closeSubMenu = () => {
+      optionsSubMenuIsOpen.value = false;
+    };
 
-      switch (position) {
-        case 'top':
-          listToRender.value.unshift(newTask);
-          break;
-        case 'end':
-          listToRender.value.push(newTask);
-          break;
-      }
-
-      titleInput.value = '';
-      descriptionInput.value = '';
-      statusSelect.value = 'todo';
-      closeDialog();
-    }
+    const openTaskEditing = () => {
+      initialTask.value = selectedTask.value;
+      taskDialogIsOpen.value = true;
+      removeSelection();
+    };
 
     return (
       <div class="container">
         <div class="top-row">
           <h1>Task List</h1>
-          <button class="add-task-button" onClick={openDialog}>
+          <button type="button" class="add-task-button" onClick={openDialog}>
             Add New Task
           </button>
         </div>
+
+        {/* Columns */}
         <div class="grid">
-          <div class="column">
-            <h2>Todo</h2>
-            <ul class="task-list" style={{ height: todoTasksListHeight }}>
-              {For(todoTasks, function (item, index) {
-                return <TaskItem item={item} index={index} />;
-              })}
-            </ul>
-          </div>
-          <div class="column">
-            <h2>In Progress</h2>
-            <ul class="task-list" style={{ height: inProgressTasksListHeight }}>
-              {For(inProgressTasks, function (item, index) {
-                return <TaskItem item={item} index={index} />;
-              })}
-            </ul>
-          </div>
-          <div class="column">
-            <h2>Completed</h2>
-            <ul class="task-list" style={{ height: doneTasksListHeight }}>
-              {For(doneTasks, function (item, index) {
-                return <TaskItem item={item} index={index} />;
-              })}
-            </ul>
-          </div>
+          <TaskList
+            name="Todo"
+            height={todoTasksListHeight}
+            tasks={columns.todo.tasks}
+            onOptionsClick={selectTask}
+          />
+          <TaskList
+            name="In Progress"
+            height={inProgressTasksListHeight}
+            tasks={columns.inProgress.tasks}
+            onOptionsClick={selectTask}
+          />
+          <TaskList
+            name="Completed"
+            height={doneTasksListHeight}
+            tasks={columns.done.tasks}
+            onOptionsClick={selectTask}
+          />
         </div>
-        <dialog class="dialog" popover="auto">
-          <h2>Add New Task</h2>
-          <button class="close-dialog-button" onClick={closeDialog}>
-            <svg viewBox="0 0 24 24">
-              <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" />
-            </svg>
-          </button>
-          <form onSubmit={addTask}>
-            <input
-              class="form-input"
-              placeholder="Enter title"
-              type="text"
-              name="task-title"
-              required
+
+        {/* Popup List. */}
+        {If(selectedTask, (task) => {
+          return (
+            <Popup
+              attr:popover="auto"
+              attr:onBeforeToggle={removeSelection}
+              anchor={popupAnchor.value}
+              preferredAnchorPosition="top-right"
+            >
+              <menu class="options-menu">
+                <Popup.ListItem attr:onClick={openTaskEditing}>
+                  Edit Task
+                </Popup.ListItem>
+                <Popup.ListItem
+                  hasSubmenu
+                  attr:onMouseOver={openSubMenu}
+                  attr:onMouseLeave={closeSubMenu}
+                >
+                  Move to
+                  {If(optionsSubMenuIsOpen, () => {
+                    return (
+                      <Popup.SubMenu>
+                        {For(Object.entries(columns), ([key, column]) => {
+                          if (task.status.value === key) return;
+                          const changeTaskStatus = () => {
+                            task.status.value = key as TaskStatus;
+                            removeSelection();
+                          };
+                          return (
+                            <Popup.ListItem attr:onClick={changeTaskStatus}>
+                              {column.name}
+                            </Popup.ListItem>
+                          );
+                        })}
+                      </Popup.SubMenu>
+                    );
+                  })}
+                </Popup.ListItem>
+                <Popup.ListItem
+                  attr:onClick={deleteSelectedTask}
+                  attr:class="delete-task-option"
+                >
+                  Delete
+                </Popup.ListItem>
+              </menu>
+            </Popup>
+          );
+        })}
+        {If(taskDialogIsOpen, () => {
+          return (
+            <TaskDialog
+              list={list}
+              initialTask={initialTask}
+              onClose={closeDialog}
             />
-            <input
-              class="form-input"
-              placeholder="Enter description"
-              type="text"
-              name="task-description"
-            />
-            <select class="status-select" name="task-status">
-              <option value="todo" selected>
-                Todo
-              </option>
-              <option value="inProgress">In Progress</option>
-              <option value="done">Done</option>
-            </select>
-            <div class="button-group">
-              <button
-                class="button-group-button"
-                type="submit"
-                data-position="top"
-              >
-                Add to Top
-              </button>
-              <button
-                class="button-group-button"
-                type="submit"
-                data-position="end"
-              >
-                Add to Bottom
-              </button>
-            </div>
-          </form>
-        </dialog>
+          );
+        })}
       </div>
     );
   },
@@ -351,154 +358,63 @@ export const App = createElement({
     }
   `,
 
-  styles: css(styles),
+  styles: css`
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+    }
+
+    h1,
+    h2,
+    h3 {
+      font-family: Georgia, 'Times New Roman', Times, serif;
+    }
+
+    h1 {
+      text-align: center;
+      border-bottom: 2px solid #333;
+      padding-bottom: 15px;
+      margin-bottom: 30px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+
+      @media (max-width: 1024px) {
+        grid-template-columns: 1fr 1fr;
+      }
+
+      @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .add-task-button {
+      background-color: #4a4a4a;
+      color: #fff;
+      border: none;
+      padding: 12px 20px;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+      font-size: 1rem;
+      margin-bottom: 20px;
+
+      &:hover {
+        background-color: #333;
+      }
+    }
+
+    .options-menu {
+      display: flex;
+      flex-direction: column;
+      padding: 0;
+      margin: 0;
+    }
+
+    .delete-task-option {
+      color: red;
+    }
+  `,
 });
-
-/**
- * Renders a single task item in the task list.
- *
- * @param props - The properties for the TaskItem component
- * @param props.item - The task object containing id, title, description, and status
- * @param props.index - The index of the task in its respective list (todo, inProgress, or done)
- * @returns An HTMLLIElement representing the task item
- */
-function TaskItem(props: TaskItemProps): HTMLLIElement {
-  const { item, index } = props;
-  const popupVisible = Cell.source(false);
-  const moveSubmenuVisible = Cell.source(false);
-
-  const transform = Cell.derived(function () {
-    if (index.value === 0) return 'none';
-
-    const percent = index.value * 100;
-    const shift = index.value * 15;
-    return `translateY(calc(${percent}% + ${shift}px))`;
-  });
-
-  const textDecoration = Cell.derived(function () {
-    if (item.status.value === 'done') {
-      return 'line-through';
-    }
-  });
-
-  function updateStatus(newStatus: 'todo' | 'inProgress' | 'done'): void {
-    item.status.value = newStatus;
-    popupVisible.value = false;
-    moveSubmenuVisible.value = false;
-  }
-
-  function deleteTask(): void {
-    listToRender.value = listToRender.value.filter(function (task) {
-      return task.id !== item.id;
-    });
-  }
-
-  popupVisible.listen(function (isVisible) {
-    if (isVisible) {
-      addEventListener('click', closePopupOnOutsideClick, { once: true });
-    }
-  });
-
-  function togglePopup(event: MouseEvent) {
-    if (!popupVisible.value) {
-      event.stopPropagation();
-    }
-    popupVisible.value = !popupVisible.value;
-  }
-
-  function closePopupOnOutsideClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (!popupVisible.value || !target.closest('.popup-menu')) {
-      popupVisible.value = false;
-      moveSubmenuVisible.value = false;
-    }
-  }
-
-  function toggleMoveSubmenu(event: MouseEvent): void {
-    event.stopPropagation();
-    moveSubmenuVisible.value = !moveSubmenuVisible.value;
-  }
-
-  const popupMenuClass = Cell.derived(function () {
-    return popupVisible.value ? 'popup-menu visible' : 'popup-menu';
-  });
-
-  const moveSubmenuClass = Cell.derived(function () {
-    return moveSubmenuVisible.value ? 'submenu visible' : 'submenu';
-  });
-
-  const todoButtonDisabled = Cell.derived(function () {
-    return item.status.value === 'todo';
-  });
-  const inProgressButtonDisabled = Cell.derived(function () {
-    return item.status.value === 'inProgress';
-  });
-  const doneButtonDisabled = Cell.derived(function () {
-    return item.status.value === 'done';
-  });
-
-  return (
-    <li class="task-item" style={{ transform }} data-index={index}>
-      <div class="task-header">
-        <h3 class="task-title" style={{ textDecoration }}>
-          {item.title}
-        </h3>
-        <div class="task-actions">
-          <button
-            type="button"
-            class="more-options-button"
-            onClick={togglePopup}
-          >
-            ⋮
-          </button>
-          <div class={popupMenuClass}>
-            <button
-              class="move-to-button"
-              onClick={toggleMoveSubmenu}
-              onMouseEnter={function () {
-                moveSubmenuVisible.value = true;
-              }}
-            >
-              Move to <span class="arrow">▸</span>
-            </button>
-            <button onClick={deleteTask} class="delete-button">
-              Delete Task
-            </button>
-          </div>
-          <div
-            class={moveSubmenuClass}
-            onMouseLeave={function () {
-              moveSubmenuVisible.value = false;
-            }}
-          >
-            <button
-              onClick={function () {
-                updateStatus('todo');
-              }}
-              disabled={todoButtonDisabled}
-            >
-              Todo
-            </button>
-            <button
-              onClick={function () {
-                updateStatus('inProgress');
-              }}
-              disabled={inProgressButtonDisabled}
-            >
-              In Progress
-            </button>
-            <button
-              onClick={function () {
-                updateStatus('done');
-              }}
-              disabled={doneButtonDisabled}
-            >
-              Completed
-            </button>
-          </div>
-        </div>
-      </div>
-      <p class="task-description">{item.description}</p>
-    </li>
-  );
-}
