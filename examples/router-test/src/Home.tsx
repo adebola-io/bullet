@@ -1,4 +1,4 @@
-import { css, domMap } from '@adbl/bullet';
+import { css, For } from '@adbl/bullet';
 import { Card, type CardProps } from './Card';
 import { createElement } from './setup';
 
@@ -8,12 +8,12 @@ export default createElement({
   async render() {
     const res = await fetch('https://dummyjson.com/products');
     const data = await res.json();
-    const { products } = data;
+    const { products }: { products: CardProps[] } = data;
 
     return (
       <main>
         <ul class="CardList">
-          {domMap(products, (data: CardProps) => (
+          {For(products, (data) => (
             <Card {...data} key={data.id} />
           ))}
         </ul>

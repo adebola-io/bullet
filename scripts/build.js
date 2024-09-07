@@ -1,3 +1,8 @@
+// @adbl-bullet
+// @ts-nocheck
+
+/// <reference path="node" />
+
 import fs from 'node:fs';
 import { execSync } from 'node:child_process';
 

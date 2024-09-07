@@ -1,6 +1,9 @@
 /// @adbl-bullet
 
 import { setAttributeFromProps } from '../jsx.js';
+import { getWindowContext } from '../shim.js';
+
+const window = getWindowContext();
 
 /**
  * @template  Key
@@ -31,7 +34,7 @@ import { setAttributeFromProps } from '../jsx.js';
  * A reactive store that allows setting and getting values,
  * and dispatches events when values are set or retrieved.
  */
-export class ObservableMap extends EventTarget {
+export class ObservableMap extends window.EventTarget {
   #map = new Map();
 
   /**

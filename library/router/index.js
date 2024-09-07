@@ -4,6 +4,9 @@ import { createElement, css } from '../component.js';
 import { LazyRoute } from './lazy.js';
 import { RouterMiddleware, RouterMiddlewareResponse } from './middleware.js';
 import { MatchedRoute, RouteTree } from './routeTree.js';
+import { getWindowContext } from '../shim.js';
+
+const window = getWindowContext();
 
 export * from './lazy.js';
 export * from './routeTree.js';
@@ -98,7 +101,7 @@ export class Router {
    * Navigates back in the browser's history.
    */
   async back() {
-    history.back();
+    window.history.back();
   }
 
   /**
@@ -229,7 +232,7 @@ export class Router {
         if (outlet.dataset.path === currentMatchedRoute.fullPath) {
           outlet.shadowRoot?.replaceChildren(renderedComponent);
           if (currentMatchedRoute.title) {
-            document.title = currentMatchedRoute.title;
+            window.document.title = currentMatchedRoute.title;
           }
         } else {
           return false;
@@ -281,7 +284,7 @@ export class Router {
       }
 
       if (navigate && wasLoaded) {
-        history.pushState(null, '', path);
+        window.history.pushState(null, '', path);
       }
     });
   };
@@ -307,7 +310,7 @@ export class Router {
       disconnected: function () {
         self.outlets.splice(self.outlets.indexOf(this), 1);
       },
-      render: () => document.createElement('slot'),
+      render: () => window.document.createElement('slot'),
     });
   })();
 
@@ -329,7 +332,7 @@ export class Router {
       },
       /** @param {RouteLinkProps} props */
       render: function (props) {
-        const a = document.createElement('a');
+        const a = window.document.createElement('a');
         a.href = props.to;
         this.dataset.href = props.to;
 
@@ -338,7 +341,7 @@ export class Router {
           self.navigate(props.to);
         });
         a.setAttribute('part', 'inner');
-        a.append(document.createElement('slot'));
+        a.append(window.document.createElement('slot'));
 
         if (props.plain) {
           this.toggleAttribute('plain', true);
@@ -440,7 +443,7 @@ export function defineRoutes(routes) {
  */
 function emptyRoute(path) {
   console.warn(`Route not found: ${path}`);
-  const node = new DocumentFragment();
-  node.appendChild(document.createTextNode(`Route not found: ${path}`));
+  const node = new window.DocumentFragment();
+  node.appendChild(window.document.createTextNode(`Route not found: ${path}`));
   return node;
 }

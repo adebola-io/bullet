@@ -14,6 +14,6 @@
   "type": "module",
   "dependencies": {
     "@adbl/bullet": "file:../..",
-    "@adbl/cells": "^0.0.1"
+    "@adbl/cells": "^0.0.6"
   }
 }

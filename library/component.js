@@ -18,6 +18,9 @@ import {
   RENDERING_TREE,
   BulletComponent,
 } from './utils.js';
+import { getWindowContext } from './shim.js';
+
+const window = getWindowContext();
 
 /**
  * @typedef {Node | string} AimRenderNode
@@ -200,12 +203,12 @@ const logError = (error) => {
 export const css = (template, ...substitutions) => {
   switch (true) {
     case typeof template === 'string': {
-      const stylesheet = new CSSStyleSheet();
+      const stylesheet = new window.CSSStyleSheet();
       stylesheet.replaceSync(template);
       return [stylesheet];
     }
     case template instanceof Promise: {
-      const stylesheet = new CSSStyleSheet();
+      const stylesheet = new window.CSSStyleSheet();
       template.then((imported) => {
         const data = typeof imported === 'string' ? imported : imported.default;
         stylesheet.replaceSync(data);
@@ -220,7 +223,7 @@ export const css = (template, ...substitutions) => {
       return data;
     }
     default: {
-      const stylesheet = new CSSStyleSheet();
+      const stylesheet = new window.CSSStyleSheet();
       const cssText = String.raw(template, ...substitutions);
       stylesheet.replaceSync(cssText);
       return [stylesheet];
@@ -614,13 +617,13 @@ function setupInternal(setupOptions) {
             const stylesheetArray = globalStyles.data;
             for (const [index, stylesheet] of stylesheetArray.entries()) {
               if (!(stylesheet instanceof Promise)) {
-                document.adoptedStyleSheets.push(stylesheet);
+                window.document.adoptedStyleSheets.push(stylesheet);
                 continue;
               }
               stylesheet
                 .then((sheet) => {
                   stylesheetArray.splice(index, 1, sheet);
-                  document.adoptedStyleSheets.push(sheet);
+                  window.document.adoptedStyleSheets.push(sheet);
                 })
                 .catch(logError);
             }
@@ -644,9 +647,10 @@ function setupInternal(setupOptions) {
 
           if (globalStyles.instances === 0) {
             const array = globalStyles.data;
-            document.adoptedStyleSheets = document.adoptedStyleSheets.filter(
-              (stylesheet) => array.indexOf(stylesheet) === -1
-            );
+            window.document.adoptedStyleSheets =
+              window.document.adoptedStyleSheets.filter(
+                (stylesheet) => array.indexOf(stylesheet) === -1
+              );
           }
         }
 
@@ -672,7 +676,7 @@ function setupInternal(setupOptions) {
       ComponentConstructor = previousConstructor;
     }
 
-    const previouslyDefined = customElements.get(elementTagname);
+    const previouslyDefined = window.customElements.get(elementTagname);
     if (previouslyDefined && previouslyDefined !== ComponentConstructor) {
       throw new Error(
         `A custom element with the tag name "${elementTagname}" has already been defined.`
@@ -680,7 +684,7 @@ function setupInternal(setupOptions) {
     }
 
     if (!previouslyDefined && !previousConstructor) {
-      customElements.define(elementTagname, ComponentConstructor);
+      window.customElements.define(elementTagname, ComponentConstructor);
     }
 
     CUSTOM_ELEMENT_MAP.set(elementTagname, ComponentConstructor);

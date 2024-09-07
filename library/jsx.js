@@ -5,7 +5,9 @@ import {
   BulletComponent,
   getCurrentElement,
 } from './utils.js';
+import { getWindowContext } from './shim.js';
 
+const window = getWindowContext();
 const camelCasedAttributes = new Set([
   // SVG attributes
   'attributeName',
@@ -104,8 +106,8 @@ const camelCasedAttributes = new Set([
  * @returns {Node} A new virtual DOM element.
  */
 export function h(tagname, props, ...children) {
-  if (Object.is(tagname, DocumentFragment)) {
-    const tagname = document.createDocumentFragment();
+  if (Object.is(tagname, window.DocumentFragment)) {
+    const tagname = window.document.createDocumentFragment();
     for (const child of children) {
       tagname.appendChild(normalizeJsxChild(child, tagname));
     }
@@ -124,7 +126,7 @@ export function h(tagname, props, ...children) {
     );
 
     if (component instanceof Promise) {
-      const placeholder = document.createComment('---');
+      const placeholder = window.document.createComment('---');
       component.then((component) => {
         if (component instanceof BulletComponent) {
           for (const child of children) {
@@ -150,10 +152,13 @@ export function h(tagname, props, ...children) {
   /** @type {JsxElement} */ //@ts-ignore
   const element =
     tagname === 'svg'
-      ? document.createElementNS('http://www.w3.org/2000/svg', tagname)
+      ? window.document.createElementNS('http://www.w3.org/2000/svg', tagname)
       : tagname === 'math'
-      ? document.createElementNS('http://www.w3.org/1998/Math/MathML', tagname)
-      : document.createElementNS(defaultNamespace, tagname);
+      ? window.document.createElementNS(
+          'http://www.w3.org/1998/Math/MathML',
+          tagname
+        )
+      : window.document.createElementNS(defaultNamespace, tagname);
 
   element.bullet__eventListenerList = new Map();
   element.bullet__attributeCells = new Set();
@@ -167,8 +172,8 @@ export function h(tagname, props, ...children) {
   for (const child of children) {
     const childNode = normalizeJsxChild(child, element);
     if (
-      childNode instanceof HTMLElement &&
-      customElements.get(childNode.tagName.toLowerCase())
+      childNode instanceof window.HTMLElement &&
+      window.customElements.get(childNode.tagName.toLowerCase())
     ) {
       element.appendChild(childNode);
       continue;
@@ -176,9 +181,12 @@ export function h(tagname, props, ...children) {
 
     if (
       (tagname === 'svg' || tagname === 'math') &&
-      childNode instanceof HTMLElement
+      childNode instanceof window.HTMLElement
     ) {
-      const temp = document.createElementNS(element.namespaceURI ?? '', 'div');
+      const temp = window.document.createElementNS(
+        element.namespaceURI ?? '',
+        'div'
+      );
       temp.innerHTML = childNode.outerHTML;
       element.append(...temp.children);
       continue;
@@ -238,7 +246,7 @@ export function setAttributeFromProps(element, key, value) {
     let signal;
     if (
       'controller' in element &&
-      element.controller instanceof AbortController
+      element.controller instanceof window.AbortController
     ) {
       signal = element.controller.signal;
     } else {
@@ -407,7 +415,7 @@ export function normalizeJsxChild(child, _parent) {
   }
 
   if (Array.isArray(child)) {
-    const fragment = document.createDocumentFragment();
+    const fragment = window.document.createDocumentFragment();
 
     for (const element of child) {
       fragment.appendChild(normalizeJsxChild(element, fragment));
@@ -422,7 +430,7 @@ export function normalizeJsxChild(child, _parent) {
 
   // @ts-ignore
   if (Cell.isCell(child)) {
-    const textNode = document.createTextNode('');
+    const textNode = window.document.createTextNode('');
     /** @param {any} value */
     const callback = (value) => {
       textNode.textContent = value;
@@ -442,7 +450,7 @@ export function normalizeJsxChild(child, _parent) {
     return textNode;
   }
 
-  return document.createTextNode(child?.toString() ?? '');
+  return window.document.createTextNode(child?.toString() ?? '');
 }
 
 export default h;

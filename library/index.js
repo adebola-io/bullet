@@ -5,8 +5,11 @@ export * from './router/index.js';
 export * as jsx from './jsx.js';
 export * as helpers from './helpers/index.js';
 
+import { getWindowContext } from './shim.js';
 import { generateChildNodes } from './utils.js';
 import { Cell, SourceCell } from '@adbl/cells';
+
+const window = getWindowContext();
 
 /**
  * @typedef {import('./component.js').Template} Template
@@ -47,8 +50,8 @@ export function For(list, fn) {
   let snapshot = [];
 
   if (Cell.isCell(list)) {
-    const rangeStart = document.createComment('----');
-    const rangeEnd = document.createComment('----');
+    const rangeStart = window.document.createComment('----');
+    const rangeEnd = window.document.createComment('----');
     const uniqueSymbolMarker = Symbol();
     /**
      * @type Map<any, {

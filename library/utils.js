@@ -1,6 +1,9 @@
 /// @adbl-bullet
 import { CUSTOM_ELEMENT_INSTANCE_CACHE } from './constants.js';
 import { Cell } from '@adbl/cells';
+import { getWindowContext } from './shim.js';
+
+const window = getWindowContext();
 
 /**
  * Converts an object of styles to a CSS stylesheet string.
@@ -66,17 +69,17 @@ export function generateChildNodes(children) {
   const nodes = [];
 
   if (typeof children === 'string') {
-    const parser = new DOMParser();
+    const parser = new window.DOMParser();
     return Array.from(
       parser.parseFromString(children, 'text/html').body.childNodes
     );
   }
 
-  if (children instanceof DocumentFragment) {
+  if (children instanceof window.DocumentFragment) {
     return Array.from(children.childNodes);
   }
 
-  if (children instanceof Node) {
+  if (children instanceof window.Node) {
     return [children];
   }
 
@@ -217,7 +220,7 @@ export const getCurrentElement = () => {
   return RENDERING_TREE[RENDERING_TREE.length - 1];
 };
 
-export class BulletComponent extends HTMLElement {
+export class BulletComponent extends window.HTMLElement {
   /** @type {() => import('./component.js').Template} */ //@ts-ignore
   render;
 }
