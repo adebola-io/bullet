@@ -69,9 +69,8 @@ export function generateChildNodes(children) {
 
   if (typeof children === 'string') {
     const parser = new window.DOMParser();
-    return Array.from(
-      parser.parseFromString(children, 'text/html').body.childNodes
-    );
+    const document = parser.parseFromString(children, 'text/html');
+    return Array.from(document.body.childNodes);
   }
 
   if (children instanceof window.DocumentFragment) {

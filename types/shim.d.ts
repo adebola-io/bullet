@@ -3,9 +3,9 @@
  */
 /**
  * Sets the global window context for use by the `getWindowContext()` function in non-browser environments.
- * @param {Window & typeof globalThis & {}} window - The global window object to use as the window context.
+ * @param {Window} window - The global window object to use as the window context.
  */
-export function setWindowContext(window: Window & typeof globalThis & {}): Promise<void>;
+export function setWindowContext(window: Window): Promise<void>;
 /**
  * Returns the global window context if it exists, otherwise returns a shim.
  * The shim provides a minimal implementation of the window object to prevent errors when running in non-browser environments.

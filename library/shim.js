@@ -31,7 +31,7 @@ let windowContext = undefined;
 
 /**
  * Sets the global window context for use by the `getWindowContext()` function in non-browser environments.
- * @param {Window & typeof globalThis & {}} window - The global window object to use as the window context.
+ * @param {Window} window - The global window object to use as the window context.
  */
 export async function setWindowContext(window) {
   windowContext = window;
@@ -77,5 +77,7 @@ export function initializeBulletComponent() {
   BulletComponent = class BulletComponent extends window.HTMLElement {
     /** @type {() => import('./component.js').Template} */ //@ts-ignore
     render;
+
+    attachInternals() {}
   };
 }
