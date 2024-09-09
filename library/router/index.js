@@ -1,12 +1,10 @@
-/// @adbl-bullet
+// @bullet-resolve-ignore
 
 import { createElement, css } from '../component.js';
 import { LazyRoute } from './lazy.js';
 import { RouterMiddleware, RouterMiddlewareResponse } from './middleware.js';
 import { MatchedRoute, RouteTree } from './routeTree.js';
 import { getWindowContext } from '../shim.js';
-
-const window = getWindowContext();
 
 export * from './lazy.js';
 export * from './routeTree.js';
@@ -101,6 +99,7 @@ export class Router {
    * Navigates back in the browser's history.
    */
   async back() {
+    const window = getWindowContext();
     window.history.back();
   }
 
@@ -112,6 +111,7 @@ export class Router {
    * @returns {Promise<boolean>} A promise that resolves to `true` if the route was loaded successfully, `false` otherwise.
    */
   updateDOMWithMatchingPath = async (path) => {
+    const window = getWindowContext();
     if (path === '#') {
       return false;
     }
@@ -272,6 +272,7 @@ export class Router {
    * @param {boolean} navigate
    */
   loadPath = (path, navigate = false) => {
+    const window = getWindowContext();
     if (this.currentPath?.fullPath === path) {
       return;
     }
@@ -297,6 +298,7 @@ export class Router {
    * render the appropriate component.
    */
   Outlet = (() => {
+    const window = getWindowContext();
     const self = this;
     return createElement({
       tag: 'router-outlet',
@@ -322,6 +324,7 @@ export class Router {
    * @returns {HTMLElement} The rendered `<router-link>` component.
    */
   Link = ((/** @type {RouteLinkProps} */ props) => {
+    const window = getWindowContext();
     const self = this;
 
     return createElement({
@@ -378,6 +381,7 @@ export class Router {
  */
 export function createWebRouter(routerOptions) {
   const router = new Router(routerOptions);
+  const window = getWindowContext();
   ROUTER_INSTANCE = router;
 
   window.addEventListener('popstate', () => {
@@ -442,6 +446,7 @@ export function defineRoutes(routes) {
  * @returns {DocumentFragment} A DocumentFragment node containing a text node with the "Route not found" message.
  */
 function emptyRoute(path) {
+  const window = getWindowContext();
   console.warn(`Route not found: ${path}`);
   const node = new window.DocumentFragment();
   node.appendChild(window.document.createTextNode(`Route not found: ${path}`));

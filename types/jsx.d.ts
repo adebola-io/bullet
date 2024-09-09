@@ -1,14 +1,14 @@
 /**
  * Creates a new DOM element with the specified tag name, props, and children.
  *
- * @template {object} Props
+ * @template {Record<PropertyKey, any>} Props
  * @template {string | ((props: Props & { children: any } | typeof DocumentFragment, context: any) => Node | Promise<Node>)} TagName
  * @param {TagName} tagname - The HTML tag name for the element.
  * @param {Props} props - An object containing the element's properties.
  * @param {...*} children - The child elements of the element.
  * @returns {Node} A new virtual DOM element.
  */
-export function h<Props extends object, TagName extends string | ((props: (Props & {
+export function h<Props extends Record<PropertyKey, any>, TagName extends string | ((props: (Props & {
     children: any;
 }) | typeof DocumentFragment, context: any) => Node | Promise<Node>)>(tagname: TagName, props: Props, ...children: any[]): Node;
 /**

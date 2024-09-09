@@ -1,4 +1,4 @@
-/// @adbl-bullet
+// @bullet-resolve-ignore
 import { Cell } from '@adbl/cells';
 import {
   convertObjectToCssStylesheet,
@@ -7,7 +7,6 @@ import {
 } from './utils.js';
 import { getWindowContext } from './shim.js';
 
-const window = getWindowContext();
 const camelCasedAttributes = new Set([
   // SVG attributes
   'attributeName',
@@ -106,6 +105,7 @@ const camelCasedAttributes = new Set([
  * @returns {Node} A new virtual DOM element.
  */
 export function h(tagname, props, ...children) {
+  const window = getWindowContext();
   if (Object.is(tagname, window.DocumentFragment)) {
     const tagname = window.document.createDocumentFragment();
     for (const child of children) {
@@ -230,6 +230,7 @@ export function h(tagname, props, ...children) {
  * Otherwise, it directly sets the attribute on the element.
  */
 export function setAttributeFromProps(element, key, value) {
+  const window = getWindowContext();
   if (Cell.isCell(value)) {
     let firstRunComplete = false;
     /** @param {any} value */
@@ -410,7 +411,8 @@ function isSomewhatFalsy(value) {
  * @returns {Node} The normalized child element.
  */
 export function normalizeJsxChild(child, _parent) {
-  if (child instanceof Node) {
+  const window = getWindowContext();
+  if (child instanceof window.Node) {
     return child;
   }
 

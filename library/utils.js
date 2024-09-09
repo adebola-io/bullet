@@ -1,9 +1,7 @@
-/// @adbl-bullet
+// @bullet-resolve-ignore
 import { CUSTOM_ELEMENT_INSTANCE_CACHE } from './constants.js';
 import { Cell } from '@adbl/cells';
-import { getWindowContext } from './shim.js';
-
-const window = getWindowContext();
+import { getWindowContext, BulletComponent } from './shim.js';
 
 /**
  * Converts an object of styles to a CSS stylesheet string.
@@ -65,6 +63,7 @@ export function toKebabCase(str) {
  * @returns {Node[]}
  */
 export function generateChildNodes(children) {
+  const window = getWindowContext();
   /** @type {Node[]} */
   const nodes = [];
 
@@ -220,7 +219,4 @@ export const getCurrentElement = () => {
   return RENDERING_TREE[RENDERING_TREE.length - 1];
 };
 
-export class BulletComponent extends window.HTMLElement {
-  /** @type {() => import('./component.js').Template} */ //@ts-ignore
-  render;
-}
+export { BulletComponent };

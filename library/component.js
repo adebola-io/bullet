@@ -1,4 +1,4 @@
-/// @adbl-bullet
+// @bullet-resolve-ignore
 
 import {
   CUSTOM_ELEMENT_INSTANCE_CACHE,
@@ -19,8 +19,6 @@ import {
   BulletComponent,
 } from './utils.js';
 import { getWindowContext } from './shim.js';
-
-const window = getWindowContext();
 
 /**
  * @typedef {Node | string} AimRenderNode
@@ -201,6 +199,7 @@ const logError = (error) => {
  * @returns {Array<CSSStyleSheet>} - The generated CSS stylesheet.
  */
 export const css = (template, ...substitutions) => {
+  const window = getWindowContext();
   switch (true) {
     case typeof template === 'string': {
       const stylesheet = new window.CSSStyleSheet();
@@ -319,6 +318,7 @@ function setupInternal(setupOptions) {
    * document.body.innerHtml = '<my-button color="red" label="Click here"></my-button>';
    */
   const createElement = function (elementConfig) {
+    const window = getWindowContext();
     const {
       render,
       styles,
@@ -463,7 +463,7 @@ function setupInternal(setupOptions) {
        * @param {ComponentMeta} [meta] - Metadata about the component instance.
        */
       __bullet__setup(props = {}, meta = {}) {
-        this.controller = new AbortController();
+        this.controller = new window.AbortController();
         const storage = new Map();
         GLOBAL_DATA.set(this.bullet__instanceKey, storage);
         storage.set('owner', this);
@@ -693,9 +693,9 @@ function setupInternal(setupOptions) {
      * @param {Partial<Props>} [props]
      * @param {ComponentMeta} [meta]
      */
-    function factory(props, meta) {
+    function ComponentFactory(props, meta) {
       const Constructor = CUSTOM_ELEMENT_MAP.get(
-        factory.tagName.replace(/\\\./g, '.')
+        ComponentFactory.tagName.replace(/\\\./g, '.')
       );
       const element = /** @type {ComponentConstructor} */ (
         new Constructor(props)
@@ -705,12 +705,12 @@ function setupInternal(setupOptions) {
       return replaceComponentPlaceholders(element);
     }
 
-    factory.tagName = elementTagname.replace(/\./g, '\\.');
-    factory.__isBulletConstructor__ = true;
-    factory.__isRandomTagname = tag === undefined;
+    ComponentFactory.tagName = elementTagname.replace(/\./g, '\\.');
+    ComponentFactory.__isBulletConstructor__ = true;
+    ComponentFactory.__isRandomTagname = tag === undefined;
 
     // @ts-ignore
-    return factory;
+    return ComponentFactory;
   };
 
   return {

@@ -2,21 +2,21 @@
  * @typedef {import('./component.js').Template} Template
  */
 /**
- * Creates a mapping of an iterator to DOM nodes.
+ * Creates a dynamic mapping of an iterable to DOM nodes, efficiently updating when the iterable changes.
  *
  * @template {Iterable<any>} U
- * @param {Cell<U> | U} list
- * @param {(item: U extends Iterable<infer V> ? V : never, index: Cell<number>, iter: U) => Template} fn
- * @returns {Template}
+ * @param {Cell<U> | U} list - The iterable or Cell containing an iterable to map over
+ * @param {(item: U extends Iterable<infer V> ? V : never, index: Cell<number>, iter: U) => Template} fn - Function to create a Template for each item
+ * @returns {Template} - A Template representing the mapped items
  *
  * @example
- * // Create a list of names
+ * // Create a reactive list of names
  * const names = Cell.source(['Alice', 'Bob', 'Charlie']);
  *
- * // Use rFor to create a list of <li> elements
- * const listItems = For(names, (name) => {
+ * // Use For to create a dynamic list of <li> elements
+ * const listItems = For(names, (name, index) => {
  *   const li = document.createElement('li');
- *   li.textContent = name;
+ *   li.textContent = `${index.value + 1}. ${name}`;
  *   return li;
  * });
  *
@@ -24,6 +24,10 @@
  * const ul = document.createElement('ul');
  * ul.append(...listItems);
  * document.body.appendChild(ul);
+ *
+ * // Later, update the names
+ * names.value = [...names.value, 'David'];
+ * // The list will automatically update to include the new name
  */
 export function For<U extends Iterable<any>>(list: Cell<U> | U, fn: (item: U extends Iterable<infer V> ? V : never, index: Cell<number>, iter: U) => Template): Template;
 /**
@@ -66,5 +70,6 @@ export * from "./component.js";
 export * from "./router/index.js";
 export * as jsx from "./jsx.js";
 export * as helpers from "./helpers/index.js";
+export { setWindowContext } from "./shim.js";
 export type Template = import("./component.js").Template;
 import { Cell } from '@adbl/cells';

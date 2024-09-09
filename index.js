@@ -1,4 +1,4 @@
-/// @adbl-bullet
+// @bullet-resolve-ignore
 /// <reference path="./types/index.d.ts" />
 /// <reference path="./library/jsx-runtime.d.ts" />
 

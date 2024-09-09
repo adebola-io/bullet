@@ -1,4 +1,4 @@
-// @adbl-bullet
+// @bullet-resolve-ignore
 // @ts-nocheck
 
 /**
@@ -30,18 +30,52 @@ let windowContext = undefined;
  */
 
 /**
+ * Sets the global window context for use by the `getWindowContext()` function in non-browser environments.
+ * @param {Window & typeof globalThis & {}} window - The global window object to use as the window context.
+ */
+export async function setWindowContext(window) {
+  windowContext = window;
+  initializeBulletComponent();
+}
+
+/**
  * Returns the global window context if it exists, otherwise returns a shim.
  * The shim provides a minimal implementation of the window object to prevent errors when running in non-browser environments.
  *
  * @returns {WindowContext} The global window context or a shim.
  */
 export function getWindowContext() {
+  if (windowContext) {
+    return windowContext;
+  }
   if (typeof window !== 'undefined') {
+    if (BulletComponent === undefined) {
+      BulletComponent = class extends window.HTMLElement {
+        /** @type {() => import('./component.js').Template} */ //@ts-ignore
+        render;
+      };
+    }
     return window;
   }
 
-  const windowShim = {};
+  throw new Error(
+    'Window context not found. Please call setWindowContext() before using the shim.'
+  );
+}
 
-  windowContext = windowShim;
-  return windowContext;
+/**
+ * @type {typeof HTMLElement}
+ */
+export let BulletComponent;
+/**
+ * Initializes the BulletComponent class, which extends the HTMLElement interface.
+ * The BulletComponent class has a `render` property that is a function that returns a
+ * `Template` object from the './component.js' module.
+ */
+export function initializeBulletComponent() {
+  const window = getWindowContext();
+  BulletComponent = class BulletComponent extends window.HTMLElement {
+    /** @type {() => import('./component.js').Template} */ //@ts-ignore
+    render;
+  };
 }

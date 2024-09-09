@@ -1,15 +1,14 @@
-/// @adbl-bullet
+// @bullet-resolve-ignore
 
 export * from './component.js';
 export * from './router/index.js';
 export * as jsx from './jsx.js';
 export * as helpers from './helpers/index.js';
+export { setWindowContext } from './shim.js';
 
 import { getWindowContext } from './shim.js';
 import { generateChildNodes } from './utils.js';
 import { Cell, SourceCell } from '@adbl/cells';
-
-const window = getWindowContext();
 
 /**
  * @typedef {import('./component.js').Template} Template
@@ -44,6 +43,7 @@ const window = getWindowContext();
  * // The list will automatically update to include the new name
  */
 export function For(list, fn) {
+  const window = getWindowContext();
   /**
    * @type Node[]}
    */
@@ -233,12 +233,13 @@ export function For(list, fn) {
  * // The welcome message will now be displayed
  */
 export function If(value, fn, elseFn) {
+  const window = getWindowContext();
   /** @type {Node[]} */
   let nodes = [];
 
   if (Cell.isCell(value)) {
-    const rangeStart = document.createComment('----');
-    const rangeEnd = document.createComment('----');
+    const rangeStart = window.document.createComment('----');
+    const rangeEnd = window.document.createComment('----');
 
     /** @param {T} value */
     const callback = (value) => {

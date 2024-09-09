@@ -1,4 +1,4 @@
-/// @adbl-bullet
+// @bullet-resolve-ignore
 
 import { CUSTOM_ELEMENT_NODE_LIST } from './constants.js';
 
