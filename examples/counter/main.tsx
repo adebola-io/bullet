@@ -13,16 +13,20 @@ const Counter = createElement<CounterProps, CounterData>({
     initialCount: 0,
   },
 
-  data: (props) => ({ count: props.initialCount }),
+  data: () => {
+    return {
+      count: 0,
+    };
+  },
 
-  render() {
+  render: (props, __, host) => {
     const decrement = () => {
-      this.data.count--;
-      this.render();
+      host.data.count--;
+      host.render();
     };
     const increment = () => {
-      this.data.count++;
-      this.render();
+      host.data.count++;
+      host.render();
     };
 
     return (
@@ -31,7 +35,7 @@ const Counter = createElement<CounterProps, CounterData>({
           <h1>Counter</h1>
           <p>A simple counter built in Bullet.</p>
         </div>
-        <output>{this.data.count}</output>,
+        <output>{host.data.count}</output>,
         <div class="ButtonRow">
           <button onClick={decrement} type="button">
             Decrement

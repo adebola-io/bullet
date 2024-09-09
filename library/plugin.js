@@ -1,5 +1,5 @@
-/// @adbl-bullet
-// @ts-ignore
+// @bullet-resolve-ignore
+// @ts-nocheck
 /// <reference types="node" />
 
 import { resolve } from 'node:path';
@@ -44,7 +44,10 @@ export const bullet = (options) => ({
       id.endsWith('.ts');
 
     // @ts-ignore
-    if (code.startsWith('/// @adbl-bullet') || !id.startsWith(process.cwd()))
+    if (
+      code.startsWith('// @bullet-resolve-ignore') ||
+      !id.startsWith(process.cwd())
+    )
       return null;
 
     if (shouldWatchFile && !id.startsWith(alias)) {

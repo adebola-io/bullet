@@ -56,6 +56,5 @@ export function isNotObject(value: any): boolean;
 /** @type {Array<any>} */
 export const RENDERING_TREE: Array<any>;
 export function getCurrentElement(): import("./component.js").BulletElement<unknown> | undefined;
-export class BulletComponent extends HTMLElement {
-    /** @type {() => import('./component.js').Template} */ render: () => import("./component.js").Template;
-}
+export { BulletComponent };
+import { BulletComponent } from './shim.js';

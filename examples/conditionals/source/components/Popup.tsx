@@ -1,26 +1,12 @@
 import { createElement } from '@/setup';
-import { If } from '@adbl/bullet';
-import { type Component, css } from '@adbl/bullet';
+import { If, css } from '@adbl/bullet';
 import { Cell } from '@adbl/cells';
+import { deriveElementBounding } from '@adbl/dom-cells/deriveElementBounding';
 
 export interface PopupProps {
   anchor?: HTMLElement | null;
-  preferredAnchorPosition?:
-    | 'top-left'
-    | 'top-right'
-    | 'bottom-left'
-    | 'bottom-right';
   x?: JSX.ValueOrCell<number>;
   y?: JSX.ValueOrCell<number>;
-}
-
-export interface ListItemProps {
-  hasSubmenu?: boolean;
-}
-
-interface PopupComponent extends Component<PopupProps> {
-  SubMenu: Component<object>;
-  ListItem: Component<ListItemProps>;
 }
 
 export const Popup = createElement<PopupProps>({
@@ -35,52 +21,54 @@ export const Popup = createElement<PopupProps>({
 
   connected: (props, host) => {
     const { anchor, x, y } = props;
+    const listenerOptions = { signal: host.controller.signal };
 
     if (Cell.isCell(x)) {
-      x.listen(
-        (value) => {
-          host.style.left = `${value}px`;
-        },
-        { signal: host.controller.signal }
-      );
+      x.listen((value) => {
+        host.style.left = `${value}px`;
+      }, listenerOptions);
     } else if (x) {
       host.style.left = `${x}px`;
     }
 
     if (Cell.isCell(y)) {
-      y.listen(
-        (value) => {
-          host.style.top = `${value}px`;
-        },
-        { signal: host.controller.signal }
-      );
+      y.listen((value) => {
+        host.style.top = `${value}px`;
+      }, listenerOptions);
     } else if (y) {
       host.style.top = `${y}px`;
     }
 
     if (anchor) {
-      const rect = anchor.getBoundingClientRect();
-      switch (props.preferredAnchorPosition) {
-        case 'top-left':
-          host.style.left = `${rect.left}px`;
-          host.style.top = `${rect.top - host.offsetHeight}px`;
-          break;
-        case 'top-right':
-          host.style.left = `${rect.right}px`;
-          host.style.top = `${rect.top - host.offsetHeight}px`;
-          break;
-        case 'bottom-left':
-          host.style.left = `${rect.left}px`;
-          host.style.top = `${rect.bottom}px`;
-          break;
-        case 'bottom-right':
-          host.style.left = `${rect.right}px`;
-          host.style.top = `${rect.bottom}px`;
-          break;
-        default:
-          host.style.left = `${rect.left}px`;
-          host.style.top = `${rect.top}px`;
-      }
+      const anchorBounds = deriveElementBounding(anchor);
+
+      const updateXCoordinates = () => {
+        let x = anchorBounds.x.value + anchorBounds.width.value;
+        const popupWidth = host.offsetWidth;
+        const offsetFromScreenEdge = popupWidth + x - innerWidth;
+        if (offsetFromScreenEdge > 0) {
+          x -= offsetFromScreenEdge;
+        }
+
+        host.style.left = `${x}px`;
+      };
+
+      const updateYCoordinates = () => {
+        let y = anchorBounds.y.value + anchorBounds.height.value;
+        const popupHeight = host.offsetHeight;
+        const offsetFromScreenEdge = popupHeight + y - innerHeight;
+        if (offsetFromScreenEdge > 0) {
+          y -= offsetFromScreenEdge;
+        }
+
+        host.style.top = `${y}px`;
+      };
+
+      updateXCoordinates();
+      updateYCoordinates();
+
+      anchorBounds.x.listen(updateXCoordinates, listenerOptions);
+      anchorBounds.y.listen(updateYCoordinates, listenerOptions);
     }
 
     host.showPopover();
@@ -102,9 +90,9 @@ export const Popup = createElement<PopupProps>({
       padding: 0;
     }
   `,
-}) as PopupComponent;
+});
 
-Popup.SubMenu = createElement({
+export const PopupSubMenu = createElement({
   tag: 'pop-up-submenu',
 
   render: () => {
@@ -112,12 +100,23 @@ Popup.SubMenu = createElement({
   },
 
   connected: (_, host) => {
+    const listenerOptions = { signal: host.controller.signal };
     const parentElement = host.parentElement;
+
     if (!parentElement) return;
 
-    const rect = parentElement.getBoundingClientRect();
-    host.style.left = `${rect.right}px`;
-    host.style.top = `${rect.top}px`;
+    const rect = deriveElementBounding(parentElement);
+    const updatePosition = () => {
+      const x = rect.x.value + rect.width.value;
+      const y = rect.y.value;
+      host.style.left = `${x - 5}px`;
+      host.style.top = `${y + 5}px`;
+    };
+
+    updatePosition();
+
+    rect.x.listen(updatePosition, listenerOptions);
+    rect.y.listen(updatePosition, listenerOptions);
   },
 
   styles: css`
@@ -140,7 +139,11 @@ Popup.SubMenu = createElement({
   `,
 });
 
-Popup.ListItem = createElement({
+export interface PopupListItemProps {
+  hasSubmenu?: boolean;
+}
+
+export const PopupListItem = createElement<PopupListItemProps>({
   tag: 'pop-up-list-item',
 
   render: (props) => {

@@ -1,4 +1,4 @@
-/// @adbl-bullet
+// @bullet-resolve-ignore
 
 import {
   CUSTOM_ELEMENT_INSTANCE_CACHE,
@@ -18,6 +18,7 @@ import {
   RENDERING_TREE,
   BulletComponent,
 } from './utils.js';
+import { getWindowContext } from './shim.js';
 
 /**
  * @typedef {Node | string} AimRenderNode
@@ -198,14 +199,15 @@ const logError = (error) => {
  * @returns {Array<CSSStyleSheet>} - The generated CSS stylesheet.
  */
 export const css = (template, ...substitutions) => {
+  const window = getWindowContext();
   switch (true) {
     case typeof template === 'string': {
-      const stylesheet = new CSSStyleSheet();
+      const stylesheet = new window.CSSStyleSheet();
       stylesheet.replaceSync(template);
       return [stylesheet];
     }
     case template instanceof Promise: {
-      const stylesheet = new CSSStyleSheet();
+      const stylesheet = new window.CSSStyleSheet();
       template.then((imported) => {
         const data = typeof imported === 'string' ? imported : imported.default;
         stylesheet.replaceSync(data);
@@ -220,7 +222,7 @@ export const css = (template, ...substitutions) => {
       return data;
     }
     default: {
-      const stylesheet = new CSSStyleSheet();
+      const stylesheet = new window.CSSStyleSheet();
       const cssText = String.raw(template, ...substitutions);
       stylesheet.replaceSync(cssText);
       return [stylesheet];
@@ -316,6 +318,7 @@ function setupInternal(setupOptions) {
    * document.body.innerHtml = '<my-button color="red" label="Click here"></my-button>';
    */
   const createElement = function (elementConfig) {
+    const window = getWindowContext();
     const {
       render,
       styles,
@@ -460,7 +463,7 @@ function setupInternal(setupOptions) {
        * @param {ComponentMeta} [meta] - Metadata about the component instance.
        */
       __bullet__setup(props = {}, meta = {}) {
-        this.controller = new AbortController();
+        this.controller = new window.AbortController();
         const storage = new Map();
         GLOBAL_DATA.set(this.bullet__instanceKey, storage);
         storage.set('owner', this);
@@ -614,13 +617,13 @@ function setupInternal(setupOptions) {
             const stylesheetArray = globalStyles.data;
             for (const [index, stylesheet] of stylesheetArray.entries()) {
               if (!(stylesheet instanceof Promise)) {
-                document.adoptedStyleSheets.push(stylesheet);
+                window.document.adoptedStyleSheets.push(stylesheet);
                 continue;
               }
               stylesheet
                 .then((sheet) => {
                   stylesheetArray.splice(index, 1, sheet);
-                  document.adoptedStyleSheets.push(sheet);
+                  window.document.adoptedStyleSheets.push(sheet);
                 })
                 .catch(logError);
             }
@@ -644,9 +647,10 @@ function setupInternal(setupOptions) {
 
           if (globalStyles.instances === 0) {
             const array = globalStyles.data;
-            document.adoptedStyleSheets = document.adoptedStyleSheets.filter(
-              (stylesheet) => array.indexOf(stylesheet) === -1
-            );
+            window.document.adoptedStyleSheets =
+              window.document.adoptedStyleSheets.filter(
+                (stylesheet) => array.indexOf(stylesheet) === -1
+              );
           }
         }
 
@@ -672,7 +676,7 @@ function setupInternal(setupOptions) {
       ComponentConstructor = previousConstructor;
     }
 
-    const previouslyDefined = customElements.get(elementTagname);
+    const previouslyDefined = window.customElements.get(elementTagname);
     if (previouslyDefined && previouslyDefined !== ComponentConstructor) {
       throw new Error(
         `A custom element with the tag name "${elementTagname}" has already been defined.`
@@ -680,7 +684,7 @@ function setupInternal(setupOptions) {
     }
 
     if (!previouslyDefined && !previousConstructor) {
-      customElements.define(elementTagname, ComponentConstructor);
+      window.customElements.define(elementTagname, ComponentConstructor);
     }
 
     CUSTOM_ELEMENT_MAP.set(elementTagname, ComponentConstructor);
@@ -689,9 +693,9 @@ function setupInternal(setupOptions) {
      * @param {Partial<Props>} [props]
      * @param {ComponentMeta} [meta]
      */
-    function factory(props, meta) {
+    function ComponentFactory(props, meta) {
       const Constructor = CUSTOM_ELEMENT_MAP.get(
-        factory.tagName.replace(/\\\./g, '.')
+        ComponentFactory.tagName.replace(/\\\./g, '.')
       );
       const element = /** @type {ComponentConstructor} */ (
         new Constructor(props)
@@ -701,12 +705,12 @@ function setupInternal(setupOptions) {
       return replaceComponentPlaceholders(element);
     }
 
-    factory.tagName = elementTagname.replace(/\./g, '\\.');
-    factory.__isBulletConstructor__ = true;
-    factory.__isRandomTagname = tag === undefined;
+    ComponentFactory.tagName = elementTagname.replace(/\./g, '\\.');
+    ComponentFactory.__isBulletConstructor__ = true;
+    ComponentFactory.__isRandomTagname = tag === undefined;
 
     // @ts-ignore
-    return factory;
+    return ComponentFactory;
   };
 
   return {

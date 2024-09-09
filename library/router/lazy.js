@@ -1,4 +1,4 @@
-/// @adbl-bullet
+// @bullet-resolve-ignore
 
 /**
  * @typedef {() => (Promise<{

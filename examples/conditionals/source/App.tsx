@@ -3,7 +3,7 @@ import { createElement } from '@/setup';
 import { Cell } from '@adbl/cells';
 import type { Task, TaskStatus } from '@/types';
 
-import { Popup } from '@/components/Popup';
+import { Popup, PopupListItem, PopupSubMenu } from '@/components/Popup';
 import { TaskList } from '@/components/TaskList';
 import { TaskDialog } from '@/components/TaskDialog';
 
@@ -185,15 +185,15 @@ const columns: Record<TaskStatus, Column> = {
 
 const listBottomPadding = 20;
 
-const todoTasksListHeight = Cell.derived(() => {
+const todoTasksHeight = Cell.derived(() => {
   return `${columns.todo.tasks.value.length * 145 + listBottomPadding}px`;
 });
 
-const inProgressTasksListHeight = Cell.derived(() => {
+const inProgressTasksHeight = Cell.derived(() => {
   return `${columns.inProgress.tasks.value.length * 145 + listBottomPadding}px`;
 });
 
-const doneTasksListHeight = Cell.derived(() => {
+const doneTasksHeight = Cell.derived(() => {
   return `${columns.done.tasks.value.length * 145 + listBottomPadding}px`;
 });
 
@@ -222,9 +222,11 @@ export const App = createElement({
     };
 
     const removeSelection = () => {
-      selectedTask.value = null;
+      setTimeout(() => {
+        optionsSubMenuIsOpen.value = false;
+      }, 0);
       popupAnchor.value = null;
-      optionsSubMenuIsOpen.value = false;
+      selectedTask.value = null;
     };
 
     const deleteSelectedTask = () => {
@@ -262,19 +264,19 @@ export const App = createElement({
         <div class="grid">
           <TaskList
             name="Todo"
-            height={todoTasksListHeight}
+            height={todoTasksHeight}
             tasks={columns.todo.tasks}
             onOptionsClick={selectTask}
           />
           <TaskList
             name="In Progress"
-            height={inProgressTasksListHeight}
+            height={inProgressTasksHeight}
             tasks={columns.inProgress.tasks}
             onOptionsClick={selectTask}
           />
           <TaskList
             name="Completed"
-            height={doneTasksListHeight}
+            height={doneTasksHeight}
             tasks={columns.done.tasks}
             onOptionsClick={selectTask}
           />
@@ -286,22 +288,22 @@ export const App = createElement({
             <Popup
               attr:popover="auto"
               attr:onBeforeToggle={removeSelection}
-              anchor={popupAnchor.value}
-              preferredAnchorPosition="top-right"
+              anchor={popupAnchor.deproxy()}
             >
               <menu class="options-menu">
-                <Popup.ListItem attr:onClick={openTaskEditing}>
+                <PopupListItem attr:onClick={openTaskEditing}>
                   Edit Task
-                </Popup.ListItem>
-                <Popup.ListItem
+                </PopupListItem>
+                <PopupListItem
                   hasSubmenu
                   attr:onMouseOver={openSubMenu}
+                  attr:onClick={openSubMenu}
                   attr:onMouseLeave={closeSubMenu}
                 >
                   Move to
                   {If(optionsSubMenuIsOpen, () => {
                     return (
-                      <Popup.SubMenu>
+                      <PopupSubMenu>
                         {For(Object.entries(columns), ([key, column]) => {
                           if (task.status.value === key) return;
                           const changeTaskStatus = () => {
@@ -309,21 +311,21 @@ export const App = createElement({
                             removeSelection();
                           };
                           return (
-                            <Popup.ListItem attr:onClick={changeTaskStatus}>
+                            <PopupListItem attr:onClick={changeTaskStatus}>
                               {column.name}
-                            </Popup.ListItem>
+                            </PopupListItem>
                           );
                         })}
-                      </Popup.SubMenu>
+                      </PopupSubMenu>
                     );
                   })}
-                </Popup.ListItem>
-                <Popup.ListItem
+                </PopupListItem>
+                <PopupListItem
                   attr:onClick={deleteSelectedTask}
                   attr:class="delete-task-option"
                 >
                   Delete
-                </Popup.ListItem>
+                </PopupListItem>
               </menu>
             </Popup>
           );

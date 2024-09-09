@@ -265,6 +265,7 @@ declare namespace JSX {
     onKeyDown: KeyboardEvent;
 
     /**
+     * @deprecated
      * Fired when a key that produces a character value is pressed down. Deprecated in favor of beforeinput or keydown.
      */
     onKeyPress: KeyboardEvent;

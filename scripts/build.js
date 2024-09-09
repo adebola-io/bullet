@@ -1,3 +1,8 @@
+// @bullet-resolve-ignore
+// @ts-nocheck
+
+/// <reference path="node" />
+
 import fs from 'node:fs';
 import { execSync } from 'node:child_process';
 
@@ -10,7 +15,7 @@ fs.writeFileSync(
   'index.js',
   fs
     .readFileSync('index.js', 'utf8')
-    .replace('/// @adbl-bullet', '')
+    .replace('// @bullet-resolve-ignore', '')
     .replace('/// <reference path="./types/index.d.ts" />\n', '')
 );
 
@@ -18,7 +23,7 @@ console.log('Building types...');
 execSync('npx tsc --project jsconfig.json', { stdio: 'inherit' });
 fs.writeFileSync(
   'index.js',
-  `/// @adbl-bullet
+  `// @bullet-resolve-ignore
 /// <reference path="./types/index.d.ts" />
 ${fs.readFileSync('index.js', 'utf8').trimStart()}`
 );

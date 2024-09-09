@@ -1,4 +1,4 @@
-/// @adbl-bullet
+// @bullet-resolve-ignore
 
 /**
  * @typedef {(pathDetails: PathDetails) => Promise<void | RouterMiddlewareResponse> | void | RouterMiddlewareResponse} MiddlewareCallback

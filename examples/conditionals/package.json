@@ -9,10 +9,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@adbl/bullet": "file:../.."
+    "@adbl/bullet": "file:../..",
+    "@adbl/dom-cells": "^0.0.1"
   },
   "devDependencies": {
-    "vite": "^5.4.1",
-    "typescript": "^5.5.2"
+    "typescript": "^5.5.2",
+    "vite": "^5.4.1"
   }
 }
