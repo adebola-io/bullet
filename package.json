@@ -19,6 +19,27 @@
   "engines": {
     "node": ">=14.0.0"
   },
+  "exports": {
+    ".": {
+      "import": "./index.js",
+      "require": "./index.js",
+      "types": "./types/index.d.ts"
+    },
+    "./library/jsx-runtime": {
+      "import": "./library/jsx-runtime.js",
+      "require": "./library/jsx-runtime.js",
+      "types": "./types/jsx-runtime.d.ts"
+    },
+    "./library/hmr": {
+      "import": "./library/hmr.js",
+      "require": "./library/hmr.js"
+    },
+    "./plugin": {
+      "import": "./library/plugin.js",
+      "require": "./library/plugin.js",
+      "types": "./types/plugin.d.ts"
+    }
+  },
   "homepage": "https://github.com/adebola-io/bullet#readme",
   "bugs": {
     "url": "https://github.com/adebola-io/bullet/issues"

@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { bullet } from '@adbl/bullet/library/plugin';
+import { bullet } from '@adbl/bullet/plugin';
 import path from 'node:path';
 
 export default defineConfig({
