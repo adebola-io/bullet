@@ -69,6 +69,9 @@ export class Router {
   /** @private @type {number} */
   maxRedirects;
 
+  /** @type {Promise<boolean>} */
+  rendering;
+
   /** @param {RouterOptions} routeOptions */
   constructor(routeOptions) {
     this.routeTree = RouteTree.fromRouteRecords(routeOptions.routes);
@@ -76,9 +79,90 @@ export class Router {
     this.maxRedirects = routeOptions.maxRedirects ?? 50;
     this.currentPath = null;
     this.redirectStackCount = 0;
+    this.rendering = Promise.resolve(false);
     this.outlets = [];
     this.links = [];
     this.params = new Map();
+
+    /**
+     * Defines a custom component that serves as the router outlet, rendering the component
+     * associated with the current route.
+     *
+     * This component is used internally by the `Router` class to handle route changes and
+     * render the appropriate component.
+     */
+    this.Outlet = (() => {
+      const window = getWindowContext();
+      const self = this;
+      return createElement({
+        tag: 'router-outlet',
+        connected: function () {
+          self.outlets.push(this);
+
+          if (self.currentPath === null && self.outlets.length === 1) {
+            self.loadPath(window.location.pathname);
+          }
+        },
+        disconnected: function () {
+          self.outlets.splice(self.outlets.indexOf(this), 1);
+        },
+        render: () => window.document.createElement('slot'),
+      });
+    })();
+
+    /**
+     * Defines a custom `<router-link>` component that renders an `<a>` element and handles click events to navigate to the specified route.
+     *
+     * @param {RouteLinkProps} props - The component props.
+     * @param {string} props.to - The path to navigate to when the link is clicked.
+     * @returns {HTMLElement} The rendered `<router-link>` component.
+     */
+    this.Link = ((/** @type {RouteLinkProps} */ props) => {
+      const window = getWindowContext();
+      const self = this;
+
+      return createElement({
+        tag: 'router-link',
+        defaultProps: props,
+        connected: function () {
+          self.links.push(this);
+        },
+        /** @param {RouteLinkProps} props */
+        render: function (props) {
+          const a = window.document.createElement('a');
+          a.href = props.to;
+          this.dataset.href = props.to;
+
+          a.addEventListener('click', (event) => {
+            event.preventDefault();
+            self.navigate(props.to);
+          });
+          a.setAttribute('part', 'inner');
+          a.append(window.document.createElement('slot'));
+
+          if (props.plain) {
+            this.toggleAttribute('plain', true);
+          }
+
+          return a;
+        },
+        disconnected: function () {
+          self.links.splice(self.links.indexOf(this), 1);
+        },
+        styles: css`
+          :host {
+            display: inline-block;
+          }
+          :host([plain]) a {
+            display: inline-block;
+            width: 100%;
+            height: 100%;
+            text-decoration: none;
+            color: inherit;
+          }
+        `,
+      });
+    })();
   }
 
   /**
@@ -117,6 +201,7 @@ export class Router {
     }
 
     const matchResult = this.routeTree.match(path);
+
     matchResult.flattenTransientRoutes();
     this.params = matchResult.params;
 
@@ -171,7 +256,7 @@ export class Router {
       console.warn(`No route matches path: ${path}`);
       const outlet = this.outlets[0];
       outlet?.removeAttribute('data-path');
-      outlet?.shadowRoot?.replaceChildren(emptyRoute(path));
+      outlet?.replaceChildren(emptyRoute(path));
       return true;
     }
 
@@ -188,7 +273,11 @@ export class Router {
         break;
       }
 
-      if (outlet.dataset.path !== currentMatchedRoute.fullPath) {
+      // If the outlet was prerendered on the server, the first render has to allow the
+      // loading of the children (but not their integration into the DOM).
+      const firstRenderContainsData = Reflect.get(outlet, 'bullet__hasPrerenderedShadowRoot') === true;
+      if (outlet.dataset.path !== currentMatchedRoute.fullPath || firstRenderContainsData) {
+        Reflect.set(outlet, 'bullet__hasPrerenderedShadowRoot', false);
         const matchedComponentOrLazyLoader = currentMatchedRoute.component;
 
         /** @type {ReturnType<import('../component.js').ElementConstructor>} */
@@ -209,7 +298,7 @@ export class Router {
           console.warn(`No component from route: ${path}`);
           const outlet = this.outlets[outletIndex];
           outlet?.removeAttribute('data-path');
-          outlet?.shadowRoot?.replaceChildren(emptyRoute(path));
+          outlet?.replaceChildren(emptyRoute(path));
           return true;
         }
 
@@ -230,10 +319,11 @@ export class Router {
         // if the component performs a redirect, it would change the route
         // stored in the outlet's dataset, so we need to check before replacing.
         if (outlet.dataset.path === currentMatchedRoute.fullPath) {
-          outlet.shadowRoot?.replaceChildren(renderedComponent);
+          outlet.replaceChildren(renderedComponent);
           if (currentMatchedRoute.title) {
             window.document.title = currentMatchedRoute.title;
           }
+          
         } else {
           return false;
         }
@@ -246,7 +336,7 @@ export class Router {
 
     for (const spareOutlet of this.outlets.slice(outletIndex)) {
       spareOutlet.removeAttribute('data-route-name');
-      spareOutlet.shadowRoot?.replaceChildren();
+      spareOutlet.replaceChildren();
     }
 
     if (lastMatchedRoute.redirect && lastMatchedRoute.redirect !== path) {
@@ -267,6 +357,18 @@ export class Router {
   };
 
   /**
+   * Connects a router outlet to the router and navigates to a specified path.
+   * Performs the same operation that will occur when the outlet is connected to the DOM.
+   *
+   * @param {import('../component.js').BulletElement} outlet - The router outlet element to connect.
+   * @param {string} [path='/'] - The path to navigate to after connecting the outlet.
+   */
+  connect = (outlet, path = '/') => {
+    this.outlets.push(outlet);
+    this.navigate(path);
+  };
+
+  /**
    * Loads the matching routes for a path.
    * @param {string} path
    * @param {boolean} navigate
@@ -276,99 +378,29 @@ export class Router {
     if (this.currentPath?.fullPath === path) {
       return;
     }
-    this.updateDOMWithMatchingPath(path).then((wasLoaded) => {
-      for (const link of this.links) {
-        link.toggleAttribute(
-          'active',
-          Boolean(link.dataset.href?.startsWith(path))
-        );
-      }
 
-      if (navigate && wasLoaded) {
-        window.history.pushState(null, '', path);
-      }
+    /** @type {null | ((value: boolean) => void)} */
+    let resolver = null;
+    this.rendering = new Promise((resolve) => {
+      resolver = resolve;
     });
+    this.updateDOMWithMatchingPath(path)
+      .then((wasLoaded) => {
+        for (const link of this.links) {
+          link.toggleAttribute(
+            'active',
+            Boolean(link.dataset.href?.startsWith(path))
+          );
+        }
+
+        if (navigate && wasLoaded) {
+          window.history.pushState(null, '', path);
+        }
+      })
+      .finally(() => {
+        resolver?.(true);
+      });
   };
-
-  /**
-   * Defines a custom component that serves as the router outlet, rendering the component
-   * associated with the current route.
-   *
-   * This component is used internally by the `Router` class to handle route changes and
-   * render the appropriate component.
-   */
-  Outlet = (() => {
-    const window = getWindowContext();
-    const self = this;
-    return createElement({
-      tag: 'router-outlet',
-      connected: function () {
-        self.outlets.push(this);
-
-        if (self.currentPath === null && self.outlets.length === 1) {
-          self.loadPath(window.location.pathname);
-        }
-      },
-      disconnected: function () {
-        self.outlets.splice(self.outlets.indexOf(this), 1);
-      },
-      render: () => window.document.createElement('slot'),
-    });
-  })();
-
-  /**
-   * Defines a custom `<router-link>` component that renders an `<a>` element and handles click events to navigate to the specified route.
-   *
-   * @param {RouteLinkProps} props - The component props.
-   * @param {string} props.to - The path to navigate to when the link is clicked.
-   * @returns {HTMLElement} The rendered `<router-link>` component.
-   */
-  Link = ((/** @type {RouteLinkProps} */ props) => {
-    const window = getWindowContext();
-    const self = this;
-
-    return createElement({
-      tag: 'router-link',
-      defaultProps: props,
-      connected: function () {
-        self.links.push(this);
-      },
-      /** @param {RouteLinkProps} props */
-      render: function (props) {
-        const a = window.document.createElement('a');
-        a.href = props.to;
-        this.dataset.href = props.to;
-
-        a.addEventListener('click', (event) => {
-          event.preventDefault();
-          self.navigate(props.to);
-        });
-        a.setAttribute('part', 'inner');
-        a.append(window.document.createElement('slot'));
-
-        if (props.plain) {
-          this.toggleAttribute('plain', true);
-        }
-
-        return a;
-      },
-      disconnected: function () {
-        self.links.splice(self.links.indexOf(this), 1);
-      },
-      styles: css`
-        :host {
-          display: inline-block;
-        }
-        :host([plain]) a {
-          display: inline-block;
-          width: 100%;
-          height: 100%;
-          text-decoration: none;
-          color: inherit;
-        }
-      `,
-    });
-  })();
 }
 
 /**
@@ -384,23 +416,25 @@ export function createWebRouter(routerOptions) {
   const window = getWindowContext();
   ROUTER_INSTANCE = router;
 
-  window.addEventListener('popstate', () => {
-    if (Reflect.get(router, 'outlets').length > 0) {
-      router.loadPath(window.location.pathname);
-    }
-  });
+  if (window.__BULLET_WINDOW_CONTEXT_OPTIONS__?.addRouterWindowListeners) {
+    window.addEventListener('popstate', () => {
+      if (Reflect.get(router, 'outlets').length > 0) {
+        router.loadPath(window.location.pathname);
+      }
+    });
 
-  window.addEventListener('hashchange', () => {
-    if (Reflect.get(router, 'outlets').length > 0) {
-      router.loadPath(window.location.hash);
-    }
-  });
+    window.addEventListener('hashchange', () => {
+      if (Reflect.get(router, 'outlets').length > 0) {
+        router.loadPath(window.location.hash);
+      }
+    });
 
-  window.addEventListener('load', () => {
-    if (Reflect.get(router, 'outlets').length > 0) {
-      router.loadPath(window.location.pathname);
-    }
-  });
+    window.addEventListener('load', () => {
+      if (Reflect.get(router, 'outlets').length > 0) {
+        router.loadPath(window.location.pathname);
+      }
+    });
+  }
 
   if (Reflect.get(router, 'outlets').length > 0) {
     router.loadPath(window.location.pathname);

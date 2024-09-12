@@ -2,6 +2,16 @@
 // @ts-nocheck
 
 /**
+ * @typedef {Object} WindowContextOptions
+ * @property {boolean} [initializeBulletComponent]
+ * Whether to initialize the BulletComponent class.
+ * @property {boolean} [addRouterWindowListeners]
+ * Whether to add the listeners for the popstate, hashchange, and load events to the window object.
+ * @property {boolean} [runConnectedCallbacks]
+ * Whether to run the connected callbacks for custom elements after they are connected to the document.
+ */
+
+/**
  * Throws an error indicating that a function or feature is not implemented.
  * @param {string} [message] - An optional message to include in the error.
  * @throws {Error} Always throws an error with the message 'unimplemented'.
@@ -26,16 +36,22 @@ function unreachable(message = 'unreachable') {
 let windowContext = undefined;
 
 /**
- * @typedef {Window & typeof globalThis & {}} WindowContext
+ * @typedef {Window & typeof globalThis & {
+ *   __BULLET_WINDOW_CONTEXT_OPTIONS__?: WindowContextOptions
+ * }} WindowContext
  */
 
 /**
  * Sets the global window context for use by the `getWindowContext()` function in non-browser environments.
- * @param {Window} window - The global window object to use as the window context.
+ * @param {object} window - The global window object to use as the window context.
+ * @param {WindowContextOptions} [options] - The options object for configuring the window context.
  */
-export async function setWindowContext(window) {
+export async function setWindowContext(window, options) {
   windowContext = window;
-  initializeBulletComponent();
+  windowContext.__BULLET_WINDOW_CONTEXT_OPTIONS__ = options;
+  if (options?.initializeBulletComponent) {
+    initializeBulletComponent();
+  }
 }
 
 /**
@@ -48,13 +64,9 @@ export function getWindowContext() {
   if (windowContext) {
     return windowContext;
   }
+  // Default to the browser window if it exists.
   if (typeof window !== 'undefined') {
-    if (BulletComponent === undefined) {
-      BulletComponent = class extends window.HTMLElement {
-        /** @type {() => import('./component.js').Template} */ //@ts-ignore
-        render;
-      };
-    }
+    setWindowContext(window, { initializeBulletComponent: true, addRouterWindowListeners: true });
     return window;
   }
 

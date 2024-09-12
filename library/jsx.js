@@ -106,7 +106,7 @@ const camelCasedAttributes = new Set([
  */
 export function h(tagname, props, ...children) {
   const window = getWindowContext();
-  if (Object.is(tagname, window.DocumentFragment)) {
+  if (Object.is(tagname, DocumentFragmentPlaceholder)) {
     const tagname = window.document.createDocumentFragment();
     for (const child of children) {
       tagname.appendChild(normalizeJsxChild(child, tagname));
@@ -454,5 +454,7 @@ export function normalizeJsxChild(child, _parent) {
 
   return window.document.createTextNode(child?.toString() ?? '');
 }
+
+export class DocumentFragmentPlaceholder {}
 
 export default h;

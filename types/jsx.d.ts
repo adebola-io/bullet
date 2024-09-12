@@ -54,6 +54,8 @@ export function setAttribute(element: JsxElement, key: string, value: any): void
  * @returns {Node} The normalized child element.
  */
 export function normalizeJsxChild(child: Node | Array<any> | string | number | boolean | object | undefined | null, _parent?: Node | undefined): Node;
+export class DocumentFragmentPlaceholder {
+}
 export default h;
 export type HiddenElementProperties = {
     /**

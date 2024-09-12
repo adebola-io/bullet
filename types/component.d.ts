@@ -141,6 +141,9 @@
  *
  * @property {string} [class]
  * The class attribute to attach to the base element.
+ *
+ * @property {boolean} [inlineStyles]
+ * Whether or not the component should inline its styles if it is pre-rendered on the server.
  */
 /**
  * Generates a set of child nodes from an HTML string.
@@ -346,6 +349,10 @@ export type ElementConfig<Props_1 extends object = {}, DefaultProps extends keyo
      * The class attribute to attach to the base element.
      */
     class?: string | undefined;
+    /**
+     * Whether or not the component should inline its styles if it is pre-rendered on the server.
+     */
+    inlineStyles?: boolean | undefined;
 };
 import { generateChildNodes } from './utils.js';
 /**

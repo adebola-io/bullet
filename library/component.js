@@ -12,7 +12,6 @@ import { setAttributeFromProps } from './jsx.js';
 import {
   generateInstanceKey,
   getElementAttributes,
-  replaceComponentPlaceholders,
   generateChildNodes,
   generateComponentName,
   RENDERING_TREE,
@@ -176,6 +175,9 @@ import { getWindowContext } from './shim.js';
  *
  * @property {string} [class]
  * The class attribute to attach to the base element.
+ *
+ * @property {boolean} [inlineStyles]
+ * Whether or not the component should inline its styles if it is pre-rendered on the server.
  */
 
 /**
@@ -261,9 +263,13 @@ function setupInternal(setupOptions) {
   if (styles) {
     for (const style of styles) {
       if (style instanceof Promise) {
-        style.then((imported) => injectedStyles.push(imported));
+        style.then((imported) => {
+          injectedStyles.push(imported);
+          Reflect.set(imported, 'bullet__shared', true);
+        });
       } else {
         injectedStyles.push(style);
+        Reflect.set(style, 'bullet__shared', true);
       }
     }
   }
@@ -333,6 +339,7 @@ function setupInternal(setupOptions) {
       initial,
       part,
       class: className,
+      inlineStyles,
     } = typeof elementConfig === 'function'
       ? {
           render: elementConfig,
@@ -348,6 +355,7 @@ function setupInternal(setupOptions) {
           initial: undefined,
           part: undefined,
           class: undefined,
+          inlineStyles: undefined,
         }
       : elementConfig;
     const elementTagname = `${namespace ? `${namespace}-` : ''}${
@@ -363,16 +371,28 @@ function setupInternal(setupOptions) {
     }
 
     // Load global CSS.
+    /** @type {CustomElementStyles} */
+    let associatedGlobalStyles;
     if (globalStyles) {
+      associatedGlobalStyles = Array.isArray(globalStyles)
+        ? globalStyles
+        : [globalStyles];
       CUSTOM_ELEMENT_GLOBAL_STYLES.set(elementTagname, {
-        data: Array.isArray(globalStyles) ? globalStyles : [globalStyles],
+        data: associatedGlobalStyles,
         instances: 0,
       });
+    } else {
+      associatedGlobalStyles = [];
     }
 
     let ComponentConstructor = class extends BulletComponent {
       static formAssociated = formAssociated;
       static part = part;
+
+      /**
+       * Associated global styling.
+       */
+      bullet__associatedGlobalStyles = associatedGlobalStyles;
 
       bullet__isRandomTagname = tag === undefined;
       /**
@@ -422,9 +442,16 @@ function setupInternal(setupOptions) {
       /** @type {Set<object | ((value: any) => void)>} */
       bullet__attributeCells = new Set();
 
+      /** @type {boolean} */
+      bullet__inlineStyles = Boolean(inlineStyles);
+
       constructor() {
         super();
-        this.attachShadow({ mode: 'open' });
+        if (this.shadowRoot) {
+          this.bullet__hasPrerenderedShadowRoot = true;
+        } else {
+          this.attachShadow({ mode: 'open' });
+        }
         this.elementInternals = this.attachInternals();
         if (ComponentConstructor.formAssociated) {
           this.isFormAssociated = true;
@@ -557,7 +584,9 @@ function setupInternal(setupOptions) {
           RENDERING_TREE.pop();
         };
 
-        this.render();
+        if (!this.bullet__hasPrerenderedShadowRoot) {
+          this.render();
+        }
 
         this.bullet__isSetup = true;
       }
@@ -702,7 +731,7 @@ function setupInternal(setupOptions) {
       );
       element.__bullet__setup(props, meta);
 
-      return replaceComponentPlaceholders(element);
+      return element;
     }
 
     ComponentFactory.tagName = elementTagname.replace(/\./g, '\\.');

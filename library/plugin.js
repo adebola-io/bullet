@@ -54,8 +54,7 @@ export const bullet = (options) => ({
       return {
         code: `
 import { update as __BULLET_HMR__ } from '${alias}/library/hmr';
-import { h as __bullet__jsx } from '${alias}/library/jsx-runtime'
-const __bullet__jsxFragment = globalThis.DocumentFragment;
+import { h as __bullet__jsx, DocumentFragmentPlaceholder as __bullet__jsxFragment } from '${alias}/library/jsx-runtime'
 
 ${code}
 

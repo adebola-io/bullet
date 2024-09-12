@@ -70,6 +70,6 @@ export * from "./component.js";
 export * from "./router/index.js";
 export * as jsx from "./jsx.js";
 export * as helpers from "./helpers/index.js";
-export { setWindowContext } from "./shim.js";
 export type Template = import("./component.js").Template;
 import { Cell } from '@adbl/cells';
+export { setWindowContext, getWindowContext } from "./shim.js";

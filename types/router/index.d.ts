@@ -66,6 +66,24 @@ export class Router {
     private redirectStackCount;
     /** @private @type {number} */
     private maxRedirects;
+    /** @type {Promise<boolean>} */
+    rendering: Promise<boolean>;
+    /**
+     * Defines a custom component that serves as the router outlet, rendering the component
+     * associated with the current route.
+     *
+     * This component is used internally by the `Router` class to handle route changes and
+     * render the appropriate component.
+     */
+    Outlet: import("../component.js").Component<{}, {}>;
+    /**
+     * Defines a custom `<router-link>` component that renders an `<a>` element and handles click events to navigate to the specified route.
+     *
+     * @param {RouteLinkProps} props - The component props.
+     * @param {string} props.to - The path to navigate to when the link is clicked.
+     * @returns {HTMLElement} The rendered `<router-link>` component.
+     */
+    Link: import("../component.js").Component<RouteLinkProps, {}>;
     /**
      * Pushes the specified path to the browser's history and renders the corresponding route component.
      *
@@ -86,27 +104,19 @@ export class Router {
      */
     updateDOMWithMatchingPath: (path: string) => Promise<boolean>;
     /**
+     * Connects a router outlet to the router and navigates to a specified path.
+     * Performs the same operation that will occur when the outlet is connected to the DOM.
+     *
+     * @param {import('../component.js').BulletElement} outlet - The router outlet element to connect.
+     * @param {string} [path='/'] - The path to navigate to after connecting the outlet.
+     */
+    connect: (outlet: import("../component.js").BulletElement, path?: string | undefined) => void;
+    /**
      * Loads the matching routes for a path.
      * @param {string} path
      * @param {boolean} navigate
      */
     loadPath: (path: string, navigate?: boolean) => void;
-    /**
-     * Defines a custom component that serves as the router outlet, rendering the component
-     * associated with the current route.
-     *
-     * This component is used internally by the `Router` class to handle route changes and
-     * render the appropriate component.
-     */
-    Outlet: import("../component.js").Component<{}, {}>;
-    /**
-     * Defines a custom `<router-link>` component that renders an `<a>` element and handles click events to navigate to the specified route.
-     *
-     * @param {RouteLinkProps} props - The component props.
-     * @param {string} props.to - The path to navigate to when the link is clicked.
-     * @returns {HTMLElement} The rendered `<router-link>` component.
-     */
-    Link: import("../component.js").Component<RouteLinkProps, {}>;
 }
 export type RouteRecords = import("./routeTree.js").RouteRecords<ReturnType<import("../component.js").ElementConstructor> | LazyRoute>;
 export type UnwrapArray<T> = T extends Array<infer U> ? U : T;

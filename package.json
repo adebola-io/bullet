@@ -1,6 +1,6 @@
 {
   "name": "@adbl/bullet",
-  "version": "0.0.27",
+  "version": "0.0.28",
   "description": "Library for creating web apps with JSX and web components",
   "private": false,
   "type": "module",
@@ -38,6 +38,11 @@
       "import": "./library/plugin.js",
       "require": "./library/plugin.js",
       "types": "./types/plugin.d.ts"
+    },
+    "./shim": {
+      "import": "./library/shim.js",
+      "require": "./library/shim.js",
+      "types": "./types/shim.d.ts"
     }
   },
   "homepage": "https://github.com/adebola-io/bullet#readme",

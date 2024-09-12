@@ -4,11 +4,11 @@ export * from './component.js';
 export * from './router/index.js';
 export * as jsx from './jsx.js';
 export * as helpers from './helpers/index.js';
-export { setWindowContext } from './shim.js';
+export { setWindowContext, getWindowContext } from './shim.js';
 
 import { getWindowContext } from './shim.js';
 import { generateChildNodes } from './utils.js';
-import { Cell, SourceCell } from '@adbl/cells';
+import { Cell } from '@adbl/cells';
 
 /**
  * @typedef {import('./component.js').Template} Template
@@ -103,7 +103,7 @@ export function For(list, fn) {
           newSnapShot.push(...newNodes);
         } else {
           /**
-           * @type {SourceCell<number>}
+           * @type {import('@adbl/cells').SourceCell<number>}
            */
           (cachedResult.index).value = index;
           newNodeStore.set(itemKey, cachedResult);
