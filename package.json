@@ -1,6 +1,6 @@
 {
   "name": "@adbl/bullet",
-  "version": "0.0.28",
+  "version": "0.0.29",
   "description": "Library for creating web apps with JSX and web components",
   "private": false,
   "type": "module",

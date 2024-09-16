@@ -98,10 +98,6 @@ export class Router {
         tag: 'router-outlet',
         connected: function () {
           self.outlets.push(this);
-
-          if (self.currentPath === null && self.outlets.length === 1) {
-            self.loadPath(window.location.pathname);
-          }
         },
         disconnected: function () {
           self.outlets.splice(self.outlets.indexOf(this), 1);
@@ -169,13 +165,13 @@ export class Router {
    * Pushes the specified path to the browser's history and renders the corresponding route component.
    *
    * @param {string} path - The path to navigate to.
-   * @return {undefined}
+   * @return {Promise<undefined>}
    */
-  navigate = (path) => {
+  navigate = async (path) => {
     if (path === '#') {
       return;
     }
-    this.loadPath(path, true);
+    await this.loadPath(path, true);
     return;
   };
 
@@ -245,7 +241,7 @@ export class Router {
             }
 
             this.redirectStackCount++;
-            this.navigate(middlewareResponse.path);
+            await this.navigate(middlewareResponse.path);
             return false;
           }
         }
@@ -273,11 +269,12 @@ export class Router {
         break;
       }
 
-      // If the outlet was prerendered on the server, the first render has to allow the
-      // loading of the children (but not their integration into the DOM).
-      const firstRenderContainsData = Reflect.get(outlet, 'bullet__hasPrerenderedShadowRoot') === true;
-      if (outlet.dataset.path !== currentMatchedRoute.fullPath || firstRenderContainsData) {
-        Reflect.set(outlet, 'bullet__hasPrerenderedShadowRoot', false);
+      if (outlet.hasAttribute('ct-static')) {
+        outlet.removeAttribute('ct-static');
+        outlet.removeAttribute('data-path');
+      }
+
+      if (outlet.dataset.path !== currentMatchedRoute.fullPath) {
         const matchedComponentOrLazyLoader = currentMatchedRoute.component;
 
         /** @type {ReturnType<import('../component.js').ElementConstructor>} */
@@ -287,16 +284,17 @@ export class Router {
           matchedComponentOrLazyLoader === null ||
           matchedComponentOrLazyLoader === undefined
         ) {
+          const outlet = this.outlets[outletIndex];
           if (currentMatchedRoute.child) {
             currentMatchedRoute = currentMatchedRoute.child;
             continue;
           }
           if (currentMatchedRoute.redirect) {
-            this.navigate(currentMatchedRoute.redirect);
+            await this.navigate(currentMatchedRoute.redirect);
             return false;
           }
+
           console.warn(`No component from route: ${path}`);
-          const outlet = this.outlets[outletIndex];
           outlet?.removeAttribute('data-path');
           outlet?.replaceChildren(emptyRoute(path));
           return true;
@@ -323,7 +321,6 @@ export class Router {
           if (currentMatchedRoute.title) {
             window.document.title = currentMatchedRoute.title;
           }
-          
         } else {
           return false;
         }
@@ -340,7 +337,7 @@ export class Router {
     }
 
     if (lastMatchedRoute.redirect && lastMatchedRoute.redirect !== path) {
-      this.navigate(lastMatchedRoute.redirect);
+      await this.navigate(lastMatchedRoute.redirect);
     }
 
     this.currentPath = {
@@ -363,44 +360,42 @@ export class Router {
    * @param {import('../component.js').BulletElement} outlet - The router outlet element to connect.
    * @param {string} [path='/'] - The path to navigate to after connecting the outlet.
    */
-  connect = (outlet, path = '/') => {
+  connect = async (outlet, path = '/') => {
     this.outlets.push(outlet);
-    this.navigate(path);
+    await this.navigate(path);
   };
 
   /**
    * Loads the matching routes for a path.
    * @param {string} path
-   * @param {boolean} navigate
+   * @param {boolean} [navigate]
+   * @param {Event} [_event]
+   * Event that triggered the navigation.
    */
-  loadPath = (path, navigate = false) => {
+  loadPath = async (path, navigate, _event) => {
     const window = getWindowContext();
     if (this.currentPath?.fullPath === path) {
       return;
     }
 
-    /** @type {null | ((value: boolean) => void)} */
-    let resolver = null;
-    this.rendering = new Promise((resolve) => {
-      resolver = resolve;
-    });
-    this.updateDOMWithMatchingPath(path)
-      .then((wasLoaded) => {
-        for (const link of this.links) {
-          link.toggleAttribute(
-            'active',
-            Boolean(link.dataset.href?.startsWith(path))
-          );
-        }
+    const wasLoaded = await this.updateDOMWithMatchingPath(path);
 
-        if (navigate && wasLoaded) {
-          window.history.pushState(null, '', path);
-        }
-      })
-      .finally(() => {
-        resolver?.(true);
-      });
+    for (const link of this.links) {
+      link.toggleAttribute(
+        'active',
+        Boolean(
+          this.currentPath?.fullPath &&
+            link.dataset.href?.startsWith(this.currentPath.fullPath)
+        )
+      );
+    }
+
+    if (navigate && wasLoaded) {
+      window.history.pushState(null, '', path);
+    }
   };
+
+  isLoading = false;
 }
 
 /**
@@ -417,27 +412,37 @@ export function createWebRouter(routerOptions) {
   ROUTER_INSTANCE = router;
 
   if (window.__BULLET_WINDOW_CONTEXT_OPTIONS__?.addRouterWindowListeners) {
-    window.addEventListener('popstate', () => {
-      if (Reflect.get(router, 'outlets').length > 0) {
-        router.loadPath(window.location.pathname);
+    window.addEventListener('popstate', async (event) => {
+      if (Reflect.get(router, 'outlets').length > 0 && !router.isLoading) {
+        router.isLoading = true;
+        await router.loadPath(window.location.pathname, false, event);
+        router.isLoading = false;
       }
     });
 
-    window.addEventListener('hashchange', () => {
-      if (Reflect.get(router, 'outlets').length > 0) {
-        router.loadPath(window.location.hash);
+    window.addEventListener('hashchange', async (event) => {
+      if (Reflect.get(router, 'outlets').length > 0 && !router.isLoading) {
+        router.isLoading = true;
+        await router.loadPath(window.location.hash, false, event);
+        router.isLoading = false;
       }
     });
 
-    window.addEventListener('load', () => {
-      if (Reflect.get(router, 'outlets').length > 0) {
-        router.loadPath(window.location.pathname);
+    window.addEventListener('load', async (event) => {
+      if (Reflect.get(router, 'outlets').length > 0 && !router.isLoading) {
+        router.isLoading = true;
+        await router.loadPath(window.location.pathname, false, event);
+        router.isLoading = false;
       }
     });
-  }
 
-  if (Reflect.get(router, 'outlets').length > 0) {
-    router.loadPath(window.location.pathname);
+    window.addEventListener('DOMContentLoaded', async (event) => {
+      if (Reflect.get(router, 'outlets').length > 0 && !router.isLoading) {
+        router.isLoading = true;
+        await router.loadPath(window.location.pathname, false, event);
+        router.isLoading = false;
+      }
+    });
   }
 
   return router;

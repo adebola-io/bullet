@@ -1,10 +1,11 @@
+/**@typedef {import('./css.js').CSSText} CSSText */
 /** @type {Map<string, any>} */
 export const CUSTOM_ELEMENT_MAP: Map<string, any>;
-/** @type {Map<string, Array<CSSStyleSheet | Promise<CSSStyleSheet>>>} */
-export const CUSTOM_ELEMENT_STYLES: Map<string, Array<CSSStyleSheet | Promise<CSSStyleSheet>>>;
-/** @type {Map<string, {  data: Array<CSSStyleSheet | Promise<CSSStyleSheet>>, instances: number }>} */
+/** @type {Map<string, Array<CSSText | Promise<CSSText>>>} */
+export const CUSTOM_ELEMENT_STYLES: Map<string, Array<CSSText | Promise<CSSText>>>;
+/** @type {Map<string, {  data: Array<CSSText | Promise<CSSText>>, instances: number }>} */
 export const CUSTOM_ELEMENT_GLOBAL_STYLES: Map<string, {
-    data: Array<CSSStyleSheet | Promise<CSSStyleSheet>>;
+    data: Array<CSSText | Promise<CSSText>>;
     instances: number;
 }>;
 /** @type {Map<string, HTMLElement>} */
@@ -26,3 +27,4 @@ export const CUSTOM_ELEMENT_NODE_LIST: {
     has: (key: string) => boolean;
     delete: (value: Map<any, any>) => void;
 };
+export type CSSText = import("./css.js").CSSText;

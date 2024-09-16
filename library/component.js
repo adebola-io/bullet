@@ -18,6 +18,9 @@ import {
   BulletComponent,
 } from './utils.js';
 import { getWindowContext } from './shim.js';
+import { CSSText } from './css.js';
+
+export * from './css.js';
 
 /**
  * @typedef {Node | string} AimRenderNode
@@ -93,21 +96,12 @@ import { getWindowContext } from './shim.js';
  */
 
 /**
- * @typedef {CSSStyleSheet
- *  | Promise<CSSStyleSheet>
- *  | Array<CSSStyleSheet
- *  | Promise<CSSStyleSheet>>
+ * @typedef {CSSText
+ *  | Promise<CSSText>
+ *  | Array<CSSText
+ *  | Promise<CSSText>>
  * } CustomElementStyles
  * Styles to apply to the component/element.
- */
-
-/**
- * @typedef {string
- *  | TemplateStringsArray
- *  | Promise<string | {default: string}>
- *  | Array<string | TemplateStringsArray | Promise<string | {default: string}>>
- * } CSSorStringArray
- * A CSS or string array.
  */
 
 /**
@@ -194,55 +188,16 @@ const logError = (error) => {
 };
 
 /**
- * Generates a CSS stylesheet from a CSS text string.
- *
- * @param {CSSorStringArray} template - The CSS text to create the stylesheet from.
- * @param {any[]} substitutions
- * @returns {Array<CSSStyleSheet>} - The generated CSS stylesheet.
- */
-export const css = (template, ...substitutions) => {
-  const window = getWindowContext();
-  switch (true) {
-    case typeof template === 'string': {
-      const stylesheet = new window.CSSStyleSheet();
-      stylesheet.replaceSync(template);
-      return [stylesheet];
-    }
-    case template instanceof Promise: {
-      const stylesheet = new window.CSSStyleSheet();
-      template.then((imported) => {
-        const data = typeof imported === 'string' ? imported : imported.default;
-        stylesheet.replaceSync(data);
-      });
-      return [stylesheet];
-    }
-    case Array.isArray(template): {
-      const data = [];
-      for (const temp of template) {
-        data.push(...css(temp));
-      }
-      return data;
-    }
-    default: {
-      const stylesheet = new window.CSSStyleSheet();
-      const cssText = String.raw(template, ...substitutions);
-      stylesheet.replaceSync(cssText);
-      return [stylesheet];
-    }
-  }
-};
-
-/**
  * @typedef SetupOptions
  *
  * @property {string} [namespace]
  * A namespace to scope your custom elements to. This will ensure that they do not affect
  * other custom elements in the DOM.
  *
- * @property {Array<CSSStyleSheet | Promise<CSSStyleSheet>>} [styles]
+ * @property {Array<CSSText | Promise<CSSText>>} [styles]
  * An optional array of CSS stylesheets or strings to be applied to every component created with this setup.
  * These styles will be scoped to the component's shadow DOM if it has one.
- * Can be a mix of CSSStyleSheet objects, strings, or promises that resolve to either. */
+ * Can be a mix of CSSText objects, strings, or promises that resolve to either. */
 
 /**
  * @typedef {ReturnType<typeof setupInternal>['createElement']} ElementConstructor
@@ -257,18 +212,18 @@ export const css = (template, ...substitutions) => {
 /** @param {SetupOptions} [setupOptions] */
 function setupInternal(setupOptions) {
   const { namespace, styles } = setupOptions ?? {};
-  /** @type {Array<CSSStyleSheet>} */
-  const injectedStyles = [];
+  /** @type {Array<CSSText>} */
+  const injectedCSSText = [];
 
   if (styles) {
     for (const style of styles) {
       if (style instanceof Promise) {
         style.then((imported) => {
-          injectedStyles.push(imported);
+          injectedCSSText.push(imported);
           Reflect.set(imported, 'bullet__shared', true);
         });
       } else {
-        injectedStyles.push(style);
+        injectedCSSText.push(style);
         Reflect.set(style, 'bullet__shared', true);
       }
     }
@@ -445,10 +400,13 @@ function setupInternal(setupOptions) {
       /** @type {boolean} */
       bullet__inlineStyles = Boolean(inlineStyles);
 
+      /** @type {Array<CSSText>} */
+      bullet__cssTextArray = [];
+
       constructor() {
         super();
-        if (this.shadowRoot) {
-          this.bullet__hasPrerenderedShadowRoot = true;
+        if (this.shadowRoot && this.hasAttribute('ct-static')) {
+          this.bullet__hasPreRenderedShadowRoot = true;
         } else {
           this.attachShadow({ mode: 'open' });
         }
@@ -462,26 +420,53 @@ function setupInternal(setupOptions) {
         if (ComponentConstructor.part) {
           this.setAttribute('part', ComponentConstructor.part);
         }
-        const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
-        shadowRoot.adoptedStyleSheets = [...injectedStyles];
 
-        const stylesheetArray = CUSTOM_ELEMENT_STYLES.get(elementTagname);
-        if (stylesheetArray) {
-          for (const [index, stylesheet] of stylesheetArray.entries()) {
-            if (!(stylesheet instanceof Promise)) {
-              shadowRoot.adoptedStyleSheets.push(stylesheet);
+        // Add global CSS.
+        for (const cssText of injectedCSSText) {
+          this.#addCSSText(cssText);
+        }
+
+        // Add component specific CSS.
+        const cssTextArray = CUSTOM_ELEMENT_STYLES.get(elementTagname);
+        if (cssTextArray) {
+          for (const [index, cssText] of cssTextArray.entries()) {
+            if (!(cssText instanceof Promise)) {
+              this.#addCSSText(cssText);
               continue;
             }
-            stylesheet
-              .then((sheet) => {
-                stylesheetArray.splice(index, 1, sheet);
-                shadowRoot.adoptedStyleSheets.push(sheet);
+            cssText
+              .then((cssText) => {
+                cssTextArray.splice(index, 1, cssText);
+                this.#addCSSText(cssText);
               })
               .catch(logError);
           }
         }
 
         this.bullet__instanceKey = generateInstanceKey(elementTagname);
+      }
+
+      /** @param {CSSText} cssText */
+      #addCSSText(cssText) {
+        const windowContext = getWindowContext();
+        const isServerMode =
+          windowContext.__BULLET_WINDOW_CONTEXT_OPTIONS__?.isServerMode ===
+          true;
+        if (isServerMode) {
+          this.bullet__cssTextArray.push(cssText);
+        } else {
+          const shadowRoot = /** @type {ShadowRoot} */ (this.shadowRoot);
+          if (!shadowRoot) {
+            console.warn(
+              'Cannot add CSS text to shadow root when it does not exist.'
+            );
+            return;
+          }
+          if (!shadowRoot.adoptedStyleSheets) {
+            shadowRoot.adoptedStyleSheets = [];
+          }
+          shadowRoot.adoptedStyleSheets.push(cssText.getSheet());
+        }
       }
 
       /**
@@ -584,7 +569,7 @@ function setupInternal(setupOptions) {
           RENDERING_TREE.pop();
         };
 
-        if (!this.bullet__hasPrerenderedShadowRoot) {
+        if (!this.bullet__hasPreRenderedShadowRoot) {
           this.render();
         }
 
@@ -643,16 +628,16 @@ function setupInternal(setupOptions) {
           globalStyles.instances += 1;
 
           if (globalStyles.instances === 1) {
-            const stylesheetArray = globalStyles.data;
-            for (const [index, stylesheet] of stylesheetArray.entries()) {
-              if (!(stylesheet instanceof Promise)) {
-                window.document.adoptedStyleSheets.push(stylesheet);
+            const cssTextArray = globalStyles.data;
+            for (const [index, cssText] of cssTextArray.entries()) {
+              if (!(cssText instanceof Promise)) {
+                window.document.adoptedStyleSheets.push(cssText.getSheet());
                 continue;
               }
-              stylesheet
-                .then((sheet) => {
-                  stylesheetArray.splice(index, 1, sheet);
-                  window.document.adoptedStyleSheets.push(sheet);
+              cssText
+                .then((cssText) => {
+                  cssTextArray.splice(index, 1, cssText);
+                  window.document.adoptedStyleSheets.push(cssText.getSheet());
                 })
                 .catch(logError);
             }
@@ -678,8 +663,20 @@ function setupInternal(setupOptions) {
             const array = globalStyles.data;
             window.document.adoptedStyleSheets =
               window.document.adoptedStyleSheets.filter(
-                (stylesheet) => array.indexOf(stylesheet) === -1
+                (stylesheet) =>
+                  !array.some(
+                    (cssText) =>
+                      cssText instanceof CSSText &&
+                      cssText.getSheet() === stylesheet
+                  )
               );
+
+            const associatedGlobalStyleTags = document.head.querySelectorAll(
+              `style[ct-node][data-associated-tag-name="${this.tagName.toLowerCase()}"]`
+            );
+            for (const style of associatedGlobalStyleTags) {
+              style.remove();
+            }
           }
         }
 

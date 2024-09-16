@@ -93,6 +93,15 @@ const questions = [
     ),
     default: '',
   },
+  {
+    type: 'confirm',
+    name: 'useCartridge',
+    message: chalk.magenta(
+      '(Experimental) Do you want to prerender pages on the server?'
+    ),
+    default: false,
+    when: (answers) => answers.useRouter,
+  },
 ];
 
 async function main() {
@@ -178,6 +187,7 @@ async function createProjectStructure(projectDir, answers) {
   }
 
   await Promise.all([
+    createBulletIcon(projectDir),
     createIndexHtml(projectDir, answers),
     createViteConfig(projectDir, answers),
     createSetupFile(projectDir, answers),
@@ -191,6 +201,10 @@ async function createProjectStructure(projectDir, answers) {
 
   if (answers.useTailwind) {
     await createPostcssConfig(projectDir);
+  }
+
+  if (answers.useCartridge) {
+    await createCartridgeConfig(projectDir, answers);
   }
 }
 
@@ -233,10 +247,14 @@ async function createIndexHtml(projectDir, answers) {
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Bullet App</title>
+    <link rel="icon" type="image/svg+xml" href="/bullet.svg" />
     <link rel="stylesheet" href="/source/styles/base.${styleExtension}">
+     <!-- app-head -->
   </head>
   <body>
-    <div id="app"></div>
+    <div id="app">
+      <!-- app-html -->
+    </div>
     <script type="module" src="/source/main.${extension}"></script>
   </body>
 </html>
@@ -245,15 +263,43 @@ async function createIndexHtml(projectDir, answers) {
   await fs.writeFile(path.join(projectDir, 'index.html'), content);
 }
 
+async function createBulletIcon(projectDir) {
+  const icon = `<svg width="191" height="191" viewBox="0 0 191 191" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <g clip-path="url(#clip0_7_2)">
+        <g clip-path="url(#clip1_7_2)">
+            <rect x="4" y="4" width="183" height="183" rx="32.1636" fill="url(#paint0_linear_7_2)" />
+            <line x1="244.452" y1="12.1822" x2="17.9893" y2="238.645" stroke="white" stroke-width="14" />
+            <line x1="148.412" y1="-22.2431" x2="-78.0502" y2="204.219" stroke="white" stroke-width="14" />
+            <ellipse cx="31.7881" cy="167.788" rx="49.349" ry="49.3467" transform="rotate(134.826 31.7881 167.788)"
+                fill="white" />
+        </g>
+        <rect x="9.435" y="9.435" width="172.13" height="172.13" rx="26.7286" stroke="white" stroke-width="10.87" />
+    </g>
+    <rect x="2" y="2" width="187" height="187" rx="34.15" stroke="#355FAC" stroke-width="4" />
+    <defs>
+        <linearGradient id="paint0_linear_7_2" x1="95.5" y1="4" x2="95.5" y2="187" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#538ACA" />
+            <stop offset="1" stop-color="#04187C" />
+        </linearGradient>
+        <clipPath id="clip0_7_2">
+            <rect x="4" y="4" width="183" height="183" rx="32.15" fill="white" />
+        </clipPath>
+        <clipPath id="clip1_7_2">
+            <rect x="4" y="4" width="183" height="183" rx="32.1636" fill="white" />
+        </clipPath>
+    </defs>
+</svg>`;
+  await fs.writeFile(path.join(projectDir, 'public', 'bullet.svg'), icon);
+}
+
 async function createViteConfig(projectDir, answers) {
   const extension = answers.language === 'TypeScript' ? 'ts' : 'js';
   const content = `
 import { defineConfig } from 'vite';
-import { bullet } from '@adbl/bullet/plugin';
 import path from 'node:path';
 
 export default defineConfig({
-  plugins: [bullet()],
+  ${!answers.useCartridge ? 'plugins: [bullet()],\n' : ''}
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './source'),
@@ -401,7 +447,7 @@ export default {
 
 /**
  * @param {string} projectDir
- * @param {{ language: string; useRouter: any; }} answers
+ * @param {{ language: string; useRouter: any; useCartridge: any; }} answers
  */
 async function createMainFile(projectDir, answers) {
   const extension = answers.language === 'TypeScript' ? 'ts' : 'js';
@@ -411,11 +457,18 @@ async function createMainFile(projectDir, answers) {
 `;
 
   if (answers.useRouter) {
-    content += `
-import router from './router';
-
-document.getElementById('app')?.appendChild(router.Outlet());
+    if (answers.useCartridge) {
+      content += `
+import { define } from './router'; // Define the router without attaching to the DOM
+const router = define();
     `;
+    } else {
+      content += `
+import { define } from './router';
+const router = define();
+document.getElementById('app')?.appendChild(router.Outlet());
+      `;
+    }
   } else {
     content += `
 import { App } from './App';
@@ -440,18 +493,19 @@ async function createRouterFile(projectDir, answers) {
 import { createWebRouter } from '@adbl/bullet';
 import { homeRoutes } from './pages/home/routes';
 
-const routes = [
-  {
-    name: 'App',
-    path: '/',
-    redirect: '/home',
-    children: [
-      ...homeRoutes,
-    ],
-  },
-];
-
-export default createWebRouter({ routes });
+export function define() {
+  const routes = [
+    {
+      name: 'App',
+      path: '/',
+      redirect: '/home',
+      children: [
+        ...homeRoutes,
+      ],
+    },
+  ];
+  return createWebRouter({ routes });
+}
   `.trim();
 
   await fs.writeFile(
@@ -513,6 +567,7 @@ export ${isView ? 'default' : `const ${componentName} =`} createElement({
       <main ${
         answers.useTailwind ? 'class="max-w-7xl mx-auto p-8 text-center"' : ''
       }>
+        <img src="/bullet.svg" alt="Bullet Logo" class="mb-4" />
         <h1 ${
           answers.useTailwind ? 'class="text-5xl font-bold mb-4"' : ''
         }><span class="gradient-text">bullet.</span></h1>
@@ -608,9 +663,9 @@ async function createPackageJson(projectDir, answers) {
     version: '0.0.0',
     type: 'module',
     scripts: {
-      dev: 'vite',
-      build: 'vite build',
-      preview: 'vite preview',
+      dev: answers.useCartridge ? 'cartridge dev' : 'vite',
+      build: answers.useCartridge ? 'cartridge build' : 'vite build',
+      preview: answers.useCartridge ? 'cartridge start' : 'vite preview',
     },
     dependencies: {
       ...CONFIG.dependencies,
@@ -622,6 +677,10 @@ async function createPackageJson(projectDir, answers) {
 
   if (answers.useCells) {
     content.dependencies['@adbl/cells'] = 'latest';
+  }
+
+  if (answers.useCartridge) {
+    content.dependencies['@adbl/cartridge'] = 'latest';
   }
 
   if (answers.language === 'TypeScript') {
@@ -678,6 +737,20 @@ async function createConfigFile(projectDir, answers) {
 
   await fs.writeFile(
     path.join(projectDir, fileName),
+    JSON.stringify(content, null, 2)
+  );
+}
+
+async function createCartridgeConfig(projectDir, answers) {
+  const extension = answers.language === 'TypeScript' ? 'ts' : 'js';
+  const content = {
+    port: 3145,
+    base: '/',
+    router: `source/router.${extension}`,
+  };
+
+  await fs.writeFile(
+    path.join(projectDir, 'cartridge.config.json'),
     JSON.stringify(content, null, 2)
   );
 }

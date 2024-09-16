@@ -1,3 +1,4 @@
+export * from "./css.js";
 /**
  * @typedef {Node | string} AimRenderNode
  */
@@ -63,20 +64,12 @@
  * @typedef {T extends U ? true : keyof T extends keyof U ? true : false} IsSubObject
  */
 /**
- * @typedef {CSSStyleSheet
- *  | Promise<CSSStyleSheet>
- *  | Array<CSSStyleSheet
- *  | Promise<CSSStyleSheet>>
+ * @typedef {CSSText
+ *  | Promise<CSSText>
+ *  | Array<CSSText
+ *  | Promise<CSSText>>
  * } CustomElementStyles
  * Styles to apply to the component/element.
- */
-/**
- * @typedef {string
- *  | TemplateStringsArray
- *  | Promise<string | {default: string}>
- *  | Array<string | TemplateStringsArray | Promise<string | {default: string}>>
- * } CSSorStringArray
- * A CSS or string array.
  */
 /**
  * @template {string} TagName
@@ -152,7 +145,6 @@
  * @returns {Node[]} - An array of child nodes generated from the HTML string.
  */
 export const html: typeof generateChildNodes;
-export function css(template: CSSorStringArray, ...substitutions: any[]): Array<CSSStyleSheet>;
 /**
  * @type {(setupOptions?: SetupOptions) => SetupResult}
  */
@@ -217,9 +209,9 @@ export type SetupOptions = {
     /**
      * An optional array of CSS stylesheets or strings to be applied to every component created with this setup.
      * These styles will be scoped to the component's shadow DOM if it has one.
-     * Can be a mix of CSSStyleSheet objects, strings, or promises that resolve to either.
+     * Can be a mix of CSSText objects, strings, or promises that resolve to either.
      */
-    styles?: (CSSStyleSheet | Promise<CSSStyleSheet>)[] | undefined;
+    styles?: (CSSText | Promise<CSSText>)[] | undefined;
 };
 export type ElementConstructor = ReturnType<typeof setupInternal>["createElement"];
 export type SetupResult = {
@@ -282,15 +274,7 @@ export type IsSubObject<T extends object, U extends object> = T extends U ? true
 /**
  * Styles to apply to the component/element.
  */
-export type CustomElementStyles = CSSStyleSheet | Promise<CSSStyleSheet> | Array<CSSStyleSheet | Promise<CSSStyleSheet>>;
-/**
- * A CSS or string array.
- */
-export type CSSorStringArray = string | TemplateStringsArray | Promise<string | {
-    default: string;
-}> | Array<string | TemplateStringsArray | Promise<string | {
-    default: string;
-}>>;
+export type CustomElementStyles = CSSText | Promise<CSSText> | Array<CSSText | Promise<CSSText>>;
 export type RenderFunction<Props_1, ExtraData> = (this: BulletElement<ExtraData>, props: Props_1, data: ExtraData, element: BulletElement<ExtraData>) => Template | Promise<Template>;
 export type ElementConfig<Props_1 extends object = {}, DefaultProps extends keyof Props_1 extends never ? object : Partial<Props_1> = never, ExtraData extends object = never> = {
     /**
@@ -355,6 +339,7 @@ export type ElementConfig<Props_1 extends object = {}, DefaultProps extends keyo
     inlineStyles?: boolean | undefined;
 };
 import { generateChildNodes } from './utils.js';
+import { CSSText } from './css.js';
 /**
  * @typedef SetupOptions
  *
@@ -362,10 +347,10 @@ import { generateChildNodes } from './utils.js';
  * A namespace to scope your custom elements to. This will ensure that they do not affect
  * other custom elements in the DOM.
  *
- * @property {Array<CSSStyleSheet | Promise<CSSStyleSheet>>} [styles]
+ * @property {Array<CSSText | Promise<CSSText>>} [styles]
  * An optional array of CSS stylesheets or strings to be applied to every component created with this setup.
  * These styles will be scoped to the component's shadow DOM if it has one.
- * Can be a mix of CSSStyleSheet objects, strings, or promises that resolve to either. */
+ * Can be a mix of CSSText objects, strings, or promises that resolve to either. */
 /**
  * @typedef {ReturnType<typeof setupInternal>['createElement']} ElementConstructor
  */

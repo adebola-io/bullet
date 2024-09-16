@@ -39,6 +39,11 @@ export type WindowContextOptions = {
      * Whether to run the connected callbacks for custom elements after they are connected to the document.
      */
     runConnectedCallbacks?: boolean | undefined;
+    /**
+     * Setting the window context to server mode changes some behaviors of the application to focus on
+     * better rendering performance.
+     */
+    isServerMode?: boolean | undefined;
 };
 export type WindowContext = Window & typeof globalThis & {
     __BULLET_WINDOW_CONTEXT_OPTIONS__?: WindowContextOptions;

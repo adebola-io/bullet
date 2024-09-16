@@ -9,6 +9,9 @@
  * Whether to add the listeners for the popstate, hashchange, and load events to the window object.
  * @property {boolean} [runConnectedCallbacks]
  * Whether to run the connected callbacks for custom elements after they are connected to the document.
+ * @property {boolean} [isServerMode]
+ * Setting the window context to server mode changes some behaviors of the application to focus on
+ * better rendering performance.
  */
 
 /**
@@ -66,7 +69,10 @@ export function getWindowContext() {
   }
   // Default to the browser window if it exists.
   if (typeof window !== 'undefined') {
-    setWindowContext(window, { initializeBulletComponent: true, addRouterWindowListeners: true });
+    setWindowContext(window, {
+      initializeBulletComponent: true,
+      addRouterWindowListeners: true,
+    });
     return window;
   }
 

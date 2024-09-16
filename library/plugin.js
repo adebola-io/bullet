@@ -47,8 +47,13 @@ export const bullet = (options) => ({
     if (
       code.startsWith('// @bullet-resolve-ignore') ||
       !id.startsWith(process.cwd())
-    )
+    ) {
       return null;
+    }
+
+    if (code.includes('update as __BULLET_HMR__')) {
+      return null;
+    }
 
     if (shouldWatchFile && !id.startsWith(alias)) {
       return {

@@ -88,9 +88,9 @@ export class Router {
      * Pushes the specified path to the browser's history and renders the corresponding route component.
      *
      * @param {string} path - The path to navigate to.
-     * @return {undefined}
+     * @return {Promise<undefined>}
      */
-    navigate: (path: string) => undefined;
+    navigate: (path: string) => Promise<undefined>;
     /**
      * Navigates back in the browser's history.
      */
@@ -110,13 +110,16 @@ export class Router {
      * @param {import('../component.js').BulletElement} outlet - The router outlet element to connect.
      * @param {string} [path='/'] - The path to navigate to after connecting the outlet.
      */
-    connect: (outlet: import("../component.js").BulletElement, path?: string | undefined) => void;
+    connect: (outlet: import("../component.js").BulletElement, path?: string | undefined) => Promise<void>;
     /**
      * Loads the matching routes for a path.
      * @param {string} path
-     * @param {boolean} navigate
+     * @param {boolean} [navigate]
+     * @param {Event} [_event]
+     * Event that triggered the navigation.
      */
-    loadPath: (path: string, navigate?: boolean) => void;
+    loadPath: (path: string, navigate?: boolean | undefined, _event?: Event | undefined) => Promise<void>;
+    isLoading: boolean;
 }
 export type RouteRecords = import("./routeTree.js").RouteRecords<ReturnType<import("../component.js").ElementConstructor> | LazyRoute>;
 export type UnwrapArray<T> = T extends Array<infer U> ? U : T;

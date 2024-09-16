@@ -106,9 +106,7 @@ const Counter = createElement({
     return (
       <div>
         <output>{count}</output>
-        <button onClick={()=>count.value++}>
-          Increment
-        </button>
+        <button onClick={() => count.value++}>Increment</button>
       </div>
     );
   },
@@ -231,7 +229,7 @@ It is mostly recommended to use Bullet with JSX, as it provides a lot more featu
 
 ## Styling
 
-Components can be styled using the `styles` property on the component object, and the `css` function, which can be used to generate CSS stylesheets from JavaScript strings.
+Components can be styled using the `styles` property on the component object, and the `css` function, which can be used to generate CSS from JavaScript strings.
 
 ```tsx
 import { createElement, css } from '@adbl/bullet';

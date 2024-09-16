@@ -1,12 +1,14 @@
 // @bullet-resolve-ignore
 
+/**@typedef {import('./css.js').CSSText} CSSText */
+
 /** @type {Map<string, any>} */
 export const CUSTOM_ELEMENT_MAP = new Map();
 
-/** @type {Map<string, Array<CSSStyleSheet | Promise<CSSStyleSheet>>>} */
+/** @type {Map<string, Array<CSSText | Promise<CSSText>>>} */
 export const CUSTOM_ELEMENT_STYLES = new Map();
 
-/** @type {Map<string, {  data: Array<CSSStyleSheet | Promise<CSSStyleSheet>>, instances: number }>} */
+/** @type {Map<string, {  data: Array<CSSText | Promise<CSSText>>, instances: number }>} */
 export const CUSTOM_ELEMENT_GLOBAL_STYLES = new Map();
 
 /** @type {Map<string, HTMLElement>} */

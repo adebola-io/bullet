@@ -49,6 +49,20 @@ export function For(list, fn) {
    */
   let snapshot = [];
 
+  if (
+    window.__BULLET_WINDOW_CONTEXT_OPTIONS__?.isServerMode &&
+    Cell.isCell(list)
+  ) {
+    let index = 0;
+    for (const item of list.value) {
+      snapshot.push(
+        ...generateChildNodes(fn(item, Cell.source(index), list.value))
+      );
+      index += 1;
+    }
+    return snapshot;
+  }
+
   if (Cell.isCell(list)) {
     const rangeStart = window.document.createComment('----');
     const rangeEnd = window.document.createComment('----');
